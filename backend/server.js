@@ -3,6 +3,7 @@ import session from "express-session"
 import dotenv from "dotenv";
 import { connectDB } from "./config/db.js"
 import userRoutes from "./routes/user.route.js"
+import listingRoutes from "./routes/list.route.js"
 
 dotenv.config();
 
@@ -23,6 +24,7 @@ app.use(
 );
 
 app.use("/api/users", userRoutes);
+app.use("/api/listings", listingRoutes);
 
 app.get('/', (req, res) => {
     res.send('Server is up and running');

@@ -31,21 +31,20 @@ const listingSchema = new mongoose.Schema({
     images: {
         type: [String]
     },
-    address: {
-        city: {
-            type: String,
-            required: true
+        address: {
+            city: {
+                type: String,
+                required: true
+            },
+            ward: {
+                type: String,
+                required: true
+            },
+            detail: {
+                type: String,
+                required: true
+            }
         },
-        ward: {
-            type: String,
-            required: true
-        },
-        detail: {
-            type: String,
-            required: true
-        },
-        required: true
-    },
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User"
