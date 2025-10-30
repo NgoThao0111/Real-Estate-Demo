@@ -62,5 +62,119 @@ export const deleteUser = async (req, res) => {
 }
 
 export const loginUser = async (req, res) => {
-    
+    try {
+        const {username, password} = req.body;
+
+        if(!username || !password) {
+            return res.status(400).json({
+                message: "Not Enough Information"
+            })
+        }
+
+        const user = await User.findOne({username});
+
+        if(!user) {
+            return res.status(401).json({
+                message: "Username wrong"
+            })
+        }
+
+        const match = bcrypt.compare(password, user.password);
+        if(!match) {
+            return res.status(401).json({
+                message: "Password wrong"
+            })
+        }
+        req.session.user = {
+            id: user._id,
+            username: user.username
+        }
+
+        res.json({
+            message: "Login successfully",
+            user: req.session.user
+        })
+    } catch (error) {
+        console.log(error.message);
+        return res.status(500).json({
+            message: "Server error"
+        })
+    }
+}
+
+export const getUserInfor = async (req, res) => {
+    try {
+        // Kiểm tra nếu user chưa đăng nhập
+        if (!req.session || !req.session.user) {
+            return res.status(401).json({
+                message: "Vui lòng đăng nhập"
+            });
+        }
+
+        const user_id = req.session.user.id;
+        
+        // Sửa lại cú pháp findById và thêm await
+        const user = await User.findById(user_id).select("username name phone role createdAt");
+        
+        if(!user) {
+            return res.status(404).json({
+                message: "User không tồn tại"
+            });
+        }
+
+        res.json({
+            message: "Thông tin người dùng mới nhất",
+            user: user
+        });
+    } catch (error) {
+        console.log(error.message);
+        return res.status(500).json({
+            message: "Server error"
+        });
+    }
+}
+
+export const updateUserInfo = async (req, res) => {
+    try {
+        if(!req.session || !req.session.user) {
+            return res.status(401).json({
+                message: "Vui long dang nhap"
+            });
+        }
+
+        const user_id = req.session.user.id;
+        const {name, phone} = req.body;
+        if(!name && !phone) {
+            return res.status(400).json({
+                message: "Vui long cung cap thong tin can cap nhat"
+            });
+        }
+
+        const updateFields = {};
+        if(name) updateFields.name = name;
+        if(phone) updateFields.phone = phone;
+
+        const updatedUser = await User.findByIdAndUpdate(
+            user_id, 
+            { $set: updateFields },
+            { new: true }
+        ).select("name phone role createdAt");
+
+        if(!updatedUser) {
+            return res.status(404).json({
+                message: "User không tồn tại"
+            });
+        }
+
+        res.json({
+            message: "Cập nhật thành công",
+            user: updatedUser
+        });
+
+    } catch (error) {
+        console.log(error.message);
+        return res.status(500).json({
+            message: "Server error"
+        })
+    }
 }
