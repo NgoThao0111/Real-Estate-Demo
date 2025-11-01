@@ -26,21 +26,24 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
     confirmPassword: "",
     name: "",
     phone: "",
-    role:""
+    role: "",
   });
   const toast = useToast();
-  const { registerUser, loading, error } = useUserStore();
+  const { registerUser, loginUser, checkSession, logoutUser, loading, error } =
+    useUserStore();
 
   useEffect(() => {
+    checkSession();
+
     if (isOpen) {
-      setMode(defaultMode || " login");
+      setMode(defaultMode || "login");
       setFormData({
         username: "",
         password: "",
         confirmPassword: "",
         name: "",
         phone: "",
-        role: "guest"
+        role: "guest",
       });
     }
   }, [isOpen, defaultMode]);
@@ -55,30 +58,50 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (mode !== "register") {
-      toast({
-        title: "Thông báo",
-        description: "Chức năng đăng nhập sẽ được bổ sung sau.",
-        status: "info",
-        isClosable: true,
-      });
+
+    if (mode === "login") {
+      const { success, message } = await loginUser(formData);
+      if (!success) {
+        toast({
+          title: "Lỗi",
+          description: message,
+          status: "error",
+          isClosable: true,
+        });
+      } else {
+        toast({
+          title: "Thành công",
+          description: message,
+          status: "success",
+          isClosable: true,
+        });
+        onClose();
+      }
       return;
-    }
-    const { success, message } = await registerUser(formData);
-    if (!success) {
-      toast({
-        title: "Lỗi",
-        description: message,
-        status: "error",
-        isClosable: true,
-      });
+      // toast({
+      //   title: "Thông báo",
+      //   description: "Chức năng đăng nhập sẽ được bổ sung sau.",
+      //   status: "info",
+      //   isClosable: true,
+      // });
+      // return;
     } else {
-      toast({
-        title: "Thành công",
-        description: message,
-        status: "success",
-        isClosable: true,
-      });
+      const { success, message } = await registerUser(formData);
+      if (!success) {
+        toast({
+          title: "Lỗi",
+          description: message,
+          status: "error",
+          isClosable: true,
+        });
+      } else {
+        toast({
+          title: "Thành công",
+          description: message,
+          status: "success",
+          isClosable: true,
+        });
+      }
     }
   };
   return (

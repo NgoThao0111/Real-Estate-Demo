@@ -86,7 +86,8 @@ export const loginUser = async (req, res) => {
         }
         req.session.user = {
             id: user._id,
-            username: user.username
+            username: user.username,
+            name: user.name
         }
 
         res.json({
@@ -176,4 +177,22 @@ export const updateUserInfo = async (req, res) => {
             message: "Server error"
         })
     }
+}
+
+export const getSession = async (req, res) => {
+    if(req.session.user) {
+        return res.json({
+            user: req.session.user
+        });
+    } else {
+        return res.json({user: null});
+    }
+}
+
+export const logoutUser = async (req, res) => {
+    req.session.destroy(() => {
+        res.json({
+            message: "Đã đăng xuất"
+        });
+    })
 }
