@@ -138,3 +138,26 @@ export const getListings = async (req, res) => {
         });
     }
 };
+
+export const deleteListing = async (req, res) => {
+    try {
+        const id = req.params.id;
+
+        const deleted = await Listing.findByIdAndDelete(id);
+
+        if (!deleted) {
+            return res.status(404).json({
+                message: "Not Found"
+            });
+        }
+
+        return res.json({
+            message: "Tin đăng được xóa thành công"
+        });
+    } catch (error) {
+        console.log(error.message);
+        return res.status(500).json({
+            message: "Server Error"
+        });
+    }
+}
