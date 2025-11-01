@@ -1,6 +1,7 @@
 import {create} from 'zustand';
 import axios from "axios";
 
+// Dev: ensure axios sends cookies and targets backend server
 axios.defaults.withCredentials = true; // Cho phép gửi cookie session
 
 export const useUserStore = create((set) => ({

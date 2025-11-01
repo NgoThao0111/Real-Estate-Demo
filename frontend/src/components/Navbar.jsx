@@ -6,19 +6,32 @@ import {
   Text,
   useColorMode,
   useColorModeValue,
-  Box
+  Box,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalCloseButton,
+  ModalBody,
 } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
 import { FaRegPlusSquare } from "react-icons/fa";
 import { MdOutlineLightMode, MdOutlineDarkMode } from "react-icons/md";
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import AuthModal from "./AuthModal";
+import CreateListing from "./CreateListing";
+import { useUserStore } from "../store/user";
 
 const Navbar = () => {
   const { colorMode, toggleColorMode } = useColorMode();
   const linkColor = useColorModeValue('gray.700', 'gray.100');
   const [authMode, setAuthMode] = useState(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [pendingCreate, setPendingCreate] = useState(false);
+
+  const user = useUserStore((s) => s.user);
 
   const openAuth = (mode) => {
     setAuthMode(mode)
@@ -28,6 +41,17 @@ const Navbar = () => {
     setAuthMode(null)
     setIsAuthOpen(false)
   }
+
+  const openCreate = () => setIsCreateOpen(true);
+  const closeCreate = () => setIsCreateOpen(false);
+
+  useEffect(() => {
+    if (user && pendingCreate) {
+      setPendingCreate(false);
+      setIsAuthOpen(false);
+      openCreate();
+    }
+  }, [user, pendingCreate]);
 
   return (
     <Box>
@@ -106,15 +130,30 @@ const Navbar = () => {
               <MdOutlineLightMode size={20} />
             )}
           </Button>
-          <Link to="/">
-            <Button colorScheme="blue">
-              Tạo bài viết mới
-            </Button>
-          </Link>
+          <Button colorScheme="blue" onClick={() => {
+            if (user) openCreate();
+            else {
+              setPendingCreate(true);
+              openAuth('login');
+            }
+          }}>
+            Tạo bài viết mới
+          </Button>
         </HStack>
       </Flex>
     </Container>
     <AuthModal isOpen={isAuthOpen} onClose={closeAuth} defaultMode={authMode}/>
+
+    <Modal isOpen={isCreateOpen} onClose={closeCreate} size="xl">
+      <ModalOverlay />
+      <ModalContent>
+        <ModalHeader>Tạo bài đăng mới</ModalHeader>
+        <ModalCloseButton />
+        <ModalBody>
+          <CreateListing onSuccess={() => { closeCreate(); }} />
+        </ModalBody>
+      </ModalContent>
+    </Modal>
     </Box>
   );
 };
