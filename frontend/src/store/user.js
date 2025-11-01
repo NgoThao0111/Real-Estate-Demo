@@ -1,6 +1,8 @@
 import {create} from 'zustand';
 import axios from "axios";
 
+axios.defaults.withCredentials = true; // Cho phép gửi cookie session
+
 export const useUserStore = create((set) => ({
     user: null,
     loading: false,
@@ -27,5 +29,61 @@ export const useUserStore = create((set) => ({
             set({ loading: false, error: errorMessage, user: null });
             return { success: false, message: errorMessage };
         }
+    },
+
+    //Login
+    loginUser: async (loginData) => {
+        try {
+            if(!loginData.username || !loginData.password) {
+                throw new Error("Vui lòng nhập tên đăng nhập và mật khẩu");
+            }
+
+            set({loading: true, error: null});
+            const res = await axios.post("/api/users/login", loginData, { withCredentials: true});
+
+            set({
+                user: res.data.user,
+                loading: false,
+                error: null
+            });
+            return {
+                success: true,
+                message: "Đăng nhập thành công"
+            };
+
+        } catch (error) {
+            const errorMessage = error.response?.data?.message || error.message;
+            set({
+                loading: false,
+                error: errorMessage,
+                user: null
+            });
+            return {
+                success: false,
+                message: errorMessage
+            };
+        }
+    },
+
+    //Check session nếu reload lại trang
+    checkSession: async () => {
+        try {
+            const res = await axios.get("/api/users/session", {withCredentials: true});
+
+            set({
+                user: res.data.user || null
+            });
+        } catch (error) {
+            set({user: null});
+        }
+    },
+
+    //Logout
+    logoutUser: async () => {
+        await axios.post("/api/users/logout", {}, {withCredentials: true});
+        set({
+            user: null,
+            error: null
+        });
     },
 }));
