@@ -9,16 +9,18 @@ import {
   Box
 } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
-import { FaRegPlusSquare } from "react-icons/fa";
 import { MdOutlineLightMode, MdOutlineDarkMode } from "react-icons/md";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AuthModal from "./AuthModal";
+import CreateListingModal from "./CreateListingModal";
+import { useUserStore } from "../store/user.js";
 
 const Navbar = () => {
   const { colorMode, toggleColorMode } = useColorMode();
   const linkColor = useColorModeValue('gray.700', 'gray.100');
   const [authMode, setAuthMode] = useState(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   const openAuth = (mode) => {
     setAuthMode(mode)
@@ -28,6 +30,16 @@ const Navbar = () => {
     setAuthMode(null)
     setIsAuthOpen(false)
   }
+
+  const openCreate = () => setIsCreateOpen(true);
+  const closeCreate = () => setIsCreateOpen(false);
+
+  const { user, logoutUser, checkSession } = useUserStore();
+
+  useEffect(() => {
+    // ensure we have the session state on navbar mount
+    checkSession();
+  }, []);
 
   return (
     <Box>
@@ -50,7 +62,7 @@ const Navbar = () => {
               bgGradient={"linear(to-r, cyan.400, blue.500)"}
               bgClip={"text"}
             >
-              Rencity
+              DemoPrj
             </Text>
           </Link>
 
@@ -92,13 +104,25 @@ const Navbar = () => {
           </HStack>
         </Flex>
         <HStack spacing={2} alignItems={"center"}>
-          <Button bgColor={"transparent"} onClick={() => openAuth('login')}>
-            Đăng nhập
-          </Button>
-          <Text color="muted">|</Text>
-          <Button bgColor={"transparent"} onClick={() => openAuth('register')}>
-            Đăng ký
-          </Button>
+          {!user ? (
+            <>
+              <Button bgColor={"transparent"} onClick={() => openAuth('login')}>
+                Đăng nhập
+              </Button>
+              <Text color="muted">|</Text>
+              <Button bgColor={"transparent"} onClick={() => openAuth('register')}>
+                Đăng ký
+              </Button>
+            </>
+          ) : (
+            <>
+              <Text color={linkColor} fontWeight="medium">{user.name || user.username}</Text>
+              <Button bgColor={"transparent"} onClick={async () => { await logoutUser(); }}>
+                Đăng xuất
+              </Button>
+            </>
+          )}
+
           <Button variant="ghost" onClick={toggleColorMode}>
             {colorMode === "light" ? (
               <MdOutlineDarkMode size={20} />
@@ -106,15 +130,20 @@ const Navbar = () => {
               <MdOutlineLightMode size={20} />
             )}
           </Button>
-          <Link to="/">
-            <Button colorScheme="blue">
-              Tạo bài viết mới
-            </Button>
-          </Link>
+          <Button colorScheme="blue" onClick={() => {
+            if (!user) {
+              openAuth('login');
+              return;
+            }
+            openCreate();
+          }}>
+            Tạo bài viết mới
+          </Button>
         </HStack>
       </Flex>
     </Container>
     <AuthModal isOpen={isAuthOpen} onClose={closeAuth} defaultMode={authMode}/>
+    <CreateListingModal isOpen={isCreateOpen} onClose={closeCreate} />
     </Box>
   );
 };
