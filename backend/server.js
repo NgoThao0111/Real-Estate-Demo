@@ -28,9 +28,18 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      // in development we don't use secure, in production set secure: true
+      // 1. Secure: true CHỈ khi ở Production (đang dùng HTTPS)
       secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+
+      // 2. SameSite:
+      //    - 'none' BẮT BUỘC ở Prod (khi dùng secure: true)
+      //    - false (hoặc 'lax') ở Dev. Đặt false để đảm bảo session hoạt động trên HTTP/localhost
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : false, 
+      
+      // Hoặc giữ nguyên 'lax' nếu bạn muốn bảo mật tối đa, nhưng có thể cần test kỹ.
+      // Giải pháp an toàn nhất cho Dev/HTTP: Đặt SameSite: false và bỏ thuộc tính Secure
+
+      httpOnly: true, // Thêm thuộc tính này để tăng cường bảo mật (không thể truy cập bằng JS)
       maxAge: 1000 * 60 * 60 // 1 hour
     }
   })
