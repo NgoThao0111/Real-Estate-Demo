@@ -24,10 +24,15 @@ export const userRegister = async (req, res) => {
         });
 
         await user.save();
+        req.session.user = {
+            id: user._id,
+            username: user.username,
+            name: user.name
+        }
 
         return res.status(201).json({
             message: "Đăng ký thành công",
-            userID: user._id
+            user: req.session.user
         });
     } catch (error) {
         console.log(error.message);
