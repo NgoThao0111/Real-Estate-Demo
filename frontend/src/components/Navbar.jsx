@@ -145,6 +145,7 @@ const Navbar = () => {
     <AuthModal isOpen={isAuthOpen} onClose={closeAuth} defaultMode={authMode}/>
     <CreateListingModal isOpen={isCreateOpen} onClose={closeCreate} />
     </Box>
+    /*Test*/
   );
 };
 
