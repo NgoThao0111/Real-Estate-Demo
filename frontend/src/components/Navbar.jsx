@@ -6,7 +6,13 @@ import {
   Text,
   useColorMode,
   useColorModeValue,
-  Box
+  Box,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalCloseButton,
+  ModalBody,
 } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
 import { MdOutlineLightMode, MdOutlineDarkMode } from "react-icons/md";
@@ -21,6 +27,11 @@ const Navbar = () => {
   const [authMode, setAuthMode] = useState(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [pendingCreate, setPendingCreate] = useState(false);
+
+  const user = useUserStore((s) => s.user);
 
   const openAuth = (mode) => {
     setAuthMode(mode)
