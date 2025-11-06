@@ -191,5 +191,5 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
     </Modal>
   );
 };
-
+/*....*/
 export default CreateListingModal;
