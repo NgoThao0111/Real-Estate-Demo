@@ -101,6 +101,7 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
           status: "success",
           isClosable: true,
         });
+        onClose();
       }
     }
   };
