@@ -15,18 +15,18 @@ import {
   ModalBody,
 } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
+import { FaRegPlusSquare } from "react-icons/fa";
 import { MdOutlineLightMode, MdOutlineDarkMode } from "react-icons/md";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import AuthModal from "./AuthModal";
-import CreateListingModal from "./CreateListingModal";
-import { useUserStore } from "../store/user.js";
+import CreateListing from "./CreateListing";
+import { useUserStore } from "../store/user";
 
 const Navbar = () => {
   const { colorMode, toggleColorMode } = useColorMode();
   const linkColor = useColorModeValue('gray.700', 'gray.100');
   const [authMode, setAuthMode] = useState(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [pendingCreate, setPendingCreate] = useState(false);
@@ -45,12 +45,13 @@ const Navbar = () => {
   const openCreate = () => setIsCreateOpen(true);
   const closeCreate = () => setIsCreateOpen(false);
 
-  const { user, logoutUser, checkSession } = useUserStore();
-
   useEffect(() => {
-    // ensure we have the session state on navbar mount
-    checkSession();
-  }, []);
+    if (user && pendingCreate) {
+      setPendingCreate(false);
+      setIsAuthOpen(false);
+      openCreate();
+    }
+  }, [user, pendingCreate]);
 
   return (
     <Box>
@@ -73,7 +74,7 @@ const Navbar = () => {
               bgGradient={"linear(to-r, cyan.400, blue.500)"}
               bgClip={"text"}
             >
-              DemoPrj
+              Rencity
             </Text>
           </Link>
 
@@ -115,25 +116,13 @@ const Navbar = () => {
           </HStack>
         </Flex>
         <HStack spacing={2} alignItems={"center"}>
-          {!user ? (
-            <>
-              <Button bgColor={"transparent"} onClick={() => openAuth('login')}>
-                Đăng nhập
-              </Button>
-              <Text color="muted">|</Text>
-              <Button bgColor={"transparent"} onClick={() => openAuth('register')}>
-                Đăng ký
-              </Button>
-            </>
-          ) : (
-            <>
-              <Text color={linkColor} fontWeight="medium">{user.name || user.username}</Text>
-              <Button bgColor={"transparent"} onClick={async () => { await logoutUser(); }}>
-                Đăng xuất
-              </Button>
-            </>
-          )}
-
+          <Button bgColor={"transparent"} onClick={() => openAuth('login')}>
+            Đăng nhập
+          </Button>
+          <Text color="muted">|</Text>
+          <Button bgColor={"transparent"} onClick={() => openAuth('register')}>
+            Đăng ký
+          </Button>
           <Button variant="ghost" onClick={toggleColorMode}>
             {colorMode === "light" ? (
               <MdOutlineDarkMode size={20} />
@@ -142,11 +131,11 @@ const Navbar = () => {
             )}
           </Button>
           <Button colorScheme="blue" onClick={() => {
-            if (!user) {
+            if (user) openCreate();
+            else {
+              setPendingCreate(true);
               openAuth('login');
-              return;
             }
-            openCreate();
           }}>
             Tạo bài viết mới
           </Button>
@@ -154,10 +143,18 @@ const Navbar = () => {
       </Flex>
     </Container>
     <AuthModal isOpen={isAuthOpen} onClose={closeAuth} defaultMode={authMode}/>
-    <CreateListingModal isOpen={isCreateOpen} onClose={closeCreate} />
+
+    <Modal isOpen={isCreateOpen} onClose={closeCreate} size="xl">
+      <ModalOverlay />
+      <ModalContent>
+        <ModalHeader>Tạo bài đăng mới</ModalHeader>
+        <ModalCloseButton />
+        <ModalBody>
+          <CreateListing onSuccess={() => { closeCreate(); }} />
+        </ModalBody>
+      </ModalContent>
+    </Modal>
     </Box>
-    /*Test*/
-    /*Tsfkhfkdsf*/
   );
 };
 
