@@ -1,57 +1,60 @@
-import mongoose from "mongoose"
+import mongoose from "mongoose";
 
-const listingSchema = new mongoose.Schema({
+const listingSchema = new mongoose.Schema(
+  {
     title: {
-        type: String,
-        required: true
+      type: String,
+      required: true,
     },
     description: {
-        type: String,
+      type: String,
     },
     area: {
-        type: String,
-        required: true
+      type: String,
+      required: true,
     },
     price: {
-        type: String,
-        required: true
+      type: String,
+      required: true,
     },
     status: {
-        type: String,
-        required: true
+      type: String,
+      required: true,
     },
     property_type: {
-        type: String,
-        required: true
+      type: String,
+      required: true,
     },
     rental_type: {
-        type: String,
-        required: true
+      type: String,
+      required: true,
     },
     images: {
-        type: [String]
+      type: [String],
     },
-        address: {
-            city: {
-                type: String,
-                required: true
-            },
-            ward: {
-                type: String,
-                required: true
-            },
-            detail: {
-                type: String,
-                required: true
-            }
-        },
+    address: {
+      city: {
+        type: String,
+        required: true,
+      },
+      ward: {
+        type: String,
+        required: true,
+      },
+      detail: {
+        type: String,
+        required: true,
+      },
+    },
     createdBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User"
-    }
-}, {
-    timestamps: true
-})
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
 
 const Listing = mongoose.model("Listing", listingSchema);
 

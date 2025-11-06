@@ -13,6 +13,13 @@ export const createList = async (req, res) => {
             return res.status(400).json({ message: "Missing required fields" });
         }
         
+        // images may come as an array or a comma-separated string from the frontend
+        let images = [];
+        if (req.body.images) {
+            if (Array.isArray(req.body.images)) images = req.body.images;
+            else if (typeof req.body.images === "string") images = req.body.images.split(",").map((s) => s.trim()).filter(Boolean);
+        }
+
         const list = new Listing({
             title: title,
             description: description,
@@ -21,6 +28,7 @@ export const createList = async (req, res) => {
             status: status,
             property_type: property_type,
             rental_type: rental_type,
+            images: images,
             address: {
                 city: city,
                 ward: ward,
@@ -35,10 +43,11 @@ export const createList = async (req, res) => {
 
         await list.save();
 
+        // Return the created listing so frontend receives the full object (including images)
         return res.status(201).json({
             message: "Create List Successfully",
-            list_id: list._id
-        })
+            listing: list,
+        });
     } catch (error) {
         console.log(error.message);
         return res.status(500).json({
