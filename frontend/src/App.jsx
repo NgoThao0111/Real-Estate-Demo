@@ -16,7 +16,6 @@ function App() {
         zIndex={1000}
         borderBottom={"2px"}
         borderColor={"blue.300"}
-        
       >
         <Navbar />
       </Box>

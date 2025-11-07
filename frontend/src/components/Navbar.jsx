@@ -49,7 +49,7 @@ const Navbar = () => {
   }, []);
 
   return (
-    <Box>
+    <Box bg={useColorModeValue("white", "gray.800")} boxShadow={"sm"}>
     <Container maxW={"1140px"} px={4}>
       <Flex
         h={16}

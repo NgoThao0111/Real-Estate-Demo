@@ -35,7 +35,7 @@ const HomePage = () => {
           <Text>Chưa có bài đăng nào.</Text>
         </Center>
       ) : (
-        <SimpleGrid columns={{ base: 1, sm: 2, md: 3 }} spacing={6}>
+        <SimpleGrid columns={{ base: 1, sm: 2, md: 4 }} spacing={6}>
           {listings.map((l) => (
             <ListingCard key={l._id || l.id} listing={l} />
           ))}
