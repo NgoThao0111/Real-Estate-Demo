@@ -1,13 +1,14 @@
 import { Box, useColorModeValue } from "@chakra-ui/react"
 import Navbar from "./components/Navbar.jsx";
 import HomePage from "./pages/HomePage.jsx";
+import MyPostsPage from "./pages/MyPostsPage.jsx";
+import SavedPostsPage from "./pages/SavedPostsPage.jsx";
 import { Routes, Route } from "react-router-dom";
 
 function App() {
   return (
     <>
     <Box>
-      {/* Sticky Navbar */}
       <Box 
         position="fixed"
         top={0}
@@ -20,14 +21,15 @@ function App() {
         <Navbar />
       </Box>
 
-      {/* Main Content with top padding to prevent overlap */}
       <Box 
         minH={"100vh"}  
         bg={useColorModeValue("gray.100", "gray.900")}
-        pt={"64px"} // This should match your navbar height
+        pt={"64px"} 
       >
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/my-posts" element={<MyPostsPage />} />
+          <Route path="/saved-posts" element={<SavedPostsPage />} />
         </Routes>
       </Box>
     </Box>

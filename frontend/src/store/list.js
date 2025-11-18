@@ -25,7 +25,6 @@ export const useListStore = create((set, get) => ({
     }
   },
 
-  // Get single listing by id
   getListingById: async (id) => {
     try {
       set({ loading: true, error: null });
@@ -39,13 +38,53 @@ export const useListStore = create((set, get) => ({
     }
   },
 
+  fetchMyListings: async () => {
+    try {
+      set({ loading: true, error: null });
+      const res = await axios.get(`/api/listings/my`);
+      const data = res.data.listings || [];
+      set({ listings: data, loading: false });
+      return { success: true, data };
+    } catch (err) {
+      const message = extractError(err);
+      set({ loading: false, error: message });
+      return { success: false, message };
+    }
+  },
+
+  fetchSavedListings: async () => {
+    try {
+      set({ loading: true, error: null });
+      const res = await axios.get(`/api/users/saved`);
+      const data = res.data.listings || [];
+      set({ listings: data, loading: false });
+      return { success: true, data };
+    } catch (err) {
+      const message = extractError(err);
+      set({ loading: false, error: message });
+      return { success: false, message };
+    }
+  },
+
+  toggleSaveListing: async (listingId) => {
+    try {
+      set({ loading: true, error: null });
+      const res = await axios.post(`/api/users/save/${listingId}`);
+      set({ loading: false });
+      return { success: true, message: res.data.message };
+    } catch (err) {
+      const message = extractError(err);
+      set({ loading: false, error: message });
+      return { success: false, message };
+    }
+  },
+
   // Create a new listing
   createListing: async (payload) => {
     try {
       set({ loading: true, error: null });
       const res = await axios.post(`/api/listings/createList`, payload);
       const created = res.data.listing || res.data || null;
-      // append to local state if created
       if (created) {
         const current = get().listings || [];
         set({ listings: [created, ...current] });

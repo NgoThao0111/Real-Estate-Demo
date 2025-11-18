@@ -44,7 +44,6 @@ const Navbar = () => {
   const { user, logoutUser, checkSession } = useUserStore();
 
   useEffect(() => {
-    // ensure we have the session state on navbar mount
     checkSession();
   }, []);
 
@@ -73,7 +72,6 @@ const Navbar = () => {
             </Text>
           </Link>
 
-          {/* Hide center links on very small screens if desired */}
           <HStack spacing={8} display={{ base: "none", sm: "flex" }} fontSize={{ base: "10", sm: "16" }}>
             <Link to="/">
               <Text 
@@ -86,7 +84,7 @@ const Navbar = () => {
                 Trang chủ
               </Text>
             </Link>
-            <Link to="/">
+            <Link to="/my-posts">
               <Text 
                 color={linkColor} 
                 fontWeight={"medium"}
@@ -97,7 +95,7 @@ const Navbar = () => {
                 Bài đăng của tôi
               </Text>
             </Link>
-            <Link to="/">
+            <Link to="/saved-posts">
               <Text 
                 color={linkColor} 
                 fontWeight={"medium"}
@@ -152,8 +150,6 @@ const Navbar = () => {
     <AuthModal isOpen={isAuthOpen} onClose={closeAuth} defaultMode={authMode}/>
     <CreateListingModal isOpen={isCreateOpen} onClose={closeCreate} />
     </Box>
-    /*Test*/
-    /*Tsfkhfkdsf*/
   );
 };
 
