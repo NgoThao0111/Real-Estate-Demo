@@ -2,18 +2,15 @@ import Listing from "../models/listing.model.js";
 
 export const createList = async (req, res) => {
     try {
-        // Safer destructuring: handle missing address
         const { title, description, area, price, status, property_type, rental_type, address } = req.body;
         const city = address?.city;
         const ward = address?.ward;
         const detail = address?.detail;
 
-        // Validate required fields
         if (!title || !area || !price || !status || !property_type || !rental_type || !city || !ward || !detail) {
             return res.status(400).json({ message: "Missing required fields" });
         }
         
-        // images may come as an array or a comma-separated string from the frontend
         let images = [];
         if (req.body.images) {
             if (Array.isArray(req.body.images)) images = req.body.images;
@@ -36,14 +33,12 @@ export const createList = async (req, res) => {
             }
         });
 
-        // if user is logged in, attach createdBy
         if (req.session && req.session.user && req.session.user.id) {
             list.createdBy = req.session.user.id;
         }
 
         await list.save();
 
-        // Return the created listing so frontend receives the full object (including images)
         return res.status(201).json({
             message: "Create List Successfully",
             listing: list,
@@ -56,9 +51,6 @@ export const createList = async (req, res) => {
     }
 }
 
-// GET /api/listings
-// Supports query params: search, city, property_type, rental_type, status,
-// minPrice, maxPrice, minArea, maxArea, page, limit, sort
 export const getListings = async (req, res) => {
     try {
         const {
@@ -88,7 +80,6 @@ export const getListings = async (req, res) => {
         if (rental_type) query.rental_type = rental_type;
         if (status) query.status = status;
 
-        // numeric filters - validate inputs
         const minP = minPrice !== undefined ? Number(minPrice) : undefined;
         const maxP = maxPrice !== undefined ? Number(maxPrice) : undefined;
         const minA = minArea !== undefined ? Number(minArea) : undefined;
@@ -112,13 +103,11 @@ export const getListings = async (req, res) => {
             if (maxA !== undefined) query.area.$lte = maxA;
         }
 
-        // pagination
         const pageNum = Math.max(1, Number(page));
         const lim = Math.max(1, Number(limit));
         const skip = (pageNum - 1) * lim;
 
-        // sorting
-        let sortObj = { createdAt: -1 }; // newest by default
+        let sortObj = { createdAt: -1 }; 
         if (sort) {
             if (sort === "price_asc") sortObj = { price: 1 };
             else if (sort === "price_desc") sortObj = { price: -1 };
@@ -145,6 +134,59 @@ export const getListings = async (req, res) => {
         return res.status(500).json({
             message: "Server error",
         });
+    }
+};
+
+export const getListingById = async (req, res) => {
+    try {
+        const id = req.params.id;
+        const listing = await Listing.findById(id);
+        if(!listing) return res.status(404).json({ message: "Not Found" });
+        return res.json(listing);
+    } catch (error) {
+        console.log(error.message);
+        return res.status(500).json({ message: "Server error" });
+    }
+}
+
+// Get listings created by current logged-in user
+export const getMyListings = async (req, res) => {
+    try {
+        if (!req.session || !req.session.user) return res.status(401).json({ message: "Vui lòng đăng nhập" });
+
+        const userId = req.session.user.id;
+        const listings = await Listing.find({ createdBy: userId }).sort({ createdAt: -1 });
+
+        return res.json({ message: "Lấy bài đăng của tôi thành công", listings });
+    } catch (error) {
+        console.log(error.message);
+        return res.status(500).json({ message: "Server error" });
+    }
+};
+
+export const updateListing = async (req, res) => {
+    try {
+        if (!req.session || !req.session.user) return res.status(401).json({ message: "Vui lòng đăng nhập" });
+        const userId = req.session.user.id;
+        const id = req.params.id;
+
+        const listing = await Listing.findById(id);
+        if (!listing) return res.status(404).json({ message: "Listing not found" });
+        if (!listing.createdBy || listing.createdBy.toString() !== userId.toString()) {
+            return res.status(403).json({ message: "Bạn không có quyền chỉnh sửa bài đăng này" });
+        }
+
+        const update = { ...req.body };
+        if (req.body.images) {
+            if (Array.isArray(req.body.images)) update.images = req.body.images;
+            else if (typeof req.body.images === 'string') update.images = req.body.images.split(',').map(s=>s.trim()).filter(Boolean);
+        }
+
+        const updated = await Listing.findByIdAndUpdate(id, { $set: update }, { new: true });
+        return res.json({ message: "Cập nhật thành công", listing: updated });
+    } catch (error) {
+        console.log(error.message);
+        return res.status(500).json({ message: "Server error" });
     }
 };
 

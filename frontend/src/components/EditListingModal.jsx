@@ -19,31 +19,31 @@ import {
 import { useEffect, useState } from "react";
 import { useListStore } from "../store/list.js";
 
-const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
+const EditListingModal = ({ isOpen, onClose, listing }) => {
   const toast = useToast();
-  const createListing = useListStore((s) => s.createListing);
-  const [form, setForm] = useState({
-    title: "",
-    description: "",
-    area: "",
-    price: "",
-    status: "available",
-    property_type: "house",
-    rental_type: "rent",
-    images: "",
-    address: {
-      city: "",
-      ward: "",
-      detail: "",
-    },
-  });
+  const updateListing = useListStore((s) => s.updateListing);
+  const [form, setForm] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (isOpen) {
-      setForm((prev) => ({ ...prev, ...defaultValues }));
+    if (isOpen && listing) {
+      setForm({
+        title: listing.title || "",
+        description: listing.description || "",
+        area: listing.area || "",
+        price: listing.price || "",
+        status: listing.status || "available",
+        property_type: listing.property_type || "house",
+        rental_type: listing.rental_type || "rent",
+        images: listing.images ? listing.images.join(", ") : "",
+        address: {
+          city: listing.address?.city || "",
+          ward: listing.address?.ward || "",
+          detail: listing.address?.detail || "",
+        },
+      });
     }
-  }, [isOpen, defaultValues]);
+  }, [isOpen, listing]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -57,8 +57,7 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!form.title || !form.price || !form.address.city || !form.address.detail) {
+    if (!form.title || !form.price || !form.address?.city || !form.address?.detail) {
       toast({ title: "Thiếu thông tin", description: "Vui lòng điền tiêu đề, giá và địa chỉ.", status: "error", isClosable: true });
       return;
     }
@@ -71,37 +70,25 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
       status: form.status,
       property_type: form.property_type,
       rental_type: form.rental_type,
-      images: form.images ? form.images.split(",").map((s) => s.trim()).filter(Boolean) : [],
+      images: form.images ? form.images.split(",").map(s=>s.trim()).filter(Boolean) : [],
       address: {
         city: form.address.city,
         ward: form.address.ward,
         detail: form.address.detail,
-      },
+      }
     };
 
     try {
       setSubmitting(true);
-      const res = await createListing(payload);
-      if (res.success) {
-        toast({ title: "Thành công", description: "Tạo bài đăng thành công.", status: "success", isClosable: true });
+      const res = await updateListing(listing._id, payload);
+      if(res.success) {
+        toast({ title: "Thành công", description: "Cập nhật bài viết thành công.", status: "success", isClosable: true });
         onClose();
-        // reset form
-        setForm({
-          title: "",
-          description: "",
-          area: "",
-          price: "",
-          status: "available",
-          property_type: "house",
-          rental_type: "rent",
-          images: "",
-          address: { city: "", ward: "", detail: "" },
-        });
       } else {
-        toast({ title: "Lỗi", description: res.message || "Tạo bài đăng thất bại.", status: "error", isClosable: true });
+        toast({ title: "Lỗi", description: res.message || "Cập nhật thất bại.", status: "error", isClosable: true });
       }
     } catch (err) {
-      toast({ title: "Lỗi", description: err.message || "Tạo bài đăng thất bại.", status: "error", isClosable: true });
+      toast({ title: "Lỗi", description: err.message || "Cập nhật thất bại.", status: "error", isClosable: true });
     } finally {
       setSubmitting(false);
     }
@@ -111,35 +98,35 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
     <Modal isOpen={isOpen} onClose={onClose} isCentered size="lg">
       <ModalOverlay />
       <ModalContent as="form" onSubmit={handleSubmit}>
-        <ModalHeader>Tạo bài viết mới</ModalHeader>
+        <ModalHeader>Chỉnh sửa bài viết</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
           <VStack spacing={4} align="stretch">
             <FormControl isRequired>
               <FormLabel>Tiêu đề</FormLabel>
-              <Input name="title" value={form.title} onChange={handleChange} />
+              <Input name="title" value={form.title || ""} onChange={handleChange} />
             </FormControl>
 
             <FormControl>
               <FormLabel>Mô tả</FormLabel>
-              <Textarea name="description" value={form.description} onChange={handleChange} />
+              <Textarea name="description" value={form.description || ""} onChange={handleChange} />
             </FormControl>
 
             <HStack>
               <FormControl>
                 <FormLabel>Diện tích (m²)</FormLabel>
-                <Input name="area" value={form.area} onChange={handleChange} />
+                <Input name="area" value={form.area || ""} onChange={handleChange} />
               </FormControl>
               <FormControl isRequired>
                 <FormLabel>Giá</FormLabel>
-                <Input name="price" value={form.price} onChange={handleChange} />
+                <Input name="price" value={form.price || ""} onChange={handleChange} />
               </FormControl>
             </HStack>
 
             <HStack>
               <FormControl>
                 <FormLabel>Loại tài sản</FormLabel>
-                <Select name="property_type" value={form.property_type} onChange={handleChange}>
+                <Select name="property_type" value={form.property_type || "house"} onChange={handleChange}>
                   <option value="house">Nhà</option>
                   <option value="apartment">Căn hộ</option>
                   <option value="land">Đất</option>
@@ -148,7 +135,7 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
 
               <FormControl>
                 <FormLabel>Loại cho thuê</FormLabel>
-                <Select name="rental_type" value={form.rental_type} onChange={handleChange}>
+                <Select name="rental_type" value={form.rental_type || "rent"} onChange={handleChange}>
                   <option value="rent">Cho thuê</option>
                   <option value="sale">Bán</option>
                 </Select>
@@ -157,29 +144,29 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
 
             <FormControl>
               <FormLabel>Ảnh (URLs, cách nhau bằng dấu phẩy)</FormLabel>
-              <Input placeholder="https://..., https://..." name="images" value={form.images} onChange={handleChange} />
+              <Input placeholder="https://..., https://..." name="images" value={form.images || ""} onChange={handleChange} />
             </FormControl>
 
             <FormControl isRequired>
               <FormLabel>Thành phố</FormLabel>
-              <Input name="address.city" value={form.address.city} onChange={handleChange} />
+              <Input name="address.city" value={form.address?.city || ""} onChange={handleChange} />
             </FormControl>
 
             <HStack>
               <FormControl>
                 <FormLabel>Phường</FormLabel>
-                <Input name="address.ward" value={form.address.ward} onChange={handleChange} />
+                <Input name="address.ward" value={form.address?.ward || ""} onChange={handleChange} />
               </FormControl>
               <FormControl isRequired>
                 <FormLabel>Địa chỉ chi tiết</FormLabel>
-                <Input name="address.detail" value={form.address.detail} onChange={handleChange} />
+                <Input name="address.detail" value={form.address?.detail || ""} onChange={handleChange} />
               </FormControl>
             </HStack>
           </VStack>
         </ModalBody>
         <ModalFooter>
           <Button type="submit" colorScheme="blue" isLoading={submitting} mr={3}>
-            Tạo
+            Lưu
           </Button>
           <Button variant="ghost" onClick={onClose}>
             Hủy
@@ -189,4 +176,5 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
     </Modal>
   );
 };
-export default CreateListingModal;
+
+export default EditListingModal;

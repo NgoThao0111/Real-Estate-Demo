@@ -1,11 +1,11 @@
 import {create} from 'zustand';
 import axios from "axios";
 
-// Dev: ensure axios sends cookies and targets backend server
 axios.defaults.withCredentials = true; // Cho phép gửi cookie session
 
 export const useUserStore = create((set) => ({
     user: null,
+    savedListings: [],
     loading: false,
     error: null,
     registerUser: async (userData) => {
@@ -74,6 +74,16 @@ export const useUserStore = create((set) => ({
             set({
                 user: res.data.user || null
             });
+            // if logged in, load saved listings
+            if(res.data.user) {
+                try {
+                    const savedRes = await axios.get('/api/users/saved');
+                    const saved = savedRes.data.listings || [];
+                    set({ savedListings: saved.map(l => l._id) });
+                } catch (e) {
+                    // ignore
+                }
+            }
         } catch (error) {
             set({user: null});
         }
@@ -84,7 +94,40 @@ export const useUserStore = create((set) => ({
         await axios.post("/api/users/logout", {}, {withCredentials: true});
         set({
             user: null,
-            error: null
+            error: null,
+            savedListings: []
         });
     },
+    
+    // Fetch saved listings ids for current user
+    fetchSavedListings: async () => {
+        try {
+            const res = await axios.get('/api/users/saved');
+            const saved = res.data.listings || [];
+            set({ savedListings: saved.map(l => l._id) });
+            return { success: true, data: saved };
+        } catch (err) {
+            const message = err?.response?.data?.message || err.message;
+            return { success: false, message };
+        }
+    },
+
+    // Toggle save/unsave via API and refresh saved list
+    toggleSaveListing: async (listingId) => {
+        try {
+            const res = await axios.post(`/api/users/save/${listingId}`);
+            // refresh saved ids
+            await (async () => {
+                try {
+                    const r = await axios.get('/api/users/saved');
+                    const saved = r.data.listings || [];
+                    set({ savedListings: saved.map(l => l._id) });
+                } catch (e) {}
+            })();
+            return { success: true, message: res.data.message };
+        } catch (err) {
+            const message = err?.response?.data?.message || err.message;
+            return { success: false, message };
+        }
+    }
 }));
