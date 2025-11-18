@@ -20,11 +20,38 @@ const userSchema = new mongoose.Schema({
     role: {
         type: String,
         required: true
-    }
-    ,
+    },
+
+    //profile
+    profile: {
+        firstName: String,
+        lastName: String,
+        gender: {
+            type: String,
+            enum: ['male', 'female', 'other']
+        },
+        birthday: Date,
+        address: String,
+        bio: String
+    },
+
+    //Thông tin về gói đăng ký
+    subscriptionPlan: {
+        plan: {
+            type: mongoose.Schema.Types.ObjectId, ref: 'SubscriptionPlan'
+        },
+        startDate: Date,
+        endDate: Date,
+        status: {
+            type: String,
+            enum: ['active', 'inactive', 'canceled'], default: 'inactive'
+        }
+    },
+
+    //Mối quan hệ N-N với savedListings
     savedListings: [{
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Listing"
+        ref: 'Listing'
     }]
 }, {
     timestamps: true

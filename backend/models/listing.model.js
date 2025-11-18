@@ -21,10 +21,6 @@ const listingSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    property_type: {
-      type: String,
-      required: true,
-    },
     rental_type: {
       type: String,
       required: true,
@@ -32,24 +28,53 @@ const listingSchema = new mongoose.Schema(
     images: {
       type: [String],
     },
-    address: {
-      city: {
+
+    //Tham chiếu đến người đăng
+    owner: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true
+    },
+
+    //Tham chiếu đến loại BĐS
+    propertyType: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "PropertyType",
+      required: true
+    },
+
+    //Nhúng địa chỉ
+    location: {
+      province: {
         type: String,
-        required: true,
+        required: true
+      },
+      district: {
+        type: String,
+        required: true
       },
       ward: {
         type: String,
-        required: true,
+        required: true
       },
-      detail: {
-        type: String,
-        required: true,
-      },
+      detail: String //số nhà, tên đường
+      // Có thể mở rộng thêm tọa độ
     },
-    createdBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-    },
+
+    //Mối quan hệ M-N với Utility, thêm thuộc tính amount
+    amenities: [
+      {
+        utility: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Utility"
+        },
+        amount: {
+          type: Number,
+          default: 1
+        }
+      }
+    ]
   },
   {
     timestamps: true,
