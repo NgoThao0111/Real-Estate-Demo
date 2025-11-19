@@ -33,24 +33,20 @@ const listingSchema = new mongoose.Schema(
     owner: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true,
+      // required: true,
       index: true
     },
 
     //Tham chiếu đến loại BĐS
-    propertyType: {
+    property_type: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "PropertyType",
-      required: true
+      // required: true
     },
 
     //Nhúng địa chỉ
     location: {
       province: {
-        type: String,
-        required: true
-      },
-      district: {
         type: String,
         required: true
       },
