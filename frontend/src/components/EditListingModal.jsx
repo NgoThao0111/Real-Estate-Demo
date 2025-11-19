@@ -36,10 +36,10 @@ const EditListingModal = ({ isOpen, onClose, listing }) => {
         property_type: listing.property_type || "house",
         rental_type: listing.rental_type || "rent",
         images: listing.images ? listing.images.join(", ") : "",
-        address: {
-          city: listing.address?.city || "",
-          ward: listing.address?.ward || "",
-          detail: listing.address?.detail || "",
+        location: {
+          province: listing.location?.province || "",
+          ward: listing.location?.ward || "",
+          detail: listing.location?.detail || "",
         },
       });
     }
@@ -47,9 +47,9 @@ const EditListingModal = ({ isOpen, onClose, listing }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    if (name.startsWith("address.")) {
+    if (name.startsWith("location.")) {
       const key = name.split(".")[1];
-      setForm((prev) => ({ ...prev, address: { ...prev.address, [key]: value } }));
+      setForm((prev) => ({ ...prev, location: { ...prev.location, [key]: value } }));
     } else {
       setForm((prev) => ({ ...prev, [name]: value }));
     }
@@ -57,7 +57,7 @@ const EditListingModal = ({ isOpen, onClose, listing }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.title || !form.price || !form.address?.city || !form.address?.detail) {
+    if (!form.title || !form.price || !form.location?.province || !form.location?.detail) {
       toast({ title: "Thiếu thông tin", description: "Vui lòng điền tiêu đề, giá và địa chỉ.", status: "error", isClosable: true });
       return;
     }
@@ -71,10 +71,10 @@ const EditListingModal = ({ isOpen, onClose, listing }) => {
       property_type: form.property_type,
       rental_type: form.rental_type,
       images: form.images ? form.images.split(",").map(s=>s.trim()).filter(Boolean) : [],
-      address: {
-        city: form.address.city,
-        ward: form.address.ward,
-        detail: form.address.detail,
+      location: {
+        province: form.location.province,
+        ward: form.location.ward,
+        detail: form.location.detail,
       }
     };
 
@@ -149,17 +149,17 @@ const EditListingModal = ({ isOpen, onClose, listing }) => {
 
             <FormControl isRequired>
               <FormLabel>Thành phố</FormLabel>
-              <Input name="address.city" value={form.address?.city || ""} onChange={handleChange} />
+              <Input name="location.province" value={form.location?.province || ""} onChange={handleChange} />
             </FormControl>
 
             <HStack>
               <FormControl>
                 <FormLabel>Phường</FormLabel>
-                <Input name="address.ward" value={form.address?.ward || ""} onChange={handleChange} />
+                <Input name="location.ward" value={form.location?.ward || ""} onChange={handleChange} />
               </FormControl>
               <FormControl isRequired>
                 <FormLabel>Địa chỉ chi tiết</FormLabel>
-                <Input name="address.detail" value={form.address?.detail || ""} onChange={handleChange} />
+                <Input name="location.detail" value={form.location?.detail || ""} onChange={handleChange} />
               </FormControl>
             </HStack>
           </VStack>

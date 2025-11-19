@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import { connectDB } from "./config/db.js"
 import userRoutes from "./routes/user.route.js"
 import listingRoutes from "./routes/list.route.js"
+import propertyTypeRoutes from "./routes/property_type.route.js"
 
 dotenv.config();
 
@@ -47,6 +48,7 @@ app.use(
 
 app.use("/api/users", userRoutes);
 app.use("/api/listings", listingRoutes);
+app.use("/api/property_type", propertyTypeRoutes);
 
 app.get('/', (req, res) => {
     res.send('Server is up and running');
