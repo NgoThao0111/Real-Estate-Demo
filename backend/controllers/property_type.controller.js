@@ -29,7 +29,7 @@ export const createPropertyType = async (req, res) => {
         await newType.save();
 
         res.status(201).json({
-            messgae: "Property Type created successfully",
+            message: "Property Type created successfully",
             propertyType: newType
         });
 
@@ -37,7 +37,7 @@ export const createPropertyType = async (req, res) => {
         console.error("Error creating property type: ", error.messgae);
         if(error.name === 'ValidationError') {
             return res.status(400).json({
-                messgae: "Validation failed",
+                message: "Validation failed",
                 error: error.message
             });
         }
@@ -53,7 +53,7 @@ export const getAllPropertyTypes = async (req, res) => {
 
         if(propertyTypes.length === 0) {
             return res.status(404).json({
-                messgae: "No property types found"
+                message: "No property types found"
             });
         }
 
@@ -69,7 +69,7 @@ export const getAllPropertyTypes = async (req, res) => {
     }
 }
 
-export const getAllPropertyTypeById = async (req, res) => {
+export const getPropertyTypeById = async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -87,9 +87,7 @@ export const getAllPropertyTypeById = async (req, res) => {
             });
         }
 
-        res.status(200).json({
-            propertyTye
-        });
+        res.status(200).json(propertyType);
     } catch (error) {
         console.error("Error fetching property type by ID: ", error.message);
         res.status(500).json({
