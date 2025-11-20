@@ -1,5 +1,6 @@
 import { Box, Image, Text, Badge, Stack, Button, IconButton, useToast, useColorModeValue } from "@chakra-ui/react";
-import { MdStarBorder, MdStar } from 'react-icons/md';
+import { MdPhotoLibrary } from 'react-icons/md';
+import { ImStarEmpty, ImStarFull } from "react-icons/im";
 import { useUserStore } from "../store/user.js";
 import { useListStore } from "../store/list.js";
 import { useEffect, useState } from "react";
@@ -10,12 +11,36 @@ const ListingCard = ({ listing }) => {
   const getPropertyTypeById = usePropertyTypeStore((s) => s.getPropertyTypeById);
   const img = listing.images && listing.images.length ? listing.images[0] : null;
   const location = listing.location ? `${listing.location.detail || ''}, ${listing.location.ward || ''}, ${listing.location.province || ''}` : '';
+  const imgCount = listing.images ? listing.images.length : 0;
   const toast = useToast();
 
   const savedIds = useUserStore((s) => s.savedListings || []);
   const toggleSave = useUserStore((s) => s.toggleSaveListing);
   const fallbackToggle = useListStore((s) => s.toggleSaveListing);
   const isSaved = savedIds.includes(listing._id);
+
+  const formatRelativeTime = (dateStr) => {
+    if (!dateStr) return "";
+    const d = new Date(dateStr);
+    if (isNaN(d)) return "";
+    const diffMs = Date.now() - d.getTime();
+    const sec = Math.floor(diffMs / 1000);
+    if (sec < 60) return "vài giây trước";
+    const min = Math.floor(sec / 60);
+    if (min < 60) return `${min} phút trước`;
+    const hour = Math.floor(min / 60);
+    if (hour < 24) return "trong hôm nay";
+    const day = Math.floor(hour / 24);
+    if (day === 1) return "1 ngày trước";
+    if (day < 7) return `${day} ngày trước`;
+    const week = Math.floor(day / 7);
+    if (week < 5) return `${week} tuần trước`;
+    const month = Math.floor(day / 30);
+    if (month < 12) return `${month} tháng trước`;
+    const year = Math.floor(day / 365);
+    return `${year} năm trước`;
+  };
+  const lastUpdatedText = formatRelativeTime(listing.updatedAt || listing.createdAt);
 
   useEffect(() => {
     let mounted = true;
@@ -66,24 +91,71 @@ const ListingCard = ({ listing }) => {
         bg: useColorModeValue("gray.50", "gray.700"),
         shadow: "md",
         borderColor: "blue.300",
+        cursor: "pointer"
       }}
     >
       <Box position="relative">
         {img ? (
           <Image src={img} alt={listing.title} objectFit="cover" w="100%" h="180px"/>
         ) : (
-          <Box w="100%" h="200px" bg="gray.100" display="flex" alignItems="center" justifyContent="center">
+          <Box w="100%" h="180px" bg={useColorModeValue("gray.200", "gray.600")} display="flex" alignItems="center" justifyContent="center">
             <Text color="gray.500">No image</Text>
+          </Box>
+        )}
+
+        {lastUpdatedText && (
+          <Box
+            position="absolute"
+            bottom={2}
+            left={2}
+            bg="rgba(0,0,0,0.55)"
+            color="white"
+            px={2}
+            py={1}
+            borderRadius="md"
+            fontSize="xs"
+          >
+            {lastUpdatedText}
+          </Box>
+        )}
+
+        {imgCount > 0 && (
+          <Box
+            position="absolute"
+            bottom={2}
+            right={2}
+            bg="rgba(0,0,0,0.55)"
+            color="white"
+            px={2}
+            py={1}
+            borderRadius="md"
+            fontSize="xs"
+            display="flex"
+            alignItems="center"
+            gap={2}
+          >
+            <MdPhotoLibrary size="14px" />
+            <Text>{imgCount} ảnh</Text>
           </Box>
         )}
 
         <IconButton
           aria-label={isSaved ? 'Bỏ lưu' : 'Lưu'}
-          icon={isSaved ? <MdStar /> : <MdStarBorder />}
+          icon={isSaved ? <ImStarFull /> : <ImStarEmpty />}
           position="absolute"
           top={2}
           right={2}
-          colorScheme={isSaved ? 'yellow' : 'gray'}
+          px={2}
+          py={2}
+          color={isSaved ? 'yellow.400' : 'white'}
+          bg="rgba(0,0,0,0.55)"
+          _hover={{
+            color: 'yellow.400',                          
+            bg: "rgba(0,0,0,0.65)"
+          }}
+          _groupHover={{
+            color: 'yellow.400'                           
+          }}
           onClick={async (e) => {
             e.stopPropagation();
             try {
@@ -104,14 +176,16 @@ const ListingCard = ({ listing }) => {
         <Stack spacing={2}>
           <Text 
             fontWeight="bold" 
-            fontSize="lg"
+            fontSize="md"
             noOfLines={2}
           >
             {listing.title}
           </Text>
           <Text color="blue.600" fontWeight="bold" fontSize={"md"}>
               {listing.price
-              ? `${Number(listing.price).toLocaleString("vi-VN")} VNĐ/tháng`
+              ? `${Number(listing.price).toLocaleString("vi-VN")} ${
+                  listing.rental_type === "rent" ? "VNĐ/tháng" : "VNĐ"
+                }`
               : "—"}
           </Text>
           <Text color={useColorModeValue("gray.600", "gray.200")} fontSize="sm" noOfLines={2}>
