@@ -25,7 +25,7 @@ const ChatContainer = ({ currentChat }) => {
       try {
         const res = await api.get(`/chats/${currentChat._id}/messages`);
         // Giả sử backend trả về { message: [...] } (như controller bạn viết)
-        setMessages(res.data.messages || []);
+        setMessages(res.data.messages.reverse() || []);
       } catch (err) {
         console.error(err);
       } finally {
