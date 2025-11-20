@@ -102,7 +102,7 @@ export const getListings = async (req, res) => {
       minArea,
       maxArea,
       page = 1,
-      limit = 10,
+      limit = 30,
       sort,
     } = req.query;
 
