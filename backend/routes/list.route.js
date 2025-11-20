@@ -5,9 +5,9 @@ const router = express.Router();
 
 router.post("/createList", createList);
 router.get("/getList", getListings);
-router.get(":id", getListingById);
-router.delete("/delete/:id", deleteListing);
 router.get("/my", getMyListings);
+router.delete("/delete/:id", deleteListing);
+router.get("/:id", getListingById);
 router.put("/:id", updateListing);
 
 export default router;

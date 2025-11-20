@@ -75,6 +75,18 @@ export const usePropertyTypeStore = create((set, get) => ({
                 message: errorMessage
             };
         }
+    },
+    getPropertyTypeById: async (id) => {
+    try {
+      set({ loading: true, error: null });
+      const res = await axios.get(`/api/property_type/${id}`);
+      set({ loading: false });
+      return { success: true, data: res.data };
+    } catch (err) {
+      const message = extractError(err);
+      set({ loading: false, error: message });
+      return { success: false, message };
     }
+  }
 
 }))

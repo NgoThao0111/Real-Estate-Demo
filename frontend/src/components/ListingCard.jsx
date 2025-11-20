@@ -2,16 +2,58 @@ import { Box, Image, Text, Badge, Stack, Button, IconButton, useToast, useColorM
 import { MdStarBorder, MdStar } from 'react-icons/md';
 import { useUserStore } from "../store/user.js";
 import { useListStore } from "../store/list.js";
+import { useEffect, useState } from "react";
+import { usePropertyTypeStore } from "../store/propertyType.js";
 
 const ListingCard = ({ listing }) => {
+  const [propertyTypeName, setPropertyTypeName] = useState('');
+  const getPropertyTypeById = usePropertyTypeStore((s) => s.getPropertyTypeById);
   const img = listing.images && listing.images.length ? listing.images[0] : null;
-  const address = listing.address ? `${listing.address.detail || ''}, ${listing.address.ward || ''}, ${listing.address.city || ''}` : '';
+  const location = listing.location ? `${listing.location.detail || ''}, ${listing.location.ward || ''}, ${listing.location.province || ''}` : '';
   const toast = useToast();
 
   const savedIds = useUserStore((s) => s.savedListings || []);
   const toggleSave = useUserStore((s) => s.toggleSaveListing);
   const fallbackToggle = useListStore((s) => s.toggleSaveListing);
   const isSaved = savedIds.includes(listing._id);
+
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      // if no property_type at all, fallback to unknown
+      if (!listing?.property_type) {
+        if (mounted) setPropertyTypeName("unknown");
+        return;
+      }
+
+      // already populated object with name
+      if (typeof listing.property_type === "object" && listing.property_type?.name) {
+        if (mounted) setPropertyTypeName(listing.property_type.name);
+        return;
+      }
+
+      // determine id (could be string or object with _id)
+      const id = typeof listing.property_type === "object" ? (listing.property_type._id || listing.property_type) : listing.property_type;
+
+      try {
+        const res = await getPropertyTypeById(id);
+        if (!mounted) return;
+
+        if (res.success) {
+          // handle both shapes: res.data.propertyType or res.data
+          const data = res.data?.propertyType || res.data;
+          setPropertyTypeName(data?.name || "unknown");
+        } else {
+          setPropertyTypeName("unknown");
+        }
+      } catch {
+        if (mounted) setPropertyTypeName("unknown");
+      }
+    };
+
+    load();
+    return () => { mounted = false; };
+  }, [listing.property_type, getPropertyTypeById]);
 
   return (
     <Box 
@@ -73,13 +115,13 @@ const ListingCard = ({ listing }) => {
               : "—"}
           </Text>
           <Text color={useColorModeValue("gray.600", "gray.200")} fontSize="sm" noOfLines={2}>
-            {address}
+            {location}
           </Text>
         </Stack>
 
         <Box mt={4} display="flex" justifyContent="space-between" alignItems="center">
           <Badge colorScheme="green" alignSelf="start">
-            {listing.property_type || listing.rental_type}
+            {propertyTypeName}
           </Badge>
           <Text fontSize="sm" color="gray.500">
             {listing.area ? `${listing.area} m²` : ''}

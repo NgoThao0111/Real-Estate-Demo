@@ -207,7 +207,7 @@ export const getMyListings = async (req, res) => {
       return res.status(401).json({ message: "Vui lòng đăng nhập" });
 
     const userId = req.session.user.id;
-    const listings = await Listing.find({ createdBy: userId }).sort({
+    const listings = await Listing.find({ owner: userId }).sort({
       createdAt: -1,
     });
 
@@ -228,8 +228,8 @@ export const updateListing = async (req, res) => {
     const listing = await Listing.findById(id);
     if (!listing) return res.status(404).json({ message: "Listing not found" });
     if (
-      !listing.createdBy ||
-      listing.createdBy.toString() !== userId.toString()
+      !listing.owner ||
+      listing.owner.toString() !== userId.toString()
     ) {
       return res
         .status(403)
