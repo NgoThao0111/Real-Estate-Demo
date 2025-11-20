@@ -3,6 +3,7 @@ import Navbar from "./components/Navbar.jsx";
 import HomePage from "./pages/HomePage.jsx";
 import MyPostsPage from "./pages/MyPostsPage.jsx";
 import SavedPostsPage from "./pages/SavedPostsPage.jsx";
+import ChatPage from "./pages/ChatPage.jsx";
 import { Routes, Route } from "react-router-dom";
 
 function App() {
@@ -30,6 +31,7 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/my-posts" element={<MyPostsPage />} />
           <Route path="/saved-posts" element={<SavedPostsPage />} />
+          <Route path="/chat" element={<ChatPage />} />
         </Routes>
       </Box>
     </Box>

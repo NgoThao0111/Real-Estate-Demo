@@ -243,4 +243,22 @@ export const getSavedListings = async (req, res) => {
         console.log(error.message);
         return res.status(500).json({ message: "Server error" });
     }
-}
+};
+
+export const searchUsers = async (req, res) => {
+    try {
+        const query = req.query.q;
+        if (!query) return res.json([]);
+
+        // Tìm user theo tên, trừ bản thân mình ra
+        const users = await User.find({
+            username: { $regex: query, $options: "i" },
+            _id: { $ne: req.session.user.id } 
+        }).select("username name role"); // Chỉ lấy info cần thiết
+
+        res.json(users);
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Server error" });
+    }
+};

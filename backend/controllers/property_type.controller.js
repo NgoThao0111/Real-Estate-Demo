@@ -67,9 +67,9 @@ export const getAllPropertyTypes = async (req, res) => {
             message: "Server error fetching property types."
         });
     }
-}
+};
 
-export const getAllPropertyTypeById = async (req, res) => {
+export const getPropertyTypeById = async (req, res) => {
     try {
         const { id } = req.params;
 

@@ -1,60 +1,149 @@
 import express from 'express';
-import session from "express-session"
-import cors from "cors"
+import session from "express-session";
+import MongoStore from "connect-mongo";
+import cors from "cors";
 import dotenv from "dotenv";
-import { connectDB } from "./config/db.js"
-import userRoutes from "./routes/user.route.js"
-import listingRoutes from "./routes/list.route.js"
-import propertyTypeRoutes from "./routes/property_type.route.js"
+import { createServer } from "http";
+import { Server } from "socket.io";
+import cookieParser from "cookie-parser";
+
+import { connectDB } from "./config/db.js";
+import userRoutes from "./routes/user.route.js";
+import listingRoutes from "./routes/list.route.js";
+import propertyTypeRoutes from "./routes/property_type.route.js";
+import chatRoutes from './routes/chat.route.js';
 
 dotenv.config();
 
 const app = express();
+const PORT = process.env.PORT || 5000;
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
 
-const PORT = process.env.PORT || 5000
+// 1. Tạo HTTP Server
+const httpServer = createServer(app);
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// CORS - allow frontend to send credentials (cookies)
-const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'http://localhost:5173'
-app.use(cors({
-  origin: FRONTEND_ORIGIN,
-  credentials: true
-}))
-
-app.use(
-  session({
+// 2. Cấu hình Session (Lưu vào MongoDB để cả Express và Socket cùng đọc được)
+const sessionMiddleware = session({
     secret: process.env.SECRET_KEY || 'dev-secret',
     resave: false,
     saveUninitialized: false,
+    store: MongoStore.create({ 
+        mongoUrl: process.env.MONGO_URI 
+    }),
     cookie: {
-      // 1. Secure: true CHỈ khi ở Production (đang dùng HTTPS)
-      secure: process.env.NODE_ENV === 'production',
-
-      // 2. SameSite:
-      //    - 'none' BẮT BUỘC ở Prod (khi dùng secure: true)
-      //    - false (hoặc 'lax') ở Dev. Đặt false để đảm bảo session hoạt động trên HTTP/localhost
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : false, 
-      
-      // Hoặc giữ nguyên 'lax' nếu bạn muốn bảo mật tối đa, nhưng có thể cần test kỹ.
-      // Giải pháp an toàn nhất cho Dev/HTTP: Đặt SameSite: false và bỏ thuộc tính Secure
-
-      httpOnly: true, // Thêm thuộc tính này để tăng cường bảo mật (không thể truy cập bằng JS)
-      maxAge: 1000 * 60 * 60 // 1 hour
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : false, // 'lax' hoặc false cho dev
+        httpOnly: true,
+        maxAge: 1000 * 60 * 60 * 24 // 1 ngày
     }
-  })
-);
+});
 
+// 3. Khởi tạo Socket.io
+const io = new Server(httpServer, {
+    cors: {
+        origin: FRONTEND_ORIGIN,
+        credentials: true // Bắt buộc true để nhận cookie session
+    }
+});
+
+// --- MIDDLEWARE CHO EXPRESS APP ---
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser()); 
+
+// CORS setup
+app.use(cors({
+    origin: FRONTEND_ORIGIN,
+    credentials: true
+}));
+
+// Kích hoạt Session cho Express
+app.use(sessionMiddleware);
+
+// Middleware gắn 'io' vào req để dùng trong Controller (Dùng cho tính năng Gửi tin nhắn)
+app.use((req, res, next) => {
+    req.io = io;
+    next();
+});
+
+// --- MIDDLEWARE CHO SOCKET.IO (Bảo mật & Xác thực) ---
+
+// Hàm helper: Chuyển middleware của Express sang Socket.io
+const wrap = middleware => (socket, next) => middleware(socket.request, {}, next);
+
+// A. Cho phép Socket đọc session từ cookie
+io.use(wrap(sessionMiddleware));
+
+// B. Middleware xác thực: Chỉ cho phép User đã đăng nhập mới được kết nối Socket
+io.use((socket, next) => {
+    const session = socket.request.session;
+    
+    if (session && session.user) {
+        socket.user = session.user; // Gán user vào socket để dùng bên dưới
+        next();
+    } else {
+        console.log("Socket blocked: Unauthorized user");
+        next(new Error("Unauthorized: Vui lòng đăng nhập"));
+    }
+});
+
+// --- LOGIC SOCKET EVENTS (Xử lý Real-time) ---
+io.on("connection", (socket) => {
+    // Lấy thông tin user từ session đã gán ở trên
+    const user = socket.user;
+    const userId = user.id || user._id; 
+
+    console.log(`User connected: ${user.username || user.name} (ID: ${userId})`);
+
+    // 1. Quản lý Phòng chat (Join/Leave)
+    socket.on("join_chat", (conversationId) => {
+        socket.join(conversationId);
+        console.log(`User ${userId} joined room: ${conversationId}`);
+    });
+
+    socket.on("leave_chat", (conversationId) => {
+        socket.leave(conversationId);
+        console.log(`User ${userId} left room: ${conversationId}`);
+    });
+
+    // 2. Tính năng: Đang gõ... (Typing)
+    // Logic: Gửi cho tất cả mọi người trong phòng TRỪ người gửi (socket.to)
+    socket.on("typing", (conversationId) => {
+        socket.to(conversationId).emit("typing", { conversationId, userId, username: user.username });
+    });
+
+    socket.on("stop_typing", (conversationId) => {
+        socket.to(conversationId).emit("stop_typing", { conversationId, userId });
+    });
+
+    // 3. Tính năng: Đã xem (Read Receipt) - Tích hợp ý tưởng của bạn bạn
+    socket.on("mark_read", ({ conversationId, messageId }) => {
+        // Gửi sự kiện cho người bên kia biết mình đã đọc
+        socket.to(conversationId).emit("message_read", { conversationId, messageId, readerId: userId });
+        
+        // Lưu ý: Việc update DB "đã đọc" nên gọi qua API (PUT /api/chats/:id/read) 
+        // hoặc thực hiện trực tiếp tại đây nếu muốn tối ưu tốc độ.
+    });
+
+    // Xử lý ngắt kết nối
+    socket.on("disconnect", () => {
+        console.log("Socket disconnected:", socket.id);
+    });
+});
+
+// --- ROUTES API ---
 app.use("/api/users", userRoutes);
 app.use("/api/listings", listingRoutes);
 app.use("/api/property_type", propertyTypeRoutes);
+app.use('/api/chats', chatRoutes);
 
 app.get('/', (req, res) => {
     res.send('Server is up and running');
 });
 
-app.listen(PORT, () => {
-  connectDB();
-  console.log('Server is running on port 5000');
+// --- KHỞI CHẠY SERVER ---
+// Quan trọng: Phải dùng httpServer.listen
+httpServer.listen(PORT, () => {
+    connectDB();
+    console.log(`Server (HTTP + Socket) is running on port ${PORT}`);
 });

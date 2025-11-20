@@ -5,7 +5,7 @@ import { useListStore } from "../store/list.js";
 
 const ListingCard = ({ listing }) => {
   const img = listing.images && listing.images.length ? listing.images[0] : null;
-  const address = listing.address ? `${listing.address.detail || ''}, ${listing.address.ward || ''}, ${listing.address.city || ''}` : '';
+  const location = listing.location ? `${listing.location.detail || ''}, ${listing.location.ward || ''}, ${listing.location.city || ''}` : '';
   const toast = useToast();
 
   const savedIds = useUserStore((s) => s.savedListings || []);
@@ -73,7 +73,7 @@ const ListingCard = ({ listing }) => {
               : "—"}
           </Text>
           <Text color={useColorModeValue("gray.600", "gray.200")} fontSize="sm" noOfLines={2}>
-            {address}
+            {location}
           </Text>
         </Stack>
 
