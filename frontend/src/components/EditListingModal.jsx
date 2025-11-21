@@ -98,7 +98,7 @@ const EditListingModal = ({ isOpen, onClose, listing }) => {
     <Modal isOpen={isOpen} onClose={onClose} isCentered size="lg">
       <ModalOverlay />
       <ModalContent as="form" onSubmit={handleSubmit}>
-        <ModalHeader>Chỉnh sửa bài viết</ModalHeader>
+        <ModalHeader>Chỉnh sửa bài đăng</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
           <VStack spacing={4} align="stretch">

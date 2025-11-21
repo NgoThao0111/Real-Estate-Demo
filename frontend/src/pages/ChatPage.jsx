@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Box, Flex, Text, VStack, HStack, Avatar, Heading } from "@chakra-ui/react";
+import { Box, Flex, Text, VStack, HStack, Avatar, Heading, useColorModeValue } from "@chakra-ui/react";
 import ChatContainer from "../components/ChatContainer";
 import api from "../lib/axios";
 import { useAuthContext } from "../context/AuthContext";
@@ -23,12 +23,12 @@ const ChatPage = () => {
   }, [currentUser]);
 
   return (
-    <Box p={5} h="90vh" bg="gray.50">
+    <Box p={5} h="90vh" >
       <Flex gap={5} h="100%">
         
         {/* CỘT TRÁI: DANH SÁCH CHAT (30%) */}
-        <Box w="30%" bg="white" borderRadius="lg" boxShadow="sm" overflow="hidden">
-          <Box p={4} borderBottom="1px solid #eee">
+        <Box w="30%" bg={useColorModeValue("white", "gray.800")} borderRadius="lg" boxShadow="sm" overflow="hidden" borderWidth="2px" >
+          <Box p={4} borderBottom="2px" borderColor={useColorModeValue("gray.200", "gray.600")}>
             <Heading size="md">Tin nhắn</Heading>
           </Box>
           
@@ -45,10 +45,14 @@ const ChatPage = () => {
                   key={chat._id} 
                   p={4} 
                   cursor="pointer"
-                  bg={isActive ? "blue.50" : "transparent"}
-                  _hover={{ bg: "gray.100" }}
+                  bg={isActive ? useColorModeValue("gray.50", "gray.700") : "transparent"}
+                  _hover={{
+                    bg: useColorModeValue("gray.200", "gray.900"),
+                    cursor: "pointer"
+                  }}
                   onClick={() => setCurrentChat(chat)}
-                  borderBottom="1px solid #f0f0f0"
+                  borderBottom="2px"
+                  borderColor={useColorModeValue("gray.200", "gray.600")}
                 >
                   <Avatar src={otherUser?.avatar} name={otherUser?.username} />
                   <Box flex={1}>
@@ -70,13 +74,15 @@ const ChatPage = () => {
           ) : (
             <Flex 
               h="100%" 
-              bg="white" 
+              bg={useColorModeValue("white", "gray.800")}
               borderRadius="lg" 
               align="center" 
               justify="center" 
               direction="column"
               color="gray.400"
               boxShadow="sm"
+              overflow="hidden" 
+              borderWidth="2px"
             >
               <Heading size="lg" mb={2}>Chào {currentUser?.username} 👋</Heading>
               <Text>Chọn một cuộc hội thoại để bắt đầu chat</Text>

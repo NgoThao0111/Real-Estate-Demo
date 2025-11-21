@@ -4,25 +4,17 @@ import {
   Flex,
   HStack,
   Text,
-  useColorMode,
   useColorModeValue,
-  Box,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalCloseButton,
-  ModalBody,
+  Box
 } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
-import { MdOutlineLightMode, MdOutlineDarkMode } from "react-icons/md";
 import { useState, useEffect } from "react";
 import AuthModal from "./AuthModal";
 import CreateListingModal from "./CreateListingModal";
 import { useUserStore } from "../store/user.js";
+import UserMenu from "./UserMenu";
 
 const Navbar = () => {
-  const { colorMode, toggleColorMode } = useColorMode();
   const linkColor = useColorModeValue('gray.700', 'gray.100');
   const [authMode, setAuthMode] = useState(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
@@ -49,7 +41,7 @@ const Navbar = () => {
 
   return (
     <Box bg={useColorModeValue("white", "gray.800")} boxShadow={"sm"}>
-    <Container maxW={"1140px"} px={4}>
+    <Container maxW="container.xl" px={4}>
       <Flex
         h={16}
         alignItems={"center"}
@@ -81,34 +73,12 @@ const Navbar = () => {
                   color:"blue.500"
                 }}
               >
-                Trang chủ
-              </Text>
-            </Link>
-            <Link to="/my-posts">
-              <Text 
-                color={linkColor} 
-                fontWeight={"medium"}
-                _hover={{
-                  color:"blue.500"
-                }}
-              >
-                Bài đăng của tôi
-              </Text>
-            </Link>
-            <Link to="/saved-posts">
-              <Text 
-                color={linkColor} 
-                fontWeight={"medium"}
-                _hover={{
-                  color:"blue.500"
-                }}
-              >
-                Bài đăng đã lưu
+                 
               </Text>
             </Link>
           </HStack>
         </Flex>
-        <HStack spacing={2} alignItems={"center"}>
+        <HStack spacing={5} alignItems={"center"}>
           {!user ? (
             <>
               <Button bgColor={"transparent"} onClick={() => openAuth('login')}>
@@ -120,21 +90,8 @@ const Navbar = () => {
               </Button>
             </>
           ) : (
-            <>
-              <Text color={linkColor} fontWeight="medium">{user.name || user.username}</Text>
-              <Button bgColor={"transparent"} onClick={async () => { await logoutUser(); }}>
-                Đăng xuất
-              </Button>
-            </>
+            <UserMenu user={user} logoutUser={logoutUser} />
           )}
-
-          <Button variant="ghost" onClick={toggleColorMode}>
-            {colorMode === "light" ? (
-              <MdOutlineDarkMode size={20} />
-            ) : (
-              <MdOutlineLightMode size={20} />
-            )}
-          </Button>
           <Button colorScheme="blue" onClick={() => {
             if (!user) {
               openAuth('login');
@@ -142,7 +99,7 @@ const Navbar = () => {
             }
             openCreate();
           }}>
-            Tạo bài viết mới
+            Đăng tin mới
           </Button>
         </HStack>
       </Flex>
