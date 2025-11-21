@@ -1,9 +1,11 @@
 import { Box, useColorModeValue } from "@chakra-ui/react"
 import Navbar from "./components/Navbar.jsx";
 import HomePage from "./pages/HomePage.jsx";
+import HomePanel from "./components/HomePanel.jsx";
 import MyPostsPage from "./pages/MyPostsPage.jsx";
 import SavedPostsPage from "./pages/SavedPostsPage.jsx";
 import ChatPage from "./pages/ChatPage.jsx";
+import AllListings from "./pages/AllListings.jsx";
 import { Routes, Route } from "react-router-dom";
 
 function App() {
@@ -29,6 +31,8 @@ function App() {
       >
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/home-panel" element={<HomePanel />} />
+          <Route path="/listings" element={<AllListings />} />
           <Route path="/my-posts" element={<MyPostsPage />} />
           <Route path="/saved-posts" element={<SavedPostsPage />} />
           <Route path="/chat" element={<ChatPage />} />
