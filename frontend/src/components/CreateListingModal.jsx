@@ -182,7 +182,7 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
     <Modal isOpen={isOpen} onClose={onClose} isCentered size="lg">
       <ModalOverlay />
       <ModalContent as="form" onSubmit={handleSubmit}>
-        <ModalHeader>Tạo bài viết mới</ModalHeader>
+        <ModalHeader>Tạo bài đăng mới</ModalHeader>
         <ModalCloseButton />
 
         <ModalBody>
