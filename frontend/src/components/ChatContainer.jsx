@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { Box, Flex, Text, Input, Button, Avatar, Spinner } from "@chakra-ui/react";
+import { Box, Flex, Text, Input, Button, Avatar, Spinner, useColorModeValue } from "@chakra-ui/react";
 import { useSocketContext } from "../context/SocketContext";
 import { useAuthContext } from "../context/AuthContext";
 import api from "../lib/axios";
@@ -86,26 +86,26 @@ const ChatContainer = ({ currentChat }) => {
   if (loading) return <Flex justify="center" align="center" h="100%"><Spinner /></Flex>;
 
   return (
-    <Flex direction="column" h="100%" bg="white" borderRadius="lg" overflow="hidden">
+    <Flex direction="column" h="100%" bg={useColorModeValue("white", "gray.800")} borderRadius="lg" overflow="hidden" boxShadow="sm" borderWidth="2px">
       {/* HEADER */}
-      <Flex align="center" gap={3} p={4} bg="gray.100" borderBottom="1px solid #e2e8f0">
+      <Flex align="center" gap={3} p={4} bg={useColorModeValue("gray.50", "gray.700")} borderBottom="2px" borderColor={useColorModeValue("gray.200", "gray.600")}>
         <Avatar src={receiver?.avatar || ""} name={receiver?.username} />
         <Box>
-          <Text fontWeight="bold">{receiver?.username}</Text>
-          <Text fontSize="xs" color="green.500">Đang trực tuyến</Text> {/* Sau này làm logic online thật sau */}
+          <Text fontWeight="bold" fontSize={"lg"}>{receiver?.username}</Text>
+          <Text fontSize="sm" fontWeight={"semibold"} color={"gray.500"}>Đang trực tuyến</Text>
         </Box>
       </Flex>
 
       {/* MESSAGE LIST */}
-      <Flex direction="column" flex={1} p={4} gap={3} overflowY="auto" bg="#fdfdfd">
+      <Flex direction="column" flex={1} p={4} gap={3} overflowY="auto" bg={useColorModeValue("white", "gray.800")}>
         {messages.map((msg) => {
           const isOwn = msg.sender._id === currentUser._id;
           return (
             <Flex key={msg._id} justify={isOwn ? "flex-end" : "flex-start"} mb={2}>
               <Box
                 maxW="70%"
-                bg={isOwn ? "blue.500" : "gray.200"}
-                color={isOwn ? "white" : "black"}
+                bg={isOwn ? "blue.500" : useColorModeValue("gray.200", "gray.700")}
+                color={isOwn ? "white" : useColorModeValue("black", "white")}
                 p={3}
                 borderRadius="lg"
                 borderBottomRightRadius={isOwn ? "0" : "lg"}
@@ -124,12 +124,13 @@ const ChatContainer = ({ currentChat }) => {
       </Flex>
 
       {/* INPUT AREA */}
-      <Flex p={3} borderTop="1px solid #e2e8f0" gap={2}>
+      <Flex p={3} borderTop="2px" gap={2} borderColor={useColorModeValue("gray.200", "gray.600")}>
         <Input 
           placeholder="Nhập tin nhắn..." 
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
           onKeyPress={handleKeyPress}
+          borderWidth={"2px"}
         />
         <Button colorScheme="blue" onClick={handleSend}>Gửi</Button>
       </Flex>
