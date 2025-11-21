@@ -25,11 +25,11 @@ const ListingCard = ({ listing }) => {
     if (isNaN(d)) return "";
     const diffMs = Date.now() - d.getTime();
     const sec = Math.floor(diffMs / 1000);
-    if (sec < 60) return "vài giây trước";
+    if (sec < 60) return "Vài giây trước";
     const min = Math.floor(sec / 60);
     if (min < 60) return `${min} phút trước`;
     const hour = Math.floor(min / 60);
-    if (hour < 24) return "trong hôm nay";
+    if (hour < 24) return "Trong hôm nay";
     const day = Math.floor(hour / 24);
     if (day === 1) return "1 ngày trước";
     if (day < 7) return `${day} ngày trước`;

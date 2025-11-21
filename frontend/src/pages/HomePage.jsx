@@ -20,16 +20,16 @@ const HomePage = () => {
 
   if (error) {
     return (
-      <Container maxW="container.xl" py={12}>
+      <Container maxW={"1140px"} py={12}>
         <Center>
-          <Text color="red.500">{error}</Text>
+          <Text>{error}</Text>
         </Center>
       </Container>
     );
   }
 
   return (
-    <Container maxW="container.xl" py={12}>
+    <Container maxW={"1140px"} py={12}>
       {(!listings || listings.length === 0) ? (
         <Center>
           <Text>Chưa có bài đăng nào.</Text>
