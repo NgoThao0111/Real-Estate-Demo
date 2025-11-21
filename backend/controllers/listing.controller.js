@@ -1,4 +1,5 @@
 import Listing from "../models/listing.model.js";
+import { uploadBuffer } from "../utils/uploadToCloudinary.js";
 
 export const createList = async (req, res) => {
   if (!req.session || !req.session.user || !req.session.user.id) {
@@ -48,6 +49,20 @@ export const createList = async (req, res) => {
           .split(",")
           .map((s) => s.trim())
           .filter(Boolean);
+    }
+
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        try {
+          const uploaded = await uploadBuffer(file.buffer, "listings");
+          if (uploaded && (uploaded.secure_url || uploaded.url)) {
+            images.push(uploaded.secure_url || uploaded.url);
+          }
+        } catch (err) {
+          console.error("Cloudinary upload error:", err);
+          // continue uploading other files; do not fail entire request for single image
+        }
+      }
     }
 
     const list = new Listing({
@@ -237,13 +252,33 @@ export const updateListing = async (req, res) => {
     }
 
     const update = { ...req.body };
+    let bodyImages = [];
     if (req.body.images) {
-      if (Array.isArray(req.body.images)) update.images = req.body.images;
+      if (Array.isArray(req.body.images)) bodyImages = req.body.images;
       else if (typeof req.body.images === "string")
-        update.images = req.body.images
+        bodyImages = req.body.images
           .split(",")
           .map((s) => s.trim())
           .filter(Boolean);
+    }
+
+    // If files uploaded, upload them to Cloudinary and append to images
+    const uploadedImages = [];
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        try {
+          const uploaded = await uploadBuffer(file.buffer, "listings");
+          if (uploaded && (uploaded.secure_url || uploaded.url)) {
+            uploadedImages.push(uploaded.secure_url || uploaded.url);
+          }
+        } catch (err) {
+          console.error("Cloudinary upload error on update:", err);
+        }
+      }
+    }
+
+    if (bodyImages.length > 0 || uploadedImages.length > 0) {
+      update.images = [...bodyImages, ...uploadedImages];
     }
 
     const updated = await Listing.findByIdAndUpdate(
