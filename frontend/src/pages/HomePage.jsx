@@ -122,7 +122,7 @@ const HomePage = () => {
       {/* CTA Register Banner */}
       <Container maxW={"1140px"} mt={12} mb={12}>
         <Box bg="blue.600" color="white" p={{ base: 6, md: 10 }} borderRadius="lg" textAlign="center">
-          <Heading as="h3" size="lg" mb={2}>Sẵn sàng để hết vô gia cư chưa?</Heading>
+          <Heading as="h3" size="lg" mb={2}>Cùng tham gia RealEstate Demo</Heading>
           <Text color="whiteAlpha.800" mb={4}>Tạo tài khoản để lưu tìm kiếm và nhận thông báo cá nhân hóa.</Text>
           <Button
             bg="yellow.400"
