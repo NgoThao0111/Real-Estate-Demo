@@ -121,7 +121,7 @@ export const useListStore = create((set, get) => ({
   deleteListing: async (id) => {
     try {
       set({ loading: true, error: null });
-      await axios.delete(`/api/listings/${id}`);
+      await axios.delete(`/api/listings/delete/${id}`);
       const current = get().listings || [];
       set({ listings: current.filter((l) => !(l._id === id || l.id === id)), loading: false });
       return { success: true };

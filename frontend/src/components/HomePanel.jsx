@@ -47,7 +47,7 @@ const HomePanel = () => {
       {/* HERO */}
       <Box
         h={{ base: "340px", md: "420px" }}
-        bgImage={"url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1600&q=60')"}
+        bgImage={"url('https://th.bing.com/th/id/R.882fba727d519950a5f7184aef7e582b?rik=e%2faiVMLLFj2BhA&pid=ImgRaw&r=0')"}
         bgSize="cover"
         bgPos="center"
         display="flex"
@@ -59,7 +59,7 @@ const HomePanel = () => {
 
         <Container maxW="1140px" zIndex={2} textAlign="center">
           <Heading color="white" fontSize={{ base: "3xl", md: "5xl" }} mb={3}>
-            Chào mừng đến với đế chế của Vancute
+            Tìm ngôi nhà mơ ước của bạn
           </Heading>
           <Text color="gray.200" mb={6} fontSize={{ base: "sm", md: "md" }}>
             Cách dễ nhất để mua, bán và cho thuê bất động sản.
