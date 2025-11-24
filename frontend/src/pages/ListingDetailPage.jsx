@@ -11,6 +11,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useListStore } from "../store/list.js";
 import { useUserStore } from "../store/user.js";
+import { useChatStore } from "../store/chat.js";
 import ListingImageSection from "../components/ListingImageSection.jsx";
 import ListingInfoSection from "../components/ListingInfoSection.jsx";
 
@@ -20,9 +21,11 @@ const ListingDetailPage = () => {
   const toast = useToast();
   const { getListingById } = useListStore();
   const { user } = useUserStore();
+  const { createOrFindConversation } = useChatStore();
   
   const [listing, setListing] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [chatLoading, setChatLoading] = useState(false);
 
   useEffect(() => {
     const loadListing = async () => {
@@ -63,7 +66,7 @@ const ListingDetailPage = () => {
     );
   }
 
-  const handleContact = () => {
+  const handleContact = async () => {
     if (!user) {
       toast({
         title: "Đăng nhập",
@@ -74,7 +77,55 @@ const ListingDetailPage = () => {
       });
       return;
     }
-    navigate('/chat');
+
+    if (!listing?.owner?._id) {
+      toast({
+        title: "Lỗi",
+        description: "Không thể tìm thấy thông tin người đăng",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    // Kiểm tra nếu người dùng đang cố gắng nhắn tin với chính mình
+    if (listing.owner._id === user.id) {
+      toast({
+        title: "Thông báo",
+        description: "Bạn không thể nhắn tin với chính mình",
+        status: "info",
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    setChatLoading(true);
+    try {
+      const res = await createOrFindConversation(listing.owner._id);
+      if (res.success) {
+        // Điều hướng đến trang chat với conversation ID
+        navigate(`/chat?conversation=${res.data._id}`);
+      } else {
+        toast({
+          title: "Lỗi",
+          description: res.message || "Không thể tạo cuộc trò chuyện",
+          status: "error",
+          duration: 3000,
+          isClosable: true,
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Lỗi",
+        description: "Có lỗi xảy ra khi tạo cuộc trò chuyện",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+    setChatLoading(false);
   };
 
   const handleSave = () => {
@@ -105,6 +156,7 @@ const ListingDetailPage = () => {
           <ListingImageSection 
             listing={listing}
             onContact={handleContact}
+            chatLoading={chatLoading}
           />
         </GridItem>
 

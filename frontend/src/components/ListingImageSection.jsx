@@ -18,7 +18,7 @@ const getUserDisplayName = (user) => {
   if (user.name) return user.name;
 };
 
-const ListingImageSection = ({ listing, onContact }) => {
+const ListingImageSection = ({ listing, onContact, chatLoading = false }) => {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
   const images = listing.images && listing.images.length > 0 
@@ -81,7 +81,14 @@ const ListingImageSection = ({ listing, onContact }) => {
               <Button leftIcon={<FiPhone />} size="sm" variant="outline">
                 Gọi điện
               </Button>
-              <Button leftIcon={<FiMail />} size="sm" colorScheme="blue" onClick={onContact}>
+              <Button 
+                leftIcon={<FiMail />} 
+                size="sm" 
+                colorScheme="blue" 
+                onClick={onContact}
+                isLoading={chatLoading}
+                loadingText="Đang tạo..."
+              >
                 Nhắn tin
               </Button>
             </HStack>
