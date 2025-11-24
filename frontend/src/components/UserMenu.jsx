@@ -17,6 +17,11 @@ import { FiFileText, FiMessageCircle, FiSettings, FiLogOut } from "react-icons/f
 import { ImStarEmpty } from "react-icons/im";
 import { MdOutlineLightMode, MdOutlineDarkMode } from "react-icons/md";
 
+const getUserDisplayName = (user) => {
+  if (!user) return "User";
+  if (user.name) return user.name;
+};
+
 export default function UserMenu({ user, logoutUser }) {
   const [open, setOpen] = useState(false);
   const { colorMode, toggleColorMode } = useColorMode();
@@ -29,8 +34,8 @@ export default function UserMenu({ user, logoutUser }) {
       >
         <MenuButton>
           <HStack cursor="pointer">
-            <Avatar src={user?.avatar} name={user?.username} size="sm" />
-            <Text fontWeight="medium">{user.name || user.username}</Text>
+            <Avatar name={getUserDisplayName(user)} size="sm" />
+            <Text fontWeight="medium">{getUserDisplayName(user)}</Text>
           </HStack>
         </MenuButton>
 

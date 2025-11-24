@@ -51,18 +51,18 @@ const HomePage = () => {
         (() => {
           const getTopThree = (items) => {
             if (!items || items.length === 0) return [];
-            // Prefer explicit ranking fields if present
+            // Ưu tiên các trường xếp hạng rõ ràng nếu có
             const rankFields = ["score", "rating", "views"];
             for (const f of rankFields) {
               if (items.some((it) => it[f] !== undefined && it[f] !== null)) {
                 return [...items].sort((a, b) => (b[f] || 0) - (a[f] || 0)).slice(0, 3);
               }
             }
-            // Fallback to most recent
+            // Dự phòng lấy tin mới nhất
             if (items.some((it) => it.createdAt)) {
               return [...items].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 3);
             }
-            // Final fallback: first three
+            // Dự phòng cuối cùng: ba tin đầu tiên
             return items.slice(0, 3);
           };
 
