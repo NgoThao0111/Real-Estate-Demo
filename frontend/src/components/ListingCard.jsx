@@ -4,9 +4,11 @@ import { ImStarEmpty, ImStarFull } from "react-icons/im";
 import { useUserStore } from "../store/user.js";
 import { useListStore } from "../store/list.js";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { usePropertyTypeStore } from "../store/propertyType.js";
 
 const ListingCard = ({ listing }) => {
+  const navigate = useNavigate();
   const [propertyTypeName, setPropertyTypeName] = useState('');
   const getPropertyTypeById = usePropertyTypeStore((s) => s.getPropertyTypeById);
   const img = listing.images && listing.images.length ? listing.images[0] : null;
@@ -93,6 +95,7 @@ const ListingCard = ({ listing }) => {
         borderColor: "blue.300",
         cursor: "pointer"
       }}
+      onClick={() => navigate(`/listings/${listing._id}`)}
     >
       <Box position="relative">
         {img ? (
