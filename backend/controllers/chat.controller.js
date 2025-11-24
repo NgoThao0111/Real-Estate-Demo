@@ -16,13 +16,28 @@ export const createConversation = async (req, res) => {
     const { participantIds = [], title, type = "private" } = req.body;
     const participants = Array.from(new Set([user.id, ...participantIds]));
 
+    // Kiểm tra xem đã có conversation giữa các participants này chưa
+    if (type === "private" && participants.length === 2) {
+      const existingConv = await Conversation.findOne({
+        type: "private",
+        participants: { $all: participants, $size: 2 }
+      }).populate("participants", "username name profile");
+
+      if (existingConv) {
+        return res.json({
+          message: "Found existing conversation",
+          conversation: existingConv,
+        });
+      }
+    }
+
     const conv = await Conversation.create({
       title: title || null,
       participants,
       type,
     });
 
-    await conv.populate("participants", "username name");
+    await conv.populate("participants", "username name profile");
 
     return res.status(201).json({
       message: "Created",
@@ -49,10 +64,10 @@ export const getConversations = async (req, res) => {
       .sort({ updatedAt: -1 })
       .skip(skip)
       .limit(Number(limit))
-      .populate("participants", "username name")
+      .populate("participants", "username name profile")
       .populate({
         path: "lastMessage",
-        populate: { path: "sender", select: "username name" },
+        populate: { path: "sender", select: "username name profile" },
       });
 
     return res.json({

@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Box, Flex, Text, VStack, HStack, Avatar, Heading, useColorModeValue } from "@chakra-ui/react";
 import ChatContainer from "../components/ChatContainer";
-import api from "../lib/axios";
-import { useAuthContext } from "../context/AuthContext";
+import { useUserStore } from "../store/user.js";
+import { useChatStore } from "../store/chat.js";
 
 const getUserDisplayName = (user) => {
   if (!user) return "Người dùng";
@@ -10,22 +11,28 @@ const getUserDisplayName = (user) => {
 };
 
 const ChatPage = () => {
-  const { currentUser } = useAuthContext();
-  const [chats, setChats] = useState([]);
+  const { user } = useUserStore();
+  const { conversations, getConversations } = useChatStore();
+  const [searchParams] = useSearchParams();
   const [currentChat, setCurrentChat] = useState(null);
 
   // Lấy danh sách cuộc hội thoại
   useEffect(() => {
-    const getChats = async () => {
-      try {
-        const res = await api.get("/chats");
-        setChats(res.data.conversations || []);
-      } catch (err) {
-        console.error(err);
+    if (user) {
+      getConversations();
+    }
+  }, [user, getConversations]);
+
+  // Xử lý conversation ID từ URL parameter
+  useEffect(() => {
+    const conversationId = searchParams.get('conversation');
+    if (conversationId && conversations.length > 0) {
+      const targetConversation = conversations.find(conv => conv._id === conversationId);
+      if (targetConversation) {
+        setCurrentChat(targetConversation);
       }
-    };
-    if (currentUser) getChats();
-  }, [currentUser]);
+    }
+  }, [searchParams, conversations]);
 
   return (
     <Box p={5} h="90vh" >
@@ -38,11 +45,11 @@ const ChatPage = () => {
           </Box>
           
           <VStack align="stretch" spacing={0} overflowY="auto" h="calc(100% - 60px)">
-            {chats.length === 0 && <Text p={4} color="gray.500">Chưa có tin nhắn nào.</Text>}
+            {conversations.length === 0 && <Text p={4} color="gray.500">Chưa có tin nhắn nào.</Text>}
             
-            {chats.map((chat) => {
+            {conversations.map((chat) => {
               // Tìm tên người đối phương để hiển thị
-              const otherUser = chat.participants.find(p => p._id !== currentUser._id);
+              const otherUser = chat.participants.find(p => p._id !== user?.id);
               const isActive = currentChat?._id === chat._id;
 
               return (
@@ -89,7 +96,7 @@ const ChatPage = () => {
               overflow="hidden" 
               borderWidth="2px"
             >
-              <Heading size="lg" mb={2}>Chào {currentUser?.username} 👋</Heading>
+              <Heading size="lg" mb={2}>Chào {user?.username} 👋</Heading>
               <Text>Chọn một cuộc hội thoại để bắt đầu chat</Text>
             </Flex>
           )}

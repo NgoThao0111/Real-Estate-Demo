@@ -12,9 +12,24 @@ import {
   useToast,
 } from "@chakra-ui/react";
 import { FiMapPin, FiHeart, FiShare2, FiHome, FiMaximize } from "react-icons/fi";
+import { FaHeart } from "react-icons/fa";
+import { useState, useEffect } from "react";
+import { useUserStore } from "../store/user.js";
+import { useListStore } from "../store/list.js";
 
-const ListingInfoSection = ({ listing, user, onContact, onSave }) => {
+const ListingInfoSection = ({ listing, onContact}) => {
+  const toggleSave = useUserStore((s) => s.toggleSaveListing);
+  const savedListings = useUserStore((s) => s.savedListings);
+  const fallbackToggle = useListStore((s) => s.toggleSaveListing);
   const toast = useToast();
+  
+  const [isSaved, setIsSaved] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Kiểm tra xem listing có được lưu không
+  useEffect(() => {
+    setIsSaved(savedListings.includes(listing._id));
+  }, [savedListings, listing._id]);
 
   const formatPrice = (price) => {
     if (!price) return "Liên hệ";
@@ -111,12 +126,41 @@ const ListingInfoSection = ({ listing, user, onContact, onSave }) => {
           
           <HStack width="full">
             <Button 
-              leftIcon={<FiHeart />} 
-              variant="outline" 
-              flex={1}
-              onClick={onSave}
+                leftIcon={isSaved ? <FaHeart /> : <FiHeart />} 
+                variant={isSaved ? "solid" : "outline"}
+                colorScheme={isSaved ? "gray" : "gray"}
+                flex={1}
+                isLoading={isLoading}
+                _hover={{
+                  transform: "translateY(-1px)",
+                  boxShadow: "md"
+                }}
+                _active={{
+                  transform: "translateY(0px)"
+                }}
+                onClick={async (e) => {
+                    e.stopPropagation();
+                    setIsLoading(true);
+                    try {
+                    const res = toggleSave ? await toggleSave(listing._id) : await fallbackToggle(listing._id);
+                    if (res.success) {
+                        toast({ 
+                          title: res.message, 
+                          status: 'success', 
+                          isClosable: true,
+                          duration: 2000 
+                        });
+                    } else {
+                        toast({ title: res.message || 'Lỗi', status: 'error', isClosable: true });
+                    }
+                    } catch (err) {
+                    toast({ title: err.message || 'Lỗi khi lưu', status: 'error', isClosable: true });
+                    } finally {
+                      setIsLoading(false);
+                    }
+                }}
             >
-              Lưu
+              {isSaved ? 'Đã lưu' : 'Lưu'}
             </Button>
             <Button 
               leftIcon={<FiShare2 />} 
