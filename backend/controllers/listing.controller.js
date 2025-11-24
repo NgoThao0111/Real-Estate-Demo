@@ -166,6 +166,8 @@ export const getListings = async (req, res) => {
     }
 
     const listings = await Listing.find(query)
+      .populate('owner', 'name profile')
+      .populate('property_type', 'name')
       .sort(sortObj)
       .skip(skip)
       .limit(lim);
@@ -192,7 +194,9 @@ export const getListings = async (req, res) => {
 export const getListingById = async (req, res) => {
   try {
     const id = req.params.id;
-    const listing = await Listing.findById(id);
+    const listing = await Listing.findById(id)
+      .populate('owner', 'name profile createdAt')
+      .populate('property_type', 'name');
     if (!listing) return res.status(404).json({ message: "Not Found" });
     return res.json(listing);
   } catch (error) {
@@ -201,16 +205,17 @@ export const getListingById = async (req, res) => {
   }
 };
 
-// Get listings created by current logged-in user
+// Lấy danh sách tin đăng của người dùng hiện tại
 export const getMyListings = async (req, res) => {
   try {
     if (!req.session || !req.session.user)
       return res.status(401).json({ message: "Vui lòng đăng nhập" });
 
     const userId = req.session.user.id;
-    const listings = await Listing.find({ owner: userId }).sort({
-      createdAt: -1,
-    });
+    const listings = await Listing.find({ owner: userId })
+      .populate('owner', 'name profile')
+      .populate('property_type', 'name')
+      .sort({ createdAt: -1 });
 
     return res.json({ message: "Lấy bài đăng của tôi thành công", listings });
   } catch (error) {
@@ -261,7 +266,7 @@ export const updateListing = async (req, res) => {
 
 export const deleteListing = async (req, res) => {
   try {
-    // Require authentication
+    // Yêu cầu xác thực
     if (!req.session || !req.session.user) {
       return res.status(401).json({ message: "Vui lòng đăng nhập" });
     }
@@ -277,7 +282,7 @@ export const deleteListing = async (req, res) => {
       return res.status(404).json({ message: "Not Found" });
     }
 
-    // Only owner can delete
+    // Chỉ chủ sở hữu mới có thể xóa
     if (!listing.owner || listing.owner.toString() !== userId.toString()) {
       return res.status(403).json({ message: "Bạn không có quyền xóa bài đăng này" });
     }

@@ -5,6 +5,11 @@ import { useAuthContext } from "../context/AuthContext";
 import api from "../lib/axios";
 import { format } from "timeago.js"; // Gợi ý: Cài thêm `npm install timeago.js` để hiện "5 phút trước"
 
+const getUserDisplayName = (user) => {
+  if (!user) return "Người dùng";
+  if (user.name) return user.name;
+};
+
 const ChatContainer = ({ currentChat }) => {
   const { socket } = useSocketContext();
   const { currentUser } = useAuthContext();
@@ -89,9 +94,9 @@ const ChatContainer = ({ currentChat }) => {
     <Flex direction="column" h="100%" bg={useColorModeValue("white", "gray.800")} borderRadius="lg" overflow="hidden" boxShadow="sm" borderWidth="2px">
       {/* HEADER */}
       <Flex align="center" gap={3} p={4} bg={useColorModeValue("gray.50", "gray.700")} borderBottom="2px" borderColor={useColorModeValue("gray.200", "gray.600")}>
-        <Avatar src={receiver?.avatar || ""} name={receiver?.username} />
+        <Avatar src={receiver?.avatar || ""} name={getUserDisplayName(receiver)} />
         <Box>
-          <Text fontWeight="bold" fontSize={"lg"}>{receiver?.username}</Text>
+          <Text fontWeight="bold" fontSize={"lg"}>{receiver?.name}</Text>
           <Text fontSize="sm" fontWeight={"semibold"} color={"gray.500"}>Đang trực tuyến</Text>
         </Box>
       </Flex>

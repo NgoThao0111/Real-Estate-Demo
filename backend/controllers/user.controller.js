@@ -230,7 +230,7 @@ export const toggleSaveListing = async (req, res) => {
     }
 }
 
-// Get saved listings for current user
+// Lấy danh sách tin đăng đã lưu của người dùng hiện tại
 export const getSavedListings = async (req, res) => {
     try {
         if(!req.session || !req.session.user) return res.status(401).json({ message: "Vui lòng đăng nhập" });

@@ -4,12 +4,17 @@ import ChatContainer from "../components/ChatContainer";
 import api from "../lib/axios";
 import { useAuthContext } from "../context/AuthContext";
 
+const getUserDisplayName = (user) => {
+  if (!user) return "Người dùng";
+  if (user.name) return user.name;
+};
+
 const ChatPage = () => {
   const { currentUser } = useAuthContext();
   const [chats, setChats] = useState([]);
   const [currentChat, setCurrentChat] = useState(null);
 
-  // Lấy danh sách Chat
+  // Lấy danh sách cuộc hội thoại
   useEffect(() => {
     const getChats = async () => {
       try {
@@ -36,7 +41,7 @@ const ChatPage = () => {
             {chats.length === 0 && <Text p={4} color="gray.500">Chưa có tin nhắn nào.</Text>}
             
             {chats.map((chat) => {
-              // Tìm tên người kia để hiển thị
+              // Tìm tên người đối phương để hiển thị
               const otherUser = chat.participants.find(p => p._id !== currentUser._id);
               const isActive = currentChat?._id === chat._id;
 
@@ -54,9 +59,9 @@ const ChatPage = () => {
                   borderBottom="2px"
                   borderColor={useColorModeValue("gray.200", "gray.600")}
                 >
-                  <Avatar src={otherUser?.avatar} name={otherUser?.username} />
+                  <Avatar src={otherUser?.avatar} name={getUserDisplayName(otherUser)} />
                   <Box flex={1}>
-                    <Text fontWeight="bold">{otherUser?.username}</Text>
+                    <Text fontWeight="bold">{otherUser?.name}</Text>
                     <Text fontSize="sm" color="gray.500" noOfLines={1}>
                       {chat.lastMessage?.content || "Bắt đầu cuộc trò chuyện"}
                     </Text>

@@ -47,19 +47,19 @@ const ListingCard = ({ listing }) => {
   useEffect(() => {
     let mounted = true;
     const load = async () => {
-      // if no property_type at all, fallback to unknown
+      // nếu không có loại bất động sản, mặc định là không xác định
       if (!listing?.property_type) {
         if (mounted) setPropertyTypeName("unknown");
         return;
       }
 
-      // already populated object with name
+      // đối tượng đã được điền đầy đủ với tên
       if (typeof listing.property_type === "object" && listing.property_type?.name) {
         if (mounted) setPropertyTypeName(listing.property_type.name);
         return;
       }
 
-      // determine id (could be string or object with _id)
+      // xác định id (có thể là chuỗi hoặc đối tượng có _id)
       const id = typeof listing.property_type === "object" ? (listing.property_type._id || listing.property_type) : listing.property_type;
 
       try {
@@ -67,7 +67,7 @@ const ListingCard = ({ listing }) => {
         if (!mounted) return;
 
         if (res.success) {
-          // handle both shapes: res.data.propertyType or res.data
+          // xử lý cả hai dạng: res.data.propertyType hoặc res.data
           const data = res.data?.propertyType || res.data;
           setPropertyTypeName(data?.name || "unknown");
         } else {

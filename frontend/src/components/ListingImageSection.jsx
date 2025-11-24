@@ -13,6 +13,11 @@ import {
 import { useState } from "react";
 import { FiPhone, FiMail } from "react-icons/fi";
 
+const getUserDisplayName = (user) => {
+  if (!user) return "Người dùng";
+  if (user.name) return user.name;
+};
+
 const ListingImageSection = ({ listing, onContact }) => {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
@@ -63,12 +68,11 @@ const ListingImageSection = ({ listing, onContact }) => {
         <HStack spacing={4}>
           <Avatar 
             size="lg" 
-            name={listing.owner?.fullName || "User"} 
-            src={listing.owner?.avatar}
+            name={getUserDisplayName(listing.owner)} 
           />
           <VStack align="start" spacing={1} flex={1}>
             <Text fontWeight="600" fontSize="lg">
-              {listing.owner?.fullName || "Người dùng"}
+              {getUserDisplayName(listing.owner)}
             </Text>
             <Text color="gray.600" fontSize="sm">
               Thành viên từ {new Date(listing.owner?.createdAt || listing.createdAt).getFullYear()}
