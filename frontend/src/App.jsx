@@ -6,6 +6,7 @@ import MyPostsPage from "./pages/MyPostsPage.jsx";
 import SavedPostsPage from "./pages/SavedPostsPage.jsx";
 import ChatPage from "./pages/ChatPage.jsx";
 import AllListings from "./pages/AllListings.jsx";
+import ListingDetailPage from "./pages/ListingDetailPage.jsx";
 import { Routes, Route } from "react-router-dom";
 
 function App() {
@@ -33,6 +34,7 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/home-panel" element={<HomePanel />} />
           <Route path="/listings" element={<AllListings />} />
+          <Route path="/listings/:id" element={<ListingDetailPage />} />
           <Route path="/my-posts" element={<MyPostsPage />} />
           <Route path="/saved-posts" element={<SavedPostsPage />} />
           <Route path="/chat" element={<ChatPage />} />
