@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import Listing from "../models/listing.model.js";
+import cloudinary from "../config/cloudinary.js";
 
 export const createList = async (req, res) => {
   if (!req.session || !req.session.user || !req.session.user.id) {
@@ -51,6 +52,30 @@ export const createList = async (req, res) => {
           .filter(Boolean);
     }
 
+    if (images.length > 10) {
+      return res.status(400).json({ message: "Max 10 images allowed" });
+    }
+
+    let cloudinaryImages = [];
+
+    if (images.length > 0) {
+      cloudinaryImages = await Promise.all(
+        images.map((img) =>
+          cloudinary.uploader.upload(img, { folder: "products" })
+        )
+      );
+    }
+
+    if (images.length > 0 && cloudinaryImages.length !== images.length) {
+      return res.status(500).json({ message: "Image upload failed" });
+    }
+
+    // save only secure_urls or public_ids depending on needs
+    const savedImages = cloudinaryImages.map((img) => ({
+      url: img.secure_url,
+      public_id: img.public_id,
+    }));
+
     const list = new Listing({
       title: title,
       description: description,
@@ -59,7 +84,7 @@ export const createList = async (req, res) => {
       status: status,
       property_type: property_type,
       rental_type: rental_type,
-      images: images,
+      images: savedImages,
       owner: ownerId,
       location: {
         province: province,

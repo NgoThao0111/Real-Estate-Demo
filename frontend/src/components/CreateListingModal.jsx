@@ -46,7 +46,7 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
     status: "available",
     property_type: "",
     rental_type: "rent",
-    images: "",
+    images: [],
     location: {
       province: "",
       ward: "",
@@ -86,6 +86,29 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleImagesChange = async (e) => {
+    const files = Array.from(e.target.files);
+
+    // convert each file to a base64 promise
+    const toBase64 = (file) =>
+      new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.readAsDataURL(file);
+      });
+
+    // wait for ALL files to finish reading
+    const base64Images = await Promise.all(
+      files.map((file) => toBase64(file))
+    );
+
+    // update state
+    setForm((prev) => ({
+      ...prev,
+      images: [...prev.images, ...base64Images], // append
+    }));
+  };
+
   // Submit
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -122,12 +145,7 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
       status: form.status,
       property_type: form.property_type,
       rental_type: form.rental_type,
-      images: form.images
-        ? form.images
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean)
-        : [],
+      images: form.images,
       location: {
         province: form.location.province,
         ward: form.location.ward,
@@ -157,7 +175,7 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
           status: "available",
           property_type: "",
           rental_type: "rent",
-          images: "",
+          images: [],
           location: { province: "", ward: "", detail: "" },
         });
       } else {
@@ -257,13 +275,20 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
 
             {/* Ảnh */}
             <FormControl>
-              <FormLabel>Ảnh (URLs, cách nhau bằng dấu phẩy)</FormLabel>
+              <FormLabel>Ảnh (chọn nhiều ảnh)</FormLabel>
+
               <Input
-                placeholder="https://..., https://..."
-                name="images"
-                value={form.images}
-                onChange={handleChange}
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleImagesChange}
               />
+
+              {form.images.length > 0 && (
+                <Text fontSize="sm" color="gray.400">
+                  {form.images.length} ảnh đã chọn
+                </Text>
+              )}
             </FormControl>
 
             {/* Địa chỉ */}

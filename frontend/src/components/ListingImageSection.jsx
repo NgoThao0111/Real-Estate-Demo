@@ -25,17 +25,22 @@ const ListingImageSection = ({ listing, onContact, chatLoading = false }) => {
   const contentBg = useColorModeValue("white", "gray.800");
   const subTextColor = useColorModeValue("gray.600", "white");
 
-  const images = listing.images && listing.images.length > 0 
-    ? listing.images 
-    : ["https://via.placeholder.com/600x400?text=No+Image"];
+  const images =
+    listing.images && listing.images.length > 0
+      ? listing.images.map((img) =>
+          typeof img === "string" ? img : img.url
+        )
+      : ["https://via.placeholder.com/600x400?text=No+Image"];
+
+  const mainImage = images[selectedImageIndex];
 
   return (
     <VStack spacing={6} align="stretch">
       {/* Main Image */}
       <Box>
-        <AspectRatio ratio={16/10}>
+        <AspectRatio ratio={16 / 10}>
           <Image 
-            src={images[selectedImageIndex]} 
+            src={mainImage} 
             alt={listing.title}
             borderRadius="lg"
             objectFit="cover"

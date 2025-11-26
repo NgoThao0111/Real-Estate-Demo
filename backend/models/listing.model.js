@@ -26,7 +26,8 @@ const listingSchema = new mongoose.Schema(
       required: true,
     },
     images: {
-      type: [String],
+      type: [mongoose.Schema.Types.Mixed],
+      default: [],
     },
 
     //Tham chiếu đến người đăng
@@ -34,7 +35,7 @@ const listingSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       // required: true,
-      index: true
+      index: true,
     },
 
     //Tham chiếu đến loại BĐS
@@ -48,13 +49,13 @@ const listingSchema = new mongoose.Schema(
     location: {
       province: {
         type: String,
-        required: true
+        required: true,
       },
       ward: {
         type: String,
-        required: true
+        required: true,
       },
-      detail: String //số nhà, tên đường
+      detail: String, //số nhà, tên đường
       // Có thể mở rộng thêm tọa độ
     },
 
@@ -63,14 +64,14 @@ const listingSchema = new mongoose.Schema(
       {
         utility: {
           type: mongoose.Schema.Types.ObjectId,
-          ref: "Utility"
+          ref: "Utility",
         },
         amount: {
           type: Number,
-          default: 1
-        }
-      }
-    ]
+          default: 1,
+        },
+      },
+    ],
   },
   {
     timestamps: true,

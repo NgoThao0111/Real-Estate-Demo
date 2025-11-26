@@ -11,7 +11,11 @@ const ListingCard = ({ listing }) => {
   const navigate = useNavigate();
   const [propertyTypeName, setPropertyTypeName] = useState('');
   const getPropertyTypeById = usePropertyTypeStore((s) => s.getPropertyTypeById);
-  const img = listing.images && listing.images.length ? listing.images[0] : null;
+  const img = listing.images && listing.images.length
+  ? typeof listing.images[0] === "string"
+    ? listing.images[0]            // old string URL
+    : listing.images[0].url        // Cloudinary object
+  : null;
   const location = listing.location ? `${listing.location.detail || ''}, ${listing.location.ward || ''}, ${listing.location.province || ''}` : '';
   const imgCount = listing.images ? listing.images.length : 0;
   const toast = useToast();
