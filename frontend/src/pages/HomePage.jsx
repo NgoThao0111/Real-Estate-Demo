@@ -1,4 +1,4 @@
-import { Container, SimpleGrid, Spinner, Center, Text, Heading, Box, Button } from "@chakra-ui/react";
+import { Container, SimpleGrid, Spinner, Center, Text, Heading, Box, Button, useColorModeValue } from "@chakra-ui/react";
 import { FiUsers, FiGrid, FiCheckCircle } from "react-icons/fi";
 import { useEffect } from "react";
 import ListingCard from "../components/ListingCard";
@@ -9,6 +9,10 @@ import { useNavigate } from "react-router-dom";
 const HomePage = () => {
   const { listings, loading, error, fetchListings } = useListStore();
   const navigate = useNavigate();
+  
+  const contentBg = useColorModeValue("white", "gray.800");
+  const subText = useColorModeValue("gray.600", "white");
+  const cardShadow = useColorModeValue("lg", "dark-lg");
 
   useEffect(() => {
     fetchListings();
@@ -39,7 +43,7 @@ const HomePage = () => {
         <Heading as="h2" size="lg" mb={2}>
           Khám phá các bài đăng của chúng tôi
         </Heading>
-        <Text color="gray.600">Tổng hợp các bài đăng nhà đất, căn hộ và đất nền được tuyển chọn — tìm ngay bất động sản phù hợp với bạn.</Text>
+        <Text color={subText}>Tổng hợp các bài đăng nhà đất, căn hộ và đất nền được tuyển chọn — tìm ngay bất động sản phù hợp với bạn.</Text>
       </Container>
 
       <Container maxW={"1140px"} py={12}>
@@ -89,7 +93,7 @@ const HomePage = () => {
       <Container maxW={"1140px"} mt={6} mb={12}>
         <Box textAlign="center" mb={6}>
           <Heading as="h3" size="lg">Tại sao chọn RealEstate Demo?</Heading>
-          <Text color="gray.500" mt={2}>Đối tác tin cậy giúp bạn tìm bất động sản phù hợp.</Text>
+          <Text color={subText} mt={2}>Đối tác tin cậy giúp bạn tìm bất động sản phù hợp.</Text>
         </Box>
 
         <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6}>
