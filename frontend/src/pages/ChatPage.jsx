@@ -16,6 +16,7 @@ const ChatPage = () => {
   const [searchParams] = useSearchParams();
   const [currentChat, setCurrentChat] = useState(null);
 
+
   // Lấy danh sách cuộc hội thoại
   useEffect(() => {
     if (user) {
@@ -24,6 +25,7 @@ const ChatPage = () => {
   }, [user, getConversations]);
 
   // Xử lý conversation ID từ URL parameter
+
   useEffect(() => {
     const conversationId = searchParams.get('conversation');
     if (conversationId && conversations.length > 0) {
@@ -39,8 +41,9 @@ const ChatPage = () => {
       <Flex gap={5} h="100%">
         
         {/* CỘT TRÁI: DANH SÁCH CHAT (30%) */}
-        <Box w="30%" bg={useColorModeValue("white", "gray.800")} borderRadius="lg" boxShadow="sm" overflow="hidden" borderWidth="2px" >
-          <Box p={4} borderBottom="2px" borderColor={useColorModeValue("gray.200", "gray.600")}>
+        {/* Sử dụng biến bgBox đã khai báo ở trên */}
+        <Box w="30%" bg={bgBox} borderRadius="lg" boxShadow="sm" overflow="hidden" borderWidth="2px" >
+          <Box p={4} borderBottom="2px" borderColor={borderColor}>
             <Heading size="md">Tin nhắn</Heading>
           </Box>
           
@@ -57,14 +60,15 @@ const ChatPage = () => {
                   key={chat._id} 
                   p={4} 
                   cursor="pointer"
-                  bg={isActive ? useColorModeValue("gray.50", "gray.700") : "transparent"}
+                  // Dùng biến activeBg thay vì gọi hook ở đây
+                  bg={isActive ? activeBg : "transparent"}
                   _hover={{
-                    bg: useColorModeValue("gray.200", "gray.900"),
+                    bg: hoverBg, // Dùng biến hoverBg
                     cursor: "pointer"
                   }}
                   onClick={() => setCurrentChat(chat)}
                   borderBottom="2px"
-                  borderColor={useColorModeValue("gray.200", "gray.600")}
+                  borderColor={borderColor} // Dùng biến borderColor
                 >
                   <Avatar src={otherUser?.avatar} name={getUserDisplayName(otherUser)} />
                   <Box flex={1}>
@@ -86,7 +90,7 @@ const ChatPage = () => {
           ) : (
             <Flex 
               h="100%" 
-              bg={useColorModeValue("white", "gray.800")}
+              bg={bgBox} // Dùng biến bgBox
               borderRadius="lg" 
               align="center" 
               justify="center" 
