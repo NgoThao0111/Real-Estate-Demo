@@ -97,28 +97,28 @@ const HomePage = () => {
         </Box>
 
         <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6}>
-          <Box bg="white" borderRadius="md" p={6} boxShadow="sm" textAlign="center">
+          <Box bg={contentBg} borderRadius="md" p={6} boxShadow={cardShadow} textAlign="center">
             <Box mx="auto" mb={4} w="56px" h="56px" borderRadius="full" bg="blue.50" display="flex" alignItems="center" justifyContent="center">
               <FiUsers size={24} color="#2B6CB0" />
             </Box>
             <Heading as="h4" size="md" mb={2}>Chuyên gia môi giới</Heading>
-            <Text color="gray.600" fontSize="sm">Đội ngũ tư vấn chuyên nghiệp đồng hành cùng bạn trong mọi bước.</Text>
+            <Text color={subText} fontSize="sm">Đội ngũ tư vấn chuyên nghiệp đồng hành cùng bạn trong mọi bước.</Text>
           </Box>
 
-          <Box bg="white" borderRadius="md" p={6} boxShadow="sm" textAlign="center">
+          <Box bg={contentBg} borderRadius="md" p={6} boxShadow={cardShadow} textAlign="center">
             <Box mx="auto" mb={4} w="56px" h="56px" borderRadius="full" bg="blue.50" display="flex" alignItems="center" justifyContent="center">
               <FiGrid size={24} color="#2B6CB0" />
             </Box>
             <Heading as="h4" size="md" mb={2}>Nguồn lựa chọn đa dạng</Heading>
-            <Text color="gray.600" fontSize="sm">Hàng nghìn tin đăng đã được kiểm duyệt, dễ dàng tìm được bất động sản phù hợp.</Text>
+            <Text color={subText} fontSize="sm">Hàng nghìn tin đăng đã được kiểm duyệt, dễ dàng tìm được bất động sản phù hợp.</Text>
           </Box>
 
-          <Box bg="white" borderRadius="md" p={6} boxShadow="sm" textAlign="center">
+          <Box bg={contentBg} borderRadius="md" p={6} boxShadow={cardShadow} textAlign="center">
             <Box mx="auto" mb={4} w="56px" h="56px" borderRadius="full" bg="blue.50" display="flex" alignItems="center" justifyContent="center">
               <FiCheckCircle size={24} color="#2B6CB0" />
             </Box>
             <Heading as="h4" size="md" mb={2}>Quy trình liền mạch</Heading>
-            <Text color="gray.600" fontSize="sm">Ứng dụng công nghệ giúp trải nghiệm mua bán, thuê mướn trở nên suôn sẻ.</Text>
+            <Text color={subText} fontSize="sm">Ứng dụng công nghệ giúp trải nghiệm mua bán, thuê mướn trở nên suôn sẻ.</Text>
           </Box>
         </SimpleGrid>
       </Container>
