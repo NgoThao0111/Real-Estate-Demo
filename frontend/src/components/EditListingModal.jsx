@@ -18,22 +18,33 @@ import {
 } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { useListStore } from "../store/list.js";
+import { usePropertyTypeStore } from "../store/propertyType.js";
 
 const EditListingModal = ({ isOpen, onClose, listing }) => {
   const toast = useToast();
   const updateListing = useListStore((s) => s.updateListing);
+  // Property types
+  const { propertyTypes, fetchPropertyTypes, loading: loadingTypes, error: errorTypes } = usePropertyTypeStore();
   const [form, setForm] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (isOpen && listing) {
+      // normalize property_type: could be id string or object
+      let ptValue = "";
+      if (listing.property_type) {
+        if (typeof listing.property_type === "string") ptValue = listing.property_type;
+        else if (listing.property_type._id) ptValue = listing.property_type._id;
+        else if (listing.property_type.id) ptValue = listing.property_type.id;
+      }
+
       setForm({
         title: listing.title || "",
         description: listing.description || "",
         area: listing.area || "",
         price: listing.price || "",
         status: listing.status || "available",
-        property_type: listing.property_type || "house",
+        property_type: ptValue,
         rental_type: listing.rental_type || "rent",
         images: listing.images ? listing.images.join(", ") : "",
         location: {
@@ -44,6 +55,10 @@ const EditListingModal = ({ isOpen, onClose, listing }) => {
       });
     }
   }, [isOpen, listing]);
+
+  useEffect(() => {
+    fetchPropertyTypes();
+  }, [fetchPropertyTypes]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -126,12 +141,21 @@ const EditListingModal = ({ isOpen, onClose, listing }) => {
             <HStack>
               <FormControl>
                 <FormLabel>Loại tài sản</FormLabel>
-                <Select name="property_type" value={form.property_type || "house"} onChange={handleChange}>
-                  <option value="house">Nhà</option>
-                  <option value="apartment">Căn hộ</option>
-                  <option value="land">Đất</option>
-                </Select>
+                {loadingTypes ? (
+                  <Input isReadOnly placeholder="Đang tải..." />
+                ) : (
+                  <Select name="property_type" value={form.property_type || ""} onChange={handleChange}>
+                    <option value="">-- Chọn một loại --</option>
+                    {propertyTypes.map((type) => (
+                        <option key={type._id} value={type._id}>
+                          {type.name}
+                        </option>
+                      ))
+                    }
+                  </Select>
+                )}
               </FormControl>
+
 
               <FormControl>
                 <FormLabel>Loại cho thuê</FormLabel>

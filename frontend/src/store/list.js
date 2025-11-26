@@ -10,7 +10,7 @@ export const useListStore = create((set, get) => ({
   loading: false,
   error: null,
 
-  // Fetch all listings
+  // Lấy tất cả tin đăng
   fetchListings: async () => {
     try {
       set({ loading: true, error: null });
@@ -79,7 +79,7 @@ export const useListStore = create((set, get) => ({
     }
   },
 
-  // Create a new listing
+  // Tạo tin đăng mới
   createListing: async (payload) => {
     try {
       set({ loading: true, error: null });
@@ -98,7 +98,7 @@ export const useListStore = create((set, get) => ({
     }
   },
 
-  // Update existing listing
+  // Cập nhật tin đăng hiện tại
   updateListing: async (id, payload) => {
     try {
       set({ loading: true, error: null });
@@ -117,11 +117,11 @@ export const useListStore = create((set, get) => ({
     }
   },
 
-  // Delete listing
+  // Xóa tin đăng
   deleteListing: async (id) => {
     try {
       set({ loading: true, error: null });
-      await axios.delete(`/api/listings/${id}`);
+      await axios.delete(`/api/listings/delete/${id}`);
       const current = get().listings || [];
       set({ listings: current.filter((l) => !(l._id === id || l.id === id)), loading: false });
       return { success: true };

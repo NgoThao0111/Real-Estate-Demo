@@ -74,14 +74,14 @@ export const useUserStore = create((set) => ({
             set({
                 user: res.data.user || null
             });
-            // if logged in, load saved listings
+            // nếu đã đăng nhập, tải danh sách tin đăng đã lưu
             if(res.data.user) {
                 try {
                     const savedRes = await axios.get('/api/users/saved');
                     const saved = savedRes.data.listings || [];
                     set({ savedListings: saved.map(l => l._id) });
                 } catch (e) {
-                    // ignore
+                    // bỏ qua
                 }
             }
         } catch (error) {
@@ -99,7 +99,7 @@ export const useUserStore = create((set) => ({
         });
     },
     
-    // Fetch saved listings ids for current user
+    // Lấy danh sách ID tin đăng đã lưu cho người dùng hiện tại
     fetchSavedListings: async () => {
         try {
             const res = await axios.get('/api/users/saved');
@@ -112,11 +112,11 @@ export const useUserStore = create((set) => ({
         }
     },
 
-    // Toggle save/unsave via API and refresh saved list
+    // Bật/tắt lưu tin đăng thông qua API và cập nhật danh sách
     toggleSaveListing: async (listingId) => {
         try {
             const res = await axios.post(`/api/users/save/${listingId}`);
-            // refresh saved ids
+            // cập nhật danh sách ID đã lưu
             await (async () => {
                 try {
                     const r = await axios.get('/api/users/saved');
