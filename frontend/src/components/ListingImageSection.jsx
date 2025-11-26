@@ -9,6 +9,7 @@ import {
   Avatar,
   SimpleGrid,
   AspectRatio,
+  useColorModeValue
 } from "@chakra-ui/react";
 import { useState } from "react";
 import { FiPhone, FiMail } from "react-icons/fi";
@@ -20,6 +21,9 @@ const getUserDisplayName = (user) => {
 
 const ListingImageSection = ({ listing, onContact, chatLoading = false }) => {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  
+  const contentBg = useColorModeValue("white", "gray.800");
+  const subTextColor = useColorModeValue("gray.600", "white");
 
   const images = listing.images && listing.images.length > 0 
     ? listing.images 
@@ -63,7 +67,7 @@ const ListingImageSection = ({ listing, onContact, chatLoading = false }) => {
       </Box>
 
       {/* Seller Information */}
-      <Box bg="white" p={6} borderRadius="lg" border="1px solid" borderColor="gray.200">
+      <Box bg={contentBg} p={6} borderRadius="lg" borderWidth="2px" shadow="sm">
         <Heading size="md" mb={4}>Thông tin người đăng</Heading>
         <HStack spacing={4}>
           <Avatar 
@@ -74,7 +78,7 @@ const ListingImageSection = ({ listing, onContact, chatLoading = false }) => {
             <Text fontWeight="600" fontSize="lg">
               {getUserDisplayName(listing.owner)}
             </Text>
-            <Text color="gray.600" fontSize="sm">
+            <Text color={subTextColor} fontSize="sm">
               Thành viên từ {new Date(listing.owner?.createdAt || listing.createdAt).getFullYear()}
             </Text>
             <HStack spacing={4} mt={2}>

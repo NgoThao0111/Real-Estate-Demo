@@ -184,7 +184,7 @@ const ListingCard = ({ listing }) => {
           >
             {listing.title}
           </Text>
-          <Text color="blue.600" fontWeight="bold" fontSize={"md"}>
+          <Text color="blue.500" fontWeight="bold" fontSize={"md"}>
               {listing.price
               ? `${Number(listing.price).toLocaleString("vi-VN")} ${
                   listing.rental_type === "rent" ? "VNĐ/tháng" : "VNĐ"
