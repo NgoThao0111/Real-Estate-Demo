@@ -17,7 +17,11 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
+const ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    process.env.FRONTEND_ORIGIN 
+].filter(Boolean);
 
 // 1. Tạo HTTP Server
 const httpServer = createServer(app);
@@ -41,8 +45,9 @@ const sessionMiddleware = session({
 // 3. Khởi tạo Socket.io
 const io = new Server(httpServer, {
     cors: {
-        origin: FRONTEND_ORIGIN,
-        credentials: true // Bắt buộc true để nhận cookie session
+        origin: ALLOWED_ORIGINS,
+        credentials: true, // Bắt buộc true để nhận cookie session
+        methods: ["GET", "POST"]
     }
 });
 
@@ -53,7 +58,7 @@ app.use(cookieParser());
 
 // CORS setup
 app.use(cors({
-    origin: FRONTEND_ORIGIN,
+    origin: ALLOWED_ORIGINS,
     credentials: true
 }));
 

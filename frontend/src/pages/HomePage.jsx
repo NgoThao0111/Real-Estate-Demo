@@ -59,15 +59,15 @@ const HomePage = () => {
             const rankFields = ["score", "rating", "views"];
             for (const f of rankFields) {
               if (items.some((it) => it[f] !== undefined && it[f] !== null)) {
-                return [...items].sort((a, b) => (b[f] || 0) - (a[f] || 0)).slice(0, 3);
+                return [...items].sort((a, b) => (b[f] || 0) - (a[f] || 0)).slice(0, 6);
               }
             }
             // Dự phòng lấy tin mới nhất
             if (items.some((it) => it.createdAt)) {
-              return [...items].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 3);
+              return [...items].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 6);
             }
             // Dự phòng cuối cùng: ba tin đầu tiên
-            return items.slice(0, 3);
+            return items.slice(0, 6);
           };
 
           const top = getTopThree(listings);

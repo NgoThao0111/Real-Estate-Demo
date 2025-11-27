@@ -3,6 +3,7 @@ import { Box, Flex, Text, Input, Button, Avatar, Spinner, useColorModeValue } fr
 import { useSocketContext } from "../context/SocketContext";
 import { useAuthContext } from "../context/AuthContext";
 import api from "../lib/axios";
+import { useChatStore } from "../store/chat.js";
 
 // Hàm helper format thời gian (giữ nguyên của bạn)
 const formatRelativeTime = (dateStr) => {
@@ -29,6 +30,7 @@ const getUserDisplayName = (user) => {
 const ChatContainer = ({ currentChat, isWidget }) => {
   const { socket } = useSocketContext();
   const { currentUser } = useAuthContext();
+  const { updateLastMessage } = useChatStore();
   
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
@@ -52,9 +54,11 @@ const ChatContainer = ({ currentChat, isWidget }) => {
       setLoading(true);
       try {
         const res = await api.get(`/chats/${currentChat._id}/messages`);
-        setMessages(res.data.messages || []).reverse(); // API của bạn có thể trả về thứ tự đúng rồi, nếu ngược thì .reverse()
+        const msgs = res.data.messages || [];
+        setMessages(msgs.reverse()); // API của bạn có thể trả về thứ tự đúng rồi, nếu ngược thì .reverse()
       } catch (err) {
         console.error(err);
+        setMessages([]);
       } finally {
         setLoading(false);
       }
@@ -99,8 +103,9 @@ const ChatContainer = ({ currentChat, isWidget }) => {
     // setMessages(prev => [...prev, tempMsg]);
 
     try {
-      await api.post(`/chats/${currentChat._id}/messages`, { content: newMessage });
+      const res = await api.post(`/chats/${currentChat._id}/messages`, { content: newMessage });
       setNewMessage("");
+      updateLastMessage(res.data);
     } catch (err) {
       console.error("Lỗi gửi tin:", err);
     }
