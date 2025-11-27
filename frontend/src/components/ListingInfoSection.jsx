@@ -10,6 +10,7 @@ import {
   SimpleGrid,
   Icon,
   useToast,
+  useColorModeValue
 } from "@chakra-ui/react";
 import { FiMapPin, FiHeart, FiShare2, FiHome, FiMaximize } from "react-icons/fi";
 import { FaHeart } from "react-icons/fa";
@@ -23,6 +24,9 @@ const ListingInfoSection = ({ listing, onContact}) => {
   const fallbackToggle = useListStore((s) => s.toggleSaveListing);
   const toast = useToast();
   
+  const contentBg = useColorModeValue("white", "gray.800");
+  const subTextColor = useColorModeValue("gray.600", "white");
+  
   const [isSaved, setIsSaved] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -31,36 +35,42 @@ const ListingInfoSection = ({ listing, onContact}) => {
     setIsSaved(savedListings.includes(listing._id));
   }, [savedListings, listing._id]);
 
-  const formatPrice = (price) => {
-    if (!price) return "Liên hệ";
-    return typeof price === 'number' 
-      ? price.toLocaleString('vi-VN') + ' VND'
-      : price;
-  };
-
   return (
-    <Box bg="white" p={6} borderRadius="lg" border="1px solid" borderColor="gray.200" position="sticky" top="20px">
+    <Box
+      bg={contentBg}
+      p={6}
+      position="sticky"
+      top="20px"
+      borderRadius="lg"
+      borderWidth="2px"
+      shadow="sm"
+    >
       <VStack spacing={4} align="stretch">
         {/* Title and Location */}
         <Box>
           <Heading size="lg" mb={2} lineHeight="short">
             {listing.title}
           </Heading>
-          <HStack color="gray.600" fontSize="sm">
+          <HStack color={subTextColor} fontSize="sm">
             <Icon as={FiMapPin} />
             <Text>
-              {listing.location?.detail}, {listing.location?.ward}, {listing.location?.province}
+              {listing.location?.detail}, {listing.location?.ward},{" "}
+              {listing.location?.province}
             </Text>
           </HStack>
         </Box>
 
         {/* Price */}
         <Box>
-          <Text fontSize="2xl" fontWeight="700" color="red.500">
-            {formatPrice(listing.price)}
+          <Text fontSize="sm" color={subTextColor}>
+            {listing.rental_type === "rent" ? "Giá thuê" : "Giá bán"}
           </Text>
-          <Text fontSize="sm" color="gray.500">
-            {listing.rental_type === 'rent' ? 'Giá thuê' : 'Giá bán'}
+          <Text color="blue.500" fontSize="2xl" fontWeight="700">
+            {listing.price
+              ? `${Number(listing.price).toLocaleString("vi-VN")} ${
+                  listing.rental_type === "rent" ? "VNĐ/tháng" : "VNĐ"
+                }`
+              : "—"}
           </Text>
         </Box>
 
@@ -69,40 +79,48 @@ const ListingInfoSection = ({ listing, onContact}) => {
         {/* Property Details */}
         <VStack spacing={3} align="stretch">
           <Text fontWeight="600">Thông tin chi tiết</Text>
-          
+
           <SimpleGrid columns={2} spacing={3}>
             <HStack>
-              <Icon as={FiHome} color="gray.500" />
+              <Icon as={FiHome} color={subTextColor} />
               <Text fontSize="sm">
-                <Text as="span" color="gray.500">Loại:</Text>{" "}
+                <Text as="span" color={subTextColor}>
+                  Loại:
+                </Text>{" "}
                 <Badge colorScheme="blue" ml={1}>
                   {listing.property_type?.name || listing.property_type}
                 </Badge>
               </Text>
             </HStack>
-            
+
             <HStack>
-              <Icon as={FiMaximize} color="gray.500" />
+              <Icon as={FiMaximize} color={subTextColor} />
               <Text fontSize="sm">
-                <Text as="span" color="gray.500">Diện tích:</Text>{" "}
+                <Text as="span" color={subTextColor}>
+                  Diện tích:
+                </Text>{" "}
                 {listing.area} m²
               </Text>
             </HStack>
           </SimpleGrid>
 
           <Box>
-            <Text fontSize="sm" color="gray.500" mb={1}>Trạng thái:</Text>
-            <Badge 
-              colorScheme={listing.status === 'available' ? 'green' : 'red'}
+            <Text fontSize="sm" color={subTextColor} mb={1}>
+              Trạng thái:
+            </Text>
+            <Badge
+              colorScheme={listing.status === "available" ? "green" : "red"}
               size="sm"
             >
-              {listing.status === 'available' ? 'Còn trống' : 'Đã thuê'}
+              {listing.status === "available" ? "Còn trống" : "Đã thuê"}
             </Badge>
           </Box>
 
           {listing.description && (
             <Box>
-              <Text fontSize="sm" color="gray.500" mb={1}>Mô tả:</Text>
+              <Text fontSize="sm" color={subTextColor} mb={1}>
+                Mô tả:
+              </Text>
               <Text fontSize="sm" lineHeight="tall">
                 {listing.description}
               </Text>
@@ -114,57 +132,67 @@ const ListingInfoSection = ({ listing, onContact}) => {
 
         {/* Action Buttons */}
         <VStack spacing={3}>
-          <Button 
-            colorScheme="red" 
-            size="lg" 
+          <Button
+            colorScheme="red"
+            size="lg"
             width="full"
             onClick={onContact}
-            isDisabled={listing.status !== 'available'}
+            isDisabled={listing.status !== "available"}
           >
-            {listing.rental_type === 'rent' ? 'Thuê ngay' : 'Mua ngay'}
+            {listing.rental_type === "rent" ? "Thuê ngay" : "Mua ngay"}
           </Button>
-          
+
           <HStack width="full">
-            <Button 
-                leftIcon={isSaved ? <FaHeart /> : <FiHeart />} 
-                variant={isSaved ? "solid" : "outline"}
-                colorScheme={isSaved ? "gray" : "gray"}
-                flex={1}
-                isLoading={isLoading}
-                _hover={{
-                  transform: "translateY(-1px)",
-                  boxShadow: "md"
-                }}
-                _active={{
-                  transform: "translateY(0px)"
-                }}
-                onClick={async (e) => {
-                    e.stopPropagation();
-                    setIsLoading(true);
-                    try {
-                    const res = toggleSave ? await toggleSave(listing._id) : await fallbackToggle(listing._id);
-                    if (res.success) {
-                        toast({ 
-                          title: res.message, 
-                          status: 'success', 
-                          isClosable: true,
-                          duration: 2000 
-                        });
-                    } else {
-                        toast({ title: res.message || 'Lỗi', status: 'error', isClosable: true });
-                    }
-                    } catch (err) {
-                    toast({ title: err.message || 'Lỗi khi lưu', status: 'error', isClosable: true });
-                    } finally {
-                      setIsLoading(false);
-                    }
-                }}
+            <Button
+              leftIcon={isSaved ? <FaHeart /> : <FiHeart />}
+              variant={isSaved ? "solid" : "outline"}
+              colorScheme={isSaved ? "gray" : "gray"}
+              flex={1}
+              isLoading={isLoading}
+              _hover={{
+                transform: "translateY(-1px)",
+                boxShadow: "md",
+              }}
+              _active={{
+                transform: "translateY(0px)",
+              }}
+              onClick={async (e) => {
+                e.stopPropagation();
+                setIsLoading(true);
+                try {
+                  const res = toggleSave
+                    ? await toggleSave(listing._id)
+                    : await fallbackToggle(listing._id);
+                  if (res.success) {
+                    toast({
+                      title: res.message,
+                      status: "success",
+                      isClosable: true,
+                      duration: 2000,
+                    });
+                  } else {
+                    toast({
+                      title: res.message || "Lỗi",
+                      status: "error",
+                      isClosable: true,
+                    });
+                  }
+                } catch (err) {
+                  toast({
+                    title: err.message || "Lỗi khi lưu",
+                    status: "error",
+                    isClosable: true,
+                  });
+                } finally {
+                  setIsLoading(false);
+                }
+              }}
             >
-              {isSaved ? 'Đã lưu' : 'Lưu'}
+              {isSaved ? "Đã lưu" : "Lưu"}
             </Button>
-            <Button 
-              leftIcon={<FiShare2 />} 
-              variant="outline" 
+            <Button
+              leftIcon={<FiShare2 />}
+              variant="outline"
               flex={1}
               onClick={() => {
                 navigator.clipboard.writeText(window.location.href);
@@ -182,9 +210,16 @@ const ListingInfoSection = ({ listing, onContact}) => {
         </VStack>
 
         {/* Safety Notice */}
-        <Box bg="yellow.50" p={3} borderRadius="md" border="1px solid" borderColor="yellow.200">
+        <Box
+          bg="yellow.50"
+          p={3}
+          borderRadius="md"
+          border="1px solid"
+          borderColor="yellow.200"
+        >
           <Text fontSize="xs" color="yellow.800">
-            💡 <strong>Lưu ý an toàn:</strong> Hãy kiểm tra kỹ thông tin và gặp trực tiếp để xem nhà trước khi quyết định thuê/mua.
+            💡 <strong>Lưu ý an toàn:</strong> Hãy kiểm tra kỹ thông tin và gặp
+            trực tiếp để xem nhà trước khi quyết định thuê/mua.
           </Text>
         </Box>
       </VStack>

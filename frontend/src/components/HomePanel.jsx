@@ -16,6 +16,7 @@ import {
   InputGroup,
   InputLeftElement,
   Icon,
+  useColorModeValue
 } from "@chakra-ui/react";
 import { FiSearch } from "react-icons/fi";
 import { useListStore } from "../store/list.js";
@@ -26,6 +27,9 @@ const HomePanel = () => {
   const [keyword, setKeyword] = useState("");
   const [type, setType] = useState("");
   const navigate = useNavigate();
+  const contentBg = useColorModeValue("white", "gray.800");
+  const subText = useColorModeValue("gray.200", "white");
+  const cardShadow = useColorModeValue("lg", "dark-lg");
 
   useEffect(() => {
     // Allow skipping automatic API calls in development to avoid Vite proxy errors
@@ -61,7 +65,7 @@ const HomePanel = () => {
           <Heading color="white" fontSize={{ base: "3xl", md: "5xl" }} mb={3}>
             Tìm ngôi nhà mơ ước của bạn
           </Heading>
-          <Text color="gray.200" mb={6} fontSize={{ base: "sm", md: "md" }}>
+          <Text color={subText} mb={6} fontSize={{ base: "sm", md: "md" }}>
             Cách dễ nhất để mua, bán và cho thuê bất động sản.
           </Text>
 
@@ -73,10 +77,10 @@ const HomePanel = () => {
           >
             <Box
               w={{ base: "100%", md: "84%" }}
-              bg="white"
+              bg={contentBg}
               p={3}
               borderRadius="32px"
-              boxShadow="lg"
+              boxShadow={cardShadow}
             >
               <Stack direction={{ base: "column", md: "row" }} spacing={3} align="center">
                 <InputGroup flex={1}>
@@ -89,6 +93,7 @@ const HomePanel = () => {
                     value={keyword}
                     onChange={(e) => setKeyword(e.target.value)}
                     borderWidth={0}
+                    _placeholder={{ color: "gray.400" }}
                   />
                 </InputGroup>
 
@@ -115,21 +120,21 @@ const HomePanel = () => {
       {/* STATS */}
       <Container maxW="1140px" mt={8}>
         <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6}>
-          <Box bg="white" borderRadius="md" p={6} boxShadow="sm">
+          <Box bg={contentBg}  borderRadius="md" p={6} boxShadow={cardShadow}>
             <Stat>
               <StatLabel>Số lượng bất động sản</StatLabel>
               <StatNumber fontSize="2xl">1,000,000+</StatNumber>
             </Stat>
           </Box>
 
-          <Box bg="white" borderRadius="md" p={6} boxShadow="sm">
+          <Box bg={contentBg}  borderRadius="md" p={6} boxShadow={cardShadow}>
             <Stat>
               <StatLabel>Khách hàng hài lòng</StatLabel>
               <StatNumber fontSize="2xl">10,000+</StatNumber>
             </Stat>
           </Box>
 
-          <Box bg="white" borderRadius="md" p={6} boxShadow="sm">
+          <Box bg={contentBg}  borderRadius="md" p={6} boxShadow={cardShadow}>
             <Stat>
               <StatLabel>Thâm niên trong ngành</StatLabel>
               <StatNumber fontSize="2xl">50+</StatNumber>

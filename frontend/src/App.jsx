@@ -7,9 +7,14 @@ import SavedPostsPage from "./pages/SavedPostsPage.jsx";
 import ChatPage from "./pages/ChatPage.jsx";
 import AllListings from "./pages/AllListings.jsx";
 import ListingDetailPage from "./pages/ListingDetailPage.jsx";
+import ChatWidget from "./components/ChatWidget.jsx";
 import { Routes, Route } from "react-router-dom";
+import { useUserStore } from "./store/user.js";
 
 function App() {
+
+  const { user } = useUserStore();
+
   return (
     <>
     <Box>
@@ -40,6 +45,8 @@ function App() {
           <Route path="/chat" element={<ChatPage />} />
         </Routes>
       </Box>
+
+      {user && <ChatWidget />}
     </Box>
     </>
   )

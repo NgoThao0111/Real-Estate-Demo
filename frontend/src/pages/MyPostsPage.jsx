@@ -50,6 +50,7 @@ const MyPostsPage = () => {
             </Box>
           ))}
         </SimpleGrid>
+        
       </Container>
 
       <EditListingModal isOpen={editOpen} onClose={() => { setEditOpen(false); load(); }} listing={selected} />

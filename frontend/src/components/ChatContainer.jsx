@@ -3,14 +3,30 @@ import { Box, Flex, Text, Input, Button, Avatar, Spinner, useColorModeValue } fr
 import { useSocketContext } from "../context/SocketContext";
 import { useAuthContext } from "../context/AuthContext";
 import api from "../lib/axios";
-import { format } from "timeago.js"; // Gợi ý: Cài thêm `npm install timeago.js` để hiện "5 phút trước"
+
+// Hàm helper format thời gian (giữ nguyên của bạn)
+const formatRelativeTime = (dateStr) => {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  if (isNaN(d)) return "";
+  const diffMs = Date.now() - d.getTime();
+  const sec = Math.floor(diffMs / 1000);
+  if (sec < 60) return "Vừa xong";
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min} phút trước`;
+  const hour = Math.floor(min / 60);
+  if (hour < 24) return `${hour} giờ trước`;
+  const day = Math.floor(hour / 24);
+  return `${day} ngày trước`;
+};
 
 const getUserDisplayName = (user) => {
   if (!user) return "Người dùng";
-  if (user.name) return user.name;
+  return user.name || user.username || "Người dùng";
 };
 
-const ChatContainer = ({ currentChat }) => {
+// SỬA LỖI 1: Thêm isWidget vào props
+const ChatContainer = ({ currentChat, isWidget }) => {
   const { socket } = useSocketContext();
   const { currentUser } = useAuthContext();
   
@@ -19,71 +35,77 @@ const ChatContainer = ({ currentChat }) => {
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef();
 
-  // Lấy thông tin người kia để hiển thị Avatar/Tên
+  // --- HOOKS MÀU SẮC ---
+  const containerBg = useColorModeValue("white", "gray.800");
+  // const headerBg = useColorModeValue("gray.50", "gray.700"); // Biến này không dùng nữa nếu ẩn header
+  const borderColor = useColorModeValue("gray.200", "gray.600");
+  const otherMsgBg = useColorModeValue("gray.100", "gray.700"); // Chỉnh màu nhẹ hơn chút cho đẹp
+  const otherMsgColor = useColorModeValue("black", "white");
+
+  // Lấy thông tin người kia
   const receiver = currentChat?.participants.find((p) => p._id !== currentUser._id);
 
-  // 1. Load tin nhắn cũ khi chọn hội thoại khác
+  // Fetch messages
   useEffect(() => {
     const fetchMessages = async () => {
       if (!currentChat?._id) return;
       setLoading(true);
       try {
         const res = await api.get(`/chats/${currentChat._id}/messages`);
-        // Giả sử backend trả về { message: [...] } (như controller bạn viết)
-        setMessages(res.data.messages.reverse() || []);
+        setMessages(res.data.messages || []).reverse(); // API của bạn có thể trả về thứ tự đúng rồi, nếu ngược thì .reverse()
       } catch (err) {
         console.error(err);
       } finally {
         setLoading(false);
       }
     };
-
     fetchMessages();
   }, [currentChat]);
 
-  // 2. REAL-TIME: Lắng nghe tin nhắn mới & Join Room
+  // Socket logic
   useEffect(() => {
     if (!socket || !currentChat?._id) return;
-
+    
     // Join room
     socket.emit("join_chat", currentChat._id);
 
-    // Lắng nghe tin mới
     const handleNewMessage = (msg) => {
-      if (msg.conversation === currentChat._id) {
+      // Kiểm tra kỹ ID để tránh nhận nhầm tin nhắn từ room khác
+      const msgConversationId = typeof msg.conversation === 'object' ? msg.conversation._id : msg.conversation;
+      if (msgConversationId?.toString() === currentChat._id.toString()) {
         setMessages((prev) => [...prev, msg]);
       }
     };
 
     socket.on("new_message", handleNewMessage);
-
     return () => {
       socket.off("new_message", handleNewMessage);
     };
   }, [socket, currentChat]);
 
-  // 3. Auto Scroll xuống cuối
+  // Auto scroll
   useEffect(() => {
-    scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+    // Timeout nhỏ giúp UI render xong mới scroll để chính xác hơn
+    setTimeout(() => {
+        scrollRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }, 100)
   }, [messages]);
 
-  // 4. Gửi tin nhắn
   const handleSend = async () => {
     if (!newMessage.trim()) return;
+    
+    // OPTIMISTIC UI (Tùy chọn): Hiển thị ngay lập tức để cảm giác nhanh hơn
+    // const tempMsg = { _id: Date.now(), content: newMessage, sender: currentUser._id, createdAt: new Date() };
+    // setMessages(prev => [...prev, tempMsg]);
 
     try {
-      // Gọi API POST (Backend sẽ tự bắn Socket)
-      await api.post(`/chats/${currentChat._id}/messages`, {
-        content: newMessage,
-      });
-      
-      setNewMessage(""); // Xóa ô nhập
+      await api.post(`/chats/${currentChat._id}/messages`, { content: newMessage });
+      setNewMessage("");
     } catch (err) {
       console.error("Lỗi gửi tin:", err);
     }
   };
 
-  // Xử lý nhấn Enter để gửi
   const handleKeyPress = (e) => {
     if (e.key === "Enter") handleSend();
   };
@@ -91,35 +113,51 @@ const ChatContainer = ({ currentChat }) => {
   if (loading) return <Flex justify="center" align="center" h="100%"><Spinner /></Flex>;
 
   return (
-    <Flex direction="column" h="100%" bg={useColorModeValue("white", "gray.800")} borderRadius="lg" overflow="hidden" boxShadow="sm" borderWidth="2px">
-      {/* HEADER */}
-      <Flex align="center" gap={3} p={4} bg={useColorModeValue("gray.50", "gray.700")} borderBottom="2px" borderColor={useColorModeValue("gray.200", "gray.600")}>
-        <Avatar src={receiver?.avatar || ""} name={getUserDisplayName(receiver)} />
-        <Box>
-          <Text fontWeight="bold" fontSize={"lg"}>{receiver?.name}</Text>
-          <Text fontSize="sm" fontWeight={"semibold"} color={"gray.500"}>Đang trực tuyến</Text>
-        </Box>
-      </Flex>
+    <Flex 
+        direction="column" 
+        h="100%" 
+        // Nếu là Widget thì padding nhỏ (2), trang to thì (4)
+        p={isWidget ? 2 : 4} 
+        bg={containerBg} 
+        // Nếu là Widget thì bỏ border/radius đi vì thằng cha (ChatWidget) đã lo rồi
+        borderRadius={isWidget ? "none" : "lg"} 
+        boxShadow={isWidget ? "none" : "sm"} 
+        borderWidth={isWidget ? "0px" : "2px"}
+        borderColor={borderColor}
+    >
+      
+      {/* SỬA LỖI 2: Ẩn Header nếu đang là Widget */}
+      {!isWidget && (
+        <Flex align="center" gap={3} p={4} mb={2} borderBottom="2px" borderColor={borderColor}>
+            <Avatar src={receiver?.avatar || ""} name={getUserDisplayName(receiver)} />
+            <Box>
+                <Text fontWeight="bold" fontSize={"lg"}>{getUserDisplayName(receiver)}</Text>
+                <Text fontSize="sm" fontWeight={"semibold"} color={"gray.500"}>Đang trực tuyến</Text>
+            </Box>
+        </Flex>
+      )}
 
       {/* MESSAGE LIST */}
-      <Flex direction="column" flex={1} p={4} gap={3} overflowY="auto" bg={useColorModeValue("white", "gray.800")}>
+      <Flex direction="column" flex={1} p={2} gap={3} overflowY="auto" >
         {messages.map((msg) => {
-          const isOwn = msg.sender._id === currentUser._id;
+          const senderId = typeof msg.sender === 'object' ? msg.sender._id : msg.sender;
+          const isOwn = senderId === currentUser._id;
+
           return (
-            <Flex key={msg._id} justify={isOwn ? "flex-end" : "flex-start"} mb={2}>
+            <Flex key={msg._id} justify={isOwn ? "flex-end" : "flex-start"}>
               <Box
-                maxW="70%"
-                bg={isOwn ? "blue.500" : useColorModeValue("gray.200", "gray.700")}
-                color={isOwn ? "white" : useColorModeValue("black", "white")}
-                p={3}
+                maxW="85%" // Tăng độ rộng tin nhắn lên chút cho dễ đọc
+                bg={isOwn ? "blue.500" : otherMsgBg}
+                color={isOwn ? "white" : otherMsgColor}
+                px={3}
+                py={2}
                 borderRadius="lg"
                 borderBottomRightRadius={isOwn ? "0" : "lg"}
                 borderBottomLeftRadius={isOwn ? "lg" : "0"}
               >
-                <Text>{msg.content}</Text>
-                <Text fontSize="10px" textAlign="right" mt={1} opacity={0.8}>
-                   {/* Nếu chưa cài timeago thì dùng new Date().toLocaleTimeString() */}
-                   {format(msg.createdAt)} 
+                <Text fontSize="md">{msg.content}</Text>
+                <Text fontSize="10px" textAlign="right" mt={1} opacity={0.7}>
+                   {formatRelativeTime(msg.createdAt)} 
                 </Text>
               </Box>
             </Flex>
@@ -129,15 +167,18 @@ const ChatContainer = ({ currentChat }) => {
       </Flex>
 
       {/* INPUT AREA */}
-      <Flex p={3} borderTop="2px" gap={2} borderColor={useColorModeValue("gray.200", "gray.600")}>
+      <Flex p={2} gap={2} borderTop={isWidget ? "1px solid" : "none"} borderColor={borderColor} pt={3}>
         <Input 
           placeholder="Nhập tin nhắn..." 
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
           onKeyPress={handleKeyPress}
-          borderWidth={"2px"}
+          size="sm" // Nhỏ lại chút cho gọn
+          borderRadius="full"
         />
-        <Button colorScheme="blue" onClick={handleSend}>Gửi</Button>
+        <Button size="sm" colorScheme="blue" borderRadius="full" onClick={handleSend} px={6}>
+            Gửi
+        </Button>
       </Flex>
     </Flex>
   );
