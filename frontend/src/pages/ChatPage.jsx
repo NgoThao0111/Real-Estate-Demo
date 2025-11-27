@@ -8,6 +8,7 @@ import { useChatStore } from "../store/chat.js";
 const getUserDisplayName = (user) => {
   if (!user) return "Người dùng";
   if (user.name) return user.name;
+  return user.username || "Người dùng"; // Fallback thêm username nếu name không có
 };
 
 const ChatPage = () => {
@@ -16,6 +17,12 @@ const ChatPage = () => {
   const [searchParams] = useSearchParams();
   const [currentChat, setCurrentChat] = useState(null);
 
+  // --- PHẦN SỬA LỖI: KHAI BÁO MÀU SẮC ---
+  const bgBox = useColorModeValue("white", "gray.800");
+  const borderColor = useColorModeValue("gray.200", "gray.700");
+  const activeBg = useColorModeValue("blue.100", "gray.600"); // Màu khi đang chọn
+  const hoverBg = useColorModeValue("gray.100", "gray.600");  // Màu khi di chuột
+  // ---------------------------------------
 
   // Lấy danh sách cuộc hội thoại
   useEffect(() => {
@@ -25,10 +32,10 @@ const ChatPage = () => {
   }, [user, getConversations]);
 
   // Xử lý conversation ID từ URL parameter
-
   useEffect(() => {
     const conversationId = searchParams.get('conversation');
-    if (conversationId && conversations.length > 0) {
+    // Thêm check an toàn (conversations || [])
+    if (conversationId && conversations?.length > 0) {
       const targetConversation = conversations.find(conv => conv._id === conversationId);
       if (targetConversation) {
         setCurrentChat(targetConversation);
@@ -41,18 +48,18 @@ const ChatPage = () => {
       <Flex gap={5} h="100%">
         
         {/* CỘT TRÁI: DANH SÁCH CHAT (30%) */}
-        {/* Sử dụng biến bgBox đã khai báo ở trên */}
-        <Box w="30%" bg={bgBox} borderRadius="lg" boxShadow="sm" overflow="hidden" borderWidth="2px" >
+        <Box w="30%" bg={bgBox} borderRadius="lg" boxShadow="sm" overflow="hidden" borderWidth="2px" borderColor={borderColor}>
           <Box p={4} borderBottom="2px" borderColor={borderColor}>
             <Heading size="md">Tin nhắn</Heading>
           </Box>
           
           <VStack align="stretch" spacing={0} overflowY="auto" h="calc(100% - 60px)">
-            {conversations.length === 0 && <Text p={4} color="gray.500">Chưa có tin nhắn nào.</Text>}
+            {/* Check an toàn: conversations có thể là null lúc đầu */}
+            {(!conversations || conversations.length === 0) && <Text p={4} color="gray.500">Chưa có tin nhắn nào.</Text>}
             
-            {conversations.map((chat) => {
-              // Tìm tên người đối phương để hiển thị
-              const otherUser = chat.participants.find(p => p._id !== user?.id);
+            {conversations?.map((chat) => {
+              // SỬA LỖI: Thêm dấu ? cho participants để tránh crash nếu dữ liệu lỗi
+              const otherUser = chat.participants?.find(p => p._id !== user?.id);
               const isActive = currentChat?._id === chat._id;
 
               return (
@@ -60,19 +67,18 @@ const ChatPage = () => {
                   key={chat._id} 
                   p={4} 
                   cursor="pointer"
-                  // Dùng biến activeBg thay vì gọi hook ở đây
                   bg={isActive ? activeBg : "transparent"}
                   _hover={{
-                    bg: hoverBg, // Dùng biến hoverBg
+                    bg: hoverBg,
                     cursor: "pointer"
                   }}
                   onClick={() => setCurrentChat(chat)}
-                  borderBottom="2px"
-                  borderColor={borderColor} // Dùng biến borderColor
+                  borderBottom="1px" // Giảm xuống 1px cho đẹp hơn
+                  borderColor={borderColor}
                 >
                   <Avatar src={otherUser?.avatar} name={getUserDisplayName(otherUser)} />
                   <Box flex={1}>
-                    <Text fontWeight="bold">{otherUser?.name}</Text>
+                    <Text fontWeight="bold">{otherUser?.name || otherUser?.username || "Người dùng"}</Text>
                     <Text fontSize="sm" color="gray.500" noOfLines={1}>
                       {chat.lastMessage?.content || "Bắt đầu cuộc trò chuyện"}
                     </Text>
@@ -90,7 +96,7 @@ const ChatPage = () => {
           ) : (
             <Flex 
               h="100%" 
-              bg={bgBox} // Dùng biến bgBox
+              bg={bgBox}
               borderRadius="lg" 
               align="center" 
               justify="center" 
@@ -99,8 +105,9 @@ const ChatPage = () => {
               boxShadow="sm"
               overflow="hidden" 
               borderWidth="2px"
+              borderColor={borderColor} // Thêm borderColor cho đồng bộ
             >
-              <Heading size="lg" mb={2}>Chào {user?.username} 👋</Heading>
+              <Heading size="lg" mb={2}>Chào {user?.username || user?.name} 👋</Heading>
               <Text>Chọn một cuộc hội thoại để bắt đầu chat</Text>
             </Flex>
           )}
