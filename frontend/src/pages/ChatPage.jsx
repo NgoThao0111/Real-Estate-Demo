@@ -4,6 +4,7 @@ import { Box, Flex, Text, VStack, HStack, Avatar, Heading, useColorModeValue } f
 import ChatContainer from "../components/ChatContainer";
 import { useUserStore } from "../store/user.js";
 import { useChatStore } from "../store/chat.js";
+import { useSocketContext } from "../context/SocketContext.jsx";
 
 const getUserDisplayName = (user) => {
   if (!user) return "Người dùng";
@@ -13,7 +14,8 @@ const getUserDisplayName = (user) => {
 
 const ChatPage = () => {
   const { user } = useUserStore();
-  const { conversations, getConversations } = useChatStore();
+  const { socket } = useSocketContext();
+  const { conversations, getConversations, updateLastMessage } = useChatStore();
   const [searchParams] = useSearchParams();
   const [currentChat, setCurrentChat] = useState(null);
 
@@ -23,6 +25,20 @@ const ChatPage = () => {
   const activeBg = useColorModeValue("blue.100", "gray.600"); // Màu khi đang chọn
   const hoverBg = useColorModeValue("gray.100", "gray.600");  // Màu khi di chuột
   // ---------------------------------------
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleNewMessage = (msg) => {
+      // Khi có tin nhắn bất kỳ tới, cập nhật danh sách chat bên trái
+      updateLastMessage(msg);
+    };
+
+    socket.on("new_message", handleNewMessage);
+
+    return () => {
+      socket.off("new_message", handleNewMessage);
+    };
+  }, [socket, updateLastMessage]);
 
   // Lấy danh sách cuộc hội thoại
   useEffect(() => {
