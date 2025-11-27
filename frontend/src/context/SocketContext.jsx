@@ -18,11 +18,13 @@ export const SocketContextProvider = ({ children }) => {
     if (currentUser) {
       // 1. Khởi tạo kết nối
       // Lưu ý: Socket không đi qua Vite proxy nên tốt nhất trỏ thẳng localhost:5000
-      const newSocket = io("http://localhost:5000", {
+      const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:5000";
+      const newSocket = io(SOCKET_URL, {
         withCredentials: true, // QUAN TRỌNG: Để gửi kèm Cookie Session xác thực
         query: {
             userId: currentUser._id // Gửi thêm ID để tiện debug hoặc xử lý ở server (tùy chọn)
-        }
+        },
+        transports: ["websocket"]
       });
 
       setSocket(newSocket);
@@ -31,7 +33,7 @@ export const SocketContextProvider = ({ children }) => {
       // newSocket.on("getOnlineUsers", (users) => { ... });
 
       // 2. Cleanup: Ngắt kết nối khi component unmount hoặc user đăng xuất
-      return () => newSocket.close();
+      return () => { newSocket.close(); }
     } else {
       // Nếu không có user (đã logout), đóng socket nếu đang mở
       if (socket) {
