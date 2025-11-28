@@ -73,7 +73,7 @@ const Navbar = () => {
                   color:"blue.500"
                 }}
               >
-                 
+                Tìm kiếm
               </Text>
             </Link>
           </HStack>

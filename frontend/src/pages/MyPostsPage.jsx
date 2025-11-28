@@ -2,7 +2,7 @@ import { Box, Container, SimpleGrid, Heading, Text, Button, Stack } from "@chakr
 import { useEffect, useState } from "react";
 import { useListStore } from "../store/list.js";
 import ListingCard from "../components/ListingCard";
-import EditListingModal from "../components/EditListingModal";
+import CreateListingModal from "../components/CreateListingModal.jsx";
 
 const MyPostsPage = () => {
   const { fetchMyListings, deleteListing } = useListStore();
@@ -53,7 +53,7 @@ const MyPostsPage = () => {
         
       </Container>
 
-      <EditListingModal isOpen={editOpen} onClose={() => { setEditOpen(false); load(); }} listing={selected} />
+      <CreateListingModal isOpen={editOpen} onClose={() => { setEditOpen(false); load(); }} defaultValues={selected} />
     </Box>
   );
 };
