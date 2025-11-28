@@ -57,6 +57,18 @@ const listingSchema = new mongoose.Schema(
       },
       detail: String, //số nhà, tên đường
       // Có thể mở rộng thêm tọa độ
+
+      coords: {
+        type: {
+          type: String,
+          enum: ["Point"], // Bắt buộc phải là 'Point'
+          default: "Point",
+        },
+        coordinates: {
+          type: [Number], // Mảng số: [longitude, latitude] (Kinh độ trước, Vĩ độ sau)
+          required: true,
+        },
+      },
     },
 
     //Mối quan hệ M-N với Utility, thêm thuộc tính amount
@@ -77,6 +89,8 @@ const listingSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+listingSchema.index({ "location.coords": "2dsphere" });
 
 const Listing = mongoose.model("Listing", listingSchema);
 

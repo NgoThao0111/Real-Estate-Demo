@@ -98,7 +98,7 @@ const HomePanel = () => {
                 </InputGroup>
 
                 <Select
-                  w={{ base: "100%", md: "240px" }}
+                  w={{ base: "100%", md: "215px" }}
                   placeholder="Chọn loại bất động sản"
                   borderRadius="full"
                   value={type}

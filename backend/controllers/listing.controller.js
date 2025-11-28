@@ -26,6 +26,8 @@ export const createList = async (req, res) => {
     const province = location?.province;
     const ward = location?.ward;
     const detail = location?.detail;
+    const longitude = location?.longitude;
+    const latitude = location?.latitude;
     const validAmenities = Array.isArray(amenities) ? amenities: [];
 
     if (
@@ -76,6 +78,9 @@ export const createList = async (req, res) => {
       public_id: img.public_id,
     }));
 
+    const finalLat = latitude ? parseFloat(latitude) : 21.028511;
+    const finalLng = longitude ? parseFloat(longitude) : 105.854444;
+
     const list = new Listing({
       title: title,
       description: description,
@@ -90,6 +95,10 @@ export const createList = async (req, res) => {
         province: province,
         ward: ward,
         detail: detail,
+        coords: {
+          type: "Point",
+          coordinates: [finalLng, finalLat],
+        },
       },
       amenities: validAmenities,
     });
@@ -130,9 +139,26 @@ export const getListings = async (req, res) => {
       page = 1,
       limit = 30,
       sort,
+      userLat,
+      userLng,
+      radius
     } = req.query;
 
     const query = {};
+
+    //Nếu client gửi lên userLat, userLng và radius
+    if(userLat && userLng && radius) {
+      const radiusInMeters = parseFloat(radius) * 1000;
+      query["location.coords"] = {
+        $near: {
+          $geometry: {
+            type: "Point",
+            coordinates: [parseFloat(userLng), parseFloat(userLat)],
+          },
+          $maxDistance: radiusInMeters,
+        },
+      };
+    }
 
     if (search) {
       const regex = new RegExp(search, "i");
@@ -253,70 +279,148 @@ export const updateListing = async (req, res) => {
   try {
     if (!req.session || !req.session.user)
       return res.status(401).json({ message: "Vui lòng đăng nhập" });
+
     const userId = req.session.user.id;
     const id = req.params.id;
 
     const listing = await Listing.findById(id);
     if (!listing) return res.status(404).json({ message: "Listing not found" });
-    if (
-      !listing.owner ||
-      listing.owner.toString() !== userId.toString()
-    ) {
-      return res
-        .status(403)
-        .json({ message: "Bạn không có quyền chỉnh sửa bài đăng này" });
+
+    if (listing.owner.toString() !== userId.toString()) {
+      return res.status(403).json({ message: "Bạn không có quyền chỉnh sửa bài đăng này" });
     }
 
-    const update = { ...req.body };
+    // -------- Xử lý images --------
+    let newImages = [];
     if (req.body.images) {
-      if (Array.isArray(req.body.images)) update.images = req.body.images;
+      if (Array.isArray(req.body.images)) newImages = req.body.images;
       else if (typeof req.body.images === "string")
-        update.images = req.body.images
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean);
+        newImages = req.body.images.split(",").map(s => s.trim()).filter(Boolean);
     }
 
-    const updated = await Listing.findByIdAndUpdate(
-      id,
-      { $set: update },
-      { new: true }
+    // Chuyển tất cả về một dạng duy nhất: old -> object, base64 mới -> string
+    const oldImages = listing.images || [];
+
+    // Ảnh mới = chuỗi base64 => không có public_id
+    const base64Images = newImages.filter(img => typeof img === "string" && img.startsWith("data:"));
+
+    // Ảnh giữ lại = object: { url, public_id }
+    const keptImages = newImages.filter(img => typeof img === "object" && img.url);
+
+    // Ảnh bị xóa = ảnh cũ mà không nằm trong keptImages
+    const removedImages = oldImages.filter(old =>
+      !keptImages.some(k => k.public_id === old.public_id)
     );
-    return res.json({ message: "Cập nhật thành công", listing: updated });
+
+    // Xóa ảnh cũ trên Cloudinary
+    await Promise.all(
+      removedImages.map(async (img) => {
+        if (img.public_id) {
+          await cloudinary.uploader.destroy(img.public_id);
+        }
+      })
+    );
+
+    // Upload ảnh base64 mới lên Cloudinary
+    const uploadedImages = await Promise.all(
+      base64Images.map(img =>
+        cloudinary.uploader.upload(img, { folder: "products" })
+      )
+    );
+
+    const uploadedConverted = uploadedImages.map(i => ({
+      url: i.secure_url,
+      public_id: i.public_id
+    }));
+
+    // Tổng hợp ảnh cuối cùng
+    const finalImages = [...keptImages, ...uploadedConverted];
+
+    // -------- Cập nhật các trường khác --------
+    const {
+      title,
+      description,
+      area,
+      price,
+      status,
+      property_type,
+      rental_type,
+      location,
+      amenities
+    } = req.body;
+
+    listing.title = title ?? listing.title;
+    listing.description = description ?? listing.description;
+    listing.area = area ?? listing.area;
+    listing.price = price ?? listing.price;
+    listing.status = status ?? listing.status;
+    listing.property_type = property_type ?? listing.property_type;
+    listing.rental_type = rental_type ?? listing.rental_type;
+    listing.amenities = Array.isArray(amenities) ? amenities : listing.amenities;
+    listing.images = finalImages;
+
+    if(location) {
+      listing.location.province = location.province ?? listing.location.province;
+      listing.location.ward = location.ward ?? listing.location.ward;
+      listing.location.detail = location.detail ?? listing.location.detail;
+
+      if(location.longitude && location.latitude) {
+        listing.location.coords = {
+          type: "Point",
+          coordinates: [
+            parseFloat(location.longitude),
+            parseFloat(location.latitude),
+          ],
+        };
+      }
+    }
+
+    await listing.save();
+
+    return res.json({
+      message: "Cập nhật thành công",
+      listing
+    });
   } catch (error) {
-    console.log(error.message);
-    return res.status(500).json({ message: "Server error" });
+    console.log(error);
+    return res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
 export const deleteListing = async (req, res) => {
   try {
-    // Yêu cầu xác thực
     if (!req.session || !req.session.user) {
       return res.status(401).json({ message: "Vui lòng đăng nhập" });
     }
-    const userId = req.session.user.id;
 
+    const userId = req.session.user.id;
     const id = req.params.id;
+
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "Invalid listing id" });
     }
 
     const listing = await Listing.findById(id);
-    if (!listing) {
-      return res.status(404).json({ message: "Not Found" });
-    }
+    if (!listing) return res.status(404).json({ message: "Not Found" });
 
-    // Chỉ chủ sở hữu mới có thể xóa
-    if (!listing.owner || listing.owner.toString() !== userId.toString()) {
+    if (listing.owner.toString() !== userId.toString()) {
       return res.status(403).json({ message: "Bạn không có quyền xóa bài đăng này" });
     }
+
+    // Xóa ảnh trên Cloudinary
+    await Promise.all(
+      listing.images.map(async (img) => {
+        if (img.public_id) {
+          await cloudinary.uploader.destroy(img.public_id);
+        }
+      })
+    );
 
     await Listing.findByIdAndDelete(id);
 
     return res.json({ message: "Tin đăng được xóa thành công" });
   } catch (error) {
-    console.error(error);
+    console.log(error);
     return res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
