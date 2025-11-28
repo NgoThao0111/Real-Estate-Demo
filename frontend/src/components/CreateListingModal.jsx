@@ -29,6 +29,8 @@ import { usePropertyTypeStore } from "../store/propertyType.js";
 const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
   const toast = useToast();
   const createListing = useListStore((s) => s.createListing);
+  const updateListing = useListStore((s) => s.updateListing);
+  const isEdit = Boolean(defaultValues?._id);
 
   //Load Property Types
   const {
@@ -66,6 +68,11 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
       setForm((prev) => ({
         ...prev,
         ...defaultValues,
+        property_type:
+        typeof defaultValues.property_type === "object"
+          ? defaultValues.property_type._id
+          : defaultValues.property_type || "",
+        images: defaultValues.images || [],
         location: {
           ...prev.location,
           ...(defaultValues.location || {}),
@@ -159,12 +166,20 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
 
     try {
       setSubmitting(true);
+      let res;
 
-      const res = await createListing(payload);
+      if (isEdit) {
+        // Cập nhật listing
+        res = await updateListing(defaultValues._id, payload);
+      } else {
+        // Tạo mới listing
+        res = await createListing(payload);
+      }
+
 
       if (res.success) {
         toast({
-          title: "Thành công",
+          title: isEdit ? "Cập nhật thành công" : "Tạo bài đăng thành công",
           description: "Tạo bài đăng thành công.",
           status: "success",
         });
@@ -185,14 +200,14 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
       } else {
         toast({
           title: "Lỗi",
-          description: res.message || "Tạo bài đăng thất bại.",
+          description: res.message || "Thao tác thất bại.",
           status: "error",
         });
       }
     } catch (error) {
       toast({
         title: "Lỗi",
-        description: error.message || "Tạo bài đăng thất bại.",
+        description: error.message || "Thao tác thất bại.",
         status: "error",
       });
     } finally {
@@ -211,7 +226,7 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
     <Modal isOpen={isOpen} onClose={onClose} isCentered size="lg">
       <ModalOverlay />
       <ModalContent as="form" onSubmit={handleSubmit}>
-        <ModalHeader>Tạo bài đăng mới</ModalHeader>
+        <ModalHeader>{isEdit ? "Cập nhật bài đăng" : "Tạo bài đăng mới"}</ModalHeader>
         <ModalCloseButton />
 
         <ModalBody>
@@ -391,7 +406,7 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
 
         <ModalFooter>
           <Button type="submit" colorScheme="blue" isLoading={submitting} mr={3}>
-            Tạo
+            {isEdit ? "Cập nhật" : "Tạo"}
           </Button>
           <Button variant="ghost" onClick={onClose}>
             Hủy
