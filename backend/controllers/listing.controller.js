@@ -26,6 +26,8 @@ export const createList = async (req, res) => {
     const province = location?.province;
     const ward = location?.ward;
     const detail = location?.detail;
+    const longitude = location?.longitude;
+    const latitude = location?.latitude;
     const validAmenities = Array.isArray(amenities) ? amenities: [];
 
     if (
@@ -76,6 +78,9 @@ export const createList = async (req, res) => {
       public_id: img.public_id,
     }));
 
+    const finalLat = latitude ? parseFloat(latitude) : 21.028511;
+    const finalLng = longitude ? parseFloat(longitude) : 105.854444;
+
     const list = new Listing({
       title: title,
       description: description,
@@ -90,6 +95,10 @@ export const createList = async (req, res) => {
         province: province,
         ward: ward,
         detail: detail,
+        coords: {
+          type: "Point",
+          coordinates: [finalLng, finalLat],
+        },
       },
       amenities: validAmenities,
     });
@@ -130,9 +139,26 @@ export const getListings = async (req, res) => {
       page = 1,
       limit = 30,
       sort,
+      userLat,
+      userLng,
+      radius
     } = req.query;
 
     const query = {};
+
+    //Nếu client gửi lên userLat, userLng và radius
+    if(userLat && userLng && radius) {
+      const radiusInMeters = parseFloat(radius) * 1000;
+      query["location.coords"] = {
+        $near: {
+          $geometry: {
+            type: "Point",
+            coordinates: [parseFloat(userLng), parseFloat(userLat)],
+          },
+          $maxDistance: radiusInMeters,
+        },
+      };
+    }
 
     if (search) {
       const regex = new RegExp(search, "i");
@@ -330,9 +356,24 @@ export const updateListing = async (req, res) => {
     listing.status = status ?? listing.status;
     listing.property_type = property_type ?? listing.property_type;
     listing.rental_type = rental_type ?? listing.rental_type;
-    listing.location = location ?? listing.location;
     listing.amenities = Array.isArray(amenities) ? amenities : listing.amenities;
     listing.images = finalImages;
+
+    if(location) {
+      listing.location.province = location.province ?? listing.location.province;
+      listing.location.ward = location.ward ?? listing.location.ward;
+      listing.location.detail = location.detail ?? listing.location.detail;
+
+      if(location.longitude && location.latitude) {
+        listing.location.coords = {
+          type: "Point",
+          coordinates: [
+            parseFloat(location.longitude),
+            parseFloat(location.latitude),
+          ],
+        };
+      }
+    }
 
     await listing.save();
 

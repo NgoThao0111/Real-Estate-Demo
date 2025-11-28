@@ -19,12 +19,13 @@ import {
   Text,
   Box,
   Image,
-  IconButton
+  IconButton,
 } from "@chakra-ui/react";
 import { FiX } from "react-icons/fi";
 import { useEffect, useState } from "react";
 import { useListStore } from "../store/list.js";
 import { usePropertyTypeStore } from "../store/propertyType.js";
+import MapboxMap from "../components/MapboxMap.jsx";
 
 const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
   const toast = useToast();
@@ -57,6 +58,8 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
       province: "",
       ward: "",
       detail: "",
+      longitude: "",
+      latitude: "",
     },
   });
 
@@ -65,21 +68,25 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
   //Merge defaultValues an toàn
   useEffect(() => {
     if (isOpen) {
+      const existingCoords = defaultValues.location?.coords?.coordinates;
+
       setForm((prev) => ({
         ...prev,
         ...defaultValues,
         property_type:
-        typeof defaultValues.property_type === "object"
-          ? defaultValues.property_type._id
-          : defaultValues.property_type || "",
+          typeof defaultValues.property_type === "object"
+            ? defaultValues.property_type._id
+            : defaultValues.property_type || "",
         images: defaultValues.images || [],
         location: {
           ...prev.location,
           ...(defaultValues.location || {}),
+          longitude: existingCoords ? existingCoords[0] : "",
+          latitude: existingCoords ? existingCoords[1] : "",
         },
       }));
     }
-  }, [isOpen, defaultValues]);
+  }, [isOpen, JSON.stringify(defaultValues)]);
 
   // Handle input
   const handleChange = (e) => {
@@ -97,6 +104,17 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleLocationSelect = (lng, lat, address) => {
+    setForm((prev) => ({
+      ...prev,
+      location: {
+        ...prev.location,
+        longitude: lng,
+        latitude: lat,
+      },
+    }));
+  };
+
   const handleImagesChange = async (e) => {
     const files = Array.from(e.target.files);
 
@@ -109,9 +127,7 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
       });
 
     // wait for ALL files to finish reading
-    const base64Images = await Promise.all(
-      files.map((file) => toBase64(file))
-    );
+    const base64Images = await Promise.all(files.map((file) => toBase64(file)));
 
     // update state
     setForm((prev) => ({
@@ -139,6 +155,16 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
       return;
     }
 
+    if (!form.location.longitude || !form.location.latitude) {
+      toast({
+        title: "Thiếu vị trí bản đồ",
+        description: "Vui lòng chọn vị trí trên bản đồ",
+        status: "warning",
+        isClosable: true,
+      });
+      return;
+    }
+
     if (!form.property_type) {
       toast({
         title: "Thiếu loại tài sản",
@@ -161,6 +187,8 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
         province: form.location.province,
         ward: form.location.ward,
         detail: form.location.detail,
+        longitude: form.location.longitude,
+        latitude: form.location.latitude,
       },
     };
 
@@ -175,7 +203,6 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
         // Tạo mới listing
         res = await createListing(payload);
       }
-
 
       if (res.success) {
         toast({
@@ -195,7 +222,13 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
           property_type: "",
           rental_type: "rent",
           images: [],
-          location: { province: "", ward: "", detail: "" },
+          location: {
+            province: "",
+            ward: "",
+            detail: "",
+            longitude: "",
+            latitude: "",
+          },
         });
       } else {
         toast({
@@ -222,16 +255,27 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
     }));
   };
 
+  const getInitialCoords = () => {
+    if (form.location.longitude && form.location.latitude) {
+      return [
+        parseFloat(form.location.longitude),
+        parseFloat(form.location.latitude),
+      ];
+    }
+    return [105.854444, 21.028511]; //Hà nội
+  };
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} isCentered size="lg">
+    <Modal isOpen={isOpen} onClose={onClose} isCentered size="xl">
       <ModalOverlay />
       <ModalContent as="form" onSubmit={handleSubmit}>
-        <ModalHeader>{isEdit ? "Cập nhật bài đăng" : "Tạo bài đăng mới"}</ModalHeader>
+        <ModalHeader>
+          {isEdit ? "Cập nhật bài đăng" : "Tạo bài đăng mới"}
+        </ModalHeader>
         <ModalCloseButton />
 
         <ModalBody>
           <VStack spacing={4} align="stretch">
-
             {/* Tiêu đề */}
             <FormControl isRequired>
               <FormLabel>Tiêu đề</FormLabel>
@@ -257,7 +301,11 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
 
               <FormControl isRequired>
                 <FormLabel>Giá</FormLabel>
-                <Input name="price" value={form.price} onChange={handleChange} />
+                <Input
+                  name="price"
+                  value={form.price}
+                  onChange={handleChange}
+                />
               </FormControl>
             </HStack>
 
@@ -265,7 +313,6 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
             <HStack>
               <FormControl isRequired>
                 <FormLabel>Loại tài sản</FormLabel>
-
                 {loadingTypes ? (
                   <Spinner />
                 ) : errorTypes ? (
@@ -303,8 +350,6 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
             <FormControl>
               <HStack justify="space-between" mb={2}>
                 <FormLabel m={0}>Ảnh (chọn nhiều ảnh)</FormLabel>
-
-                {/* Button chọn ảnh */}
                 <Button
                   as="label"
                   htmlFor="images-upload"
@@ -326,87 +371,117 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
               />
 
               {form.images.length > 0 && (
-                <Text fontSize="sm" color="gray.400">
-                  {form.images.length} ảnh đã chọn
-                </Text>
+                <Box mt={2} display="flex" gap={3} flexWrap="wrap">
+                  {form.images.map((img, idx) => (
+                    <Box
+                      key={idx}
+                      position="relative"
+                      boxSize="80px"
+                      borderRadius="md"
+                      overflow="hidden"
+                      border="1px solid"
+                      borderColor="gray.300"
+                    >
+                      <Image
+                        src={typeof img === "string" ? img : img.url}
+                        alt={`image-${idx}`}
+                        boxSize="80px"
+                        objectFit="cover"
+                      />
+                      <IconButton
+                        icon={<FiX />}
+                        size="xs"
+                        aria-label="remove"
+                        position="absolute"
+                        top="4px"
+                        right="4px"
+                        borderRadius="full"
+                        bg="whiteAlpha.800"
+                        _hover={{ bg: "white", transform: "scale(1.1)" }}
+                        color="red.500"
+                        boxShadow="sm"
+                        onClick={() => removeImage(idx)}
+                      />
+                    </Box>
+                  ))}
+                </Box>
               )}
             </FormControl>
 
-            {form.images.length > 0 && (
-              <Box mt={2} display="flex" gap={3} flexWrap="wrap">
-                {form.images.map((img, idx) => (
-                  <Box
-                    key={idx}
-                    position="relative"
-                    boxSize="80px"
-                    borderRadius="md"
-                    overflow="hidden"
-                    border="1px solid"
-                    borderColor="gray.300"
-                  >
-                    {/* Image preview */}
-                    <Image
-                      src={typeof img === "string" ? img : img.url}
-                      alt={`image-${idx}`}
-                      boxSize="80px"
-                      objectFit="cover"
-                    />
+            {/* --- PHẦN ĐỊA CHỈ & BẢN ĐỒ (Đã cập nhật) --- */}
+            <Box borderTop="1px solid #eee" pt={4}>
+              <Text fontWeight="bold" mb={3}>
+                Địa chỉ & Vị trí
+              </Text>
 
-                    {/* Remove button styled like a subtle floating icon */}
-                    <IconButton
-                      icon={<FiX />}
-                      size="xs"
-                      aria-label="remove"
-                      position="absolute"
-                      top="4px"
-                      right="4px"
-                      borderRadius="full"
-                      bg="whiteAlpha.800"
-                      _hover={{ bg: "white", transform: "scale(1.1)" }}
-                      color="red.500"
-                      boxShadow="sm"
-                      onClick={() => removeImage(idx)}
-                    />
-                  </Box>
-                ))}
-              </Box>
-            )}
-
-            {/* Địa chỉ */}
-            <FormControl isRequired>
-              <FormLabel>Thành phố</FormLabel>
-              <Input
-                name="location.province"
-                value={form.location.province}
-                onChange={handleChange}
-              />
-            </FormControl>
-
-            <HStack>
-              <FormControl>
-                <FormLabel>Phường</FormLabel>
+              <FormControl isRequired mb={3}>
+                <FormLabel fontSize="sm">Thành phố</FormLabel>
                 <Input
-                  name="location.ward"
-                  value={form.location.ward}
+                  name="location.province"
+                  value={form.location.province}
                   onChange={handleChange}
                 />
               </FormControl>
 
+              <HStack mb={3}>
+                <FormControl>
+                  <FormLabel fontSize="sm">Phường</FormLabel>
+                  <Input
+                    name="location.ward"
+                    value={form.location.ward}
+                    onChange={handleChange}
+                  />
+                </FormControl>
+
+                <FormControl isRequired>
+                  <FormLabel fontSize="sm">Địa chỉ chi tiết</FormLabel>
+                  <Input
+                    name="location.detail"
+                    value={form.location.detail}
+                    onChange={handleChange}
+                  />
+                </FormControl>
+              </HStack>
+
+              {/* SỬ DỤNG COMPONENT MAPBOXMAP */}
               <FormControl isRequired>
-                <FormLabel>Địa chỉ chi tiết</FormLabel>
-                <Input
-                  name="location.detail"
-                  value={form.location.detail}
-                  onChange={handleChange}
-                />
+                <FormLabel>
+                  Ghim vị trí trên bản đồ{" "}
+                  <Text as="span" color="red.500" fontSize="sm">
+                    (Bắt buộc)
+                  </Text>
+                </FormLabel>
+
+                {/* Render Map khi modal mở */}
+                {isOpen && (
+                  <MapboxMap
+                    mode="picker"
+                    initialCoords={getInitialCoords()}
+                    onLocationSelect={handleLocationSelect}
+                    height="350px"
+                  />
+                )}
+
+                <Text fontSize="xs" mt={2} color="blue.600">
+                  {form.location.latitude
+                    ? `Đã chọn: ${parseFloat(form.location.latitude).toFixed(
+                        5
+                      )}, ${parseFloat(form.location.longitude).toFixed(5)}`
+                    : "Vui lòng chọn vị trí trên bản đồ"}
+                </Text>
               </FormControl>
-            </HStack>
+            </Box>
           </VStack>
         </ModalBody>
 
         <ModalFooter>
-          <Button type="submit" colorScheme="blue" isLoading={submitting} mr={3}>
-            {isEdit ? "Cập nhật" : "Tạo"}
+          <Button
+            type="submit"
+            colorScheme="blue"
+            isLoading={submitting}
+            mr={3}
+          >
+            {isEdit ? "Cập nhật" : "Đăng tin"}
           </Button>
           <Button variant="ghost" onClick={onClose}>
             Hủy

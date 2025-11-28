@@ -24,7 +24,7 @@ export const SocketContextProvider = ({ children }) => {
         query: {
             userId: currentUser._id // Gửi thêm ID để tiện debug hoặc xử lý ở server (tùy chọn)
         },
-        transports: ["websocket"]
+        transports: ["websocket", "polling"]
       });
 
       setSocket(newSocket);

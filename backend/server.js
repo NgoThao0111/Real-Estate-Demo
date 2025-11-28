@@ -17,11 +17,7 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    process.env.FRONTEND_ORIGIN 
-].filter(Boolean);
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
 
 // 1. Tạo HTTP Server
 const httpServer = createServer(app);
@@ -45,20 +41,19 @@ const sessionMiddleware = session({
 // 3. Khởi tạo Socket.io
 const io = new Server(httpServer, {
     cors: {
-        origin: ALLOWED_ORIGINS,
-        credentials: true, // Bắt buộc true để nhận cookie session
-        methods: ["GET", "POST"]
+        origin: FRONTEND_ORIGIN,
+        credentials: true // Bắt buộc true để nhận cookie session
     }
 });
 
 // --- MIDDLEWARE CHO EXPRESS APP ---
-app.use(express.json({ limit: "5mb" }));
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser()); 
 
 // CORS setup
 app.use(cors({
-    origin: ALLOWED_ORIGINS,
+    origin: FRONTEND_ORIGIN,
     credentials: true
 }));
 
@@ -148,7 +143,7 @@ app.get('/', (req, res) => {
 
 // --- KHỞI CHẠY SERVER ---
 // Quan trọng: Phải dùng httpServer.listen
-httpServer.listen(PORT, '0.0.0.0', () => {
+httpServer.listen(PORT, () => {
     connectDB();
     console.log(`Server (HTTP + Socket) is running on port ${PORT}`);
 });

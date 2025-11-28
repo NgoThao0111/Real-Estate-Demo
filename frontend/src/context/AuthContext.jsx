@@ -30,7 +30,14 @@ export const AuthContextProvider = ({ children }) => {
           setCurrentUser(null);
         }
       } catch (err) {
-        setCurrentUser(null);
+        // Nếu lỗi 401 (Chưa đăng nhập) -> Bình thường, im lặng set null
+        if (err.response && err.response.status === 401) {
+          setCurrentUser(null);
+        } else {
+          // Nếu lỗi khác (ví dụ 500 Server Error, hoặc mất mạng) -> In ra để biết đường sửa
+          console.log("Lỗi Auth bất thường:", err);
+          setCurrentUser(null);
+        }
       } finally {
         setIsLoading(false);
       }
