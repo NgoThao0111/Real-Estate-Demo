@@ -16,8 +16,12 @@ import {
   HStack,
   useToast,
   Spinner,
-  Text
+  Text,
+  Box,
+  Image,
+  IconButton
 } from "@chakra-ui/react";
+import { FiX } from "react-icons/fi";
 import { useEffect, useState } from "react";
 import { useListStore } from "../store/list.js";
 import { usePropertyTypeStore } from "../store/propertyType.js";
@@ -25,6 +29,8 @@ import { usePropertyTypeStore } from "../store/propertyType.js";
 const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
   const toast = useToast();
   const createListing = useListStore((s) => s.createListing);
+  const updateListing = useListStore((s) => s.updateListing);
+  const isEdit = Boolean(defaultValues?._id);
 
   //Load Property Types
   const {
@@ -62,6 +68,11 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
       setForm((prev) => ({
         ...prev,
         ...defaultValues,
+        property_type:
+        typeof defaultValues.property_type === "object"
+          ? defaultValues.property_type._id
+          : defaultValues.property_type || "",
+        images: defaultValues.images || [],
         location: {
           ...prev.location,
           ...(defaultValues.location || {}),
@@ -155,12 +166,20 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
 
     try {
       setSubmitting(true);
+      let res;
 
-      const res = await createListing(payload);
+      if (isEdit) {
+        // Cập nhật listing
+        res = await updateListing(defaultValues._id, payload);
+      } else {
+        // Tạo mới listing
+        res = await createListing(payload);
+      }
+
 
       if (res.success) {
         toast({
-          title: "Thành công",
+          title: isEdit ? "Cập nhật thành công" : "Tạo bài đăng thành công",
           description: "Tạo bài đăng thành công.",
           status: "success",
         });
@@ -181,14 +200,14 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
       } else {
         toast({
           title: "Lỗi",
-          description: res.message || "Tạo bài đăng thất bại.",
+          description: res.message || "Thao tác thất bại.",
           status: "error",
         });
       }
     } catch (error) {
       toast({
         title: "Lỗi",
-        description: error.message || "Tạo bài đăng thất bại.",
+        description: error.message || "Thao tác thất bại.",
         status: "error",
       });
     } finally {
@@ -196,11 +215,18 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
     }
   };
 
+  const removeImage = (index) => {
+    setForm((prev) => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index),
+    }));
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} isCentered size="lg">
       <ModalOverlay />
       <ModalContent as="form" onSubmit={handleSubmit}>
-        <ModalHeader>Tạo bài đăng mới</ModalHeader>
+        <ModalHeader>{isEdit ? "Cập nhật bài đăng" : "Tạo bài đăng mới"}</ModalHeader>
         <ModalCloseButton />
 
         <ModalBody>
@@ -275,13 +301,28 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
 
             {/* Ảnh */}
             <FormControl>
-              <FormLabel>Ảnh (chọn nhiều ảnh)</FormLabel>
+              <HStack justify="space-between" mb={2}>
+                <FormLabel m={0}>Ảnh (chọn nhiều ảnh)</FormLabel>
+
+                {/* Button chọn ảnh */}
+                <Button
+                  as="label"
+                  htmlFor="images-upload"
+                  colorScheme="blue"
+                  size="sm"
+                  cursor="pointer"
+                >
+                  Chọn ảnh
+                </Button>
+              </HStack>
 
               <Input
+                id="images-upload"
                 type="file"
                 accept="image/*"
                 multiple
                 onChange={handleImagesChange}
+                display={"none"}
               />
 
               {form.images.length > 0 && (
@@ -290,6 +331,46 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
                 </Text>
               )}
             </FormControl>
+
+            {form.images.length > 0 && (
+              <Box mt={2} display="flex" gap={3} flexWrap="wrap">
+                {form.images.map((img, idx) => (
+                  <Box
+                    key={idx}
+                    position="relative"
+                    boxSize="80px"
+                    borderRadius="md"
+                    overflow="hidden"
+                    border="1px solid"
+                    borderColor="gray.300"
+                  >
+                    {/* Image preview */}
+                    <Image
+                      src={typeof img === "string" ? img : img.url}
+                      alt={`image-${idx}`}
+                      boxSize="80px"
+                      objectFit="cover"
+                    />
+
+                    {/* Remove button styled like a subtle floating icon */}
+                    <IconButton
+                      icon={<FiX />}
+                      size="xs"
+                      aria-label="remove"
+                      position="absolute"
+                      top="4px"
+                      right="4px"
+                      borderRadius="full"
+                      bg="whiteAlpha.800"
+                      _hover={{ bg: "white", transform: "scale(1.1)" }}
+                      color="red.500"
+                      boxShadow="sm"
+                      onClick={() => removeImage(idx)}
+                    />
+                  </Box>
+                ))}
+              </Box>
+            )}
 
             {/* Địa chỉ */}
             <FormControl isRequired>
@@ -325,7 +406,7 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
 
         <ModalFooter>
           <Button type="submit" colorScheme="blue" isLoading={submitting} mr={3}>
-            Tạo
+            {isEdit ? "Cập nhật" : "Tạo"}
           </Button>
           <Button variant="ghost" onClick={onClose}>
             Hủy
