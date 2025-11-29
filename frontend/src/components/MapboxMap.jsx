@@ -3,17 +3,13 @@ import mapboxgl from "mapbox-gl";
 import MapboxGeocoder from "@mapbox/mapbox-gl-geocoder";
 import "mapbox-gl/dist/mapbox-gl.css";
 import "@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css";
-import { Box, Button, Image, Text, VStack } from "@chakra-ui/react"; // Ví dụ dùng Chakra UI để style popup sau này
+import { Box } from "@chakra-ui/react";
+import { useNavigate } from "react-router-dom"; // Import useNavigate
+import "../components/mb.css";
 
 // Lấy token từ biến môi trường
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
 
-/**
- * @param {string} mode - 'picker' | 'view' | 'explorer'
- * @param {Array} data - Dùng cho mode 'explorer': Danh sách các BĐS
- * @param {Array} initialCoords - [lng, lat] Dùng cho mode 'picker' hoặc 'view'
- * @param {Function} onLocationSelect - Callback trả về {lng, lat, address} khi pick
- */
 const MapboxMap = ({
   mode = "view",
   data = [],
@@ -23,12 +19,15 @@ const MapboxMap = ({
 }) => {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
-  const markerRef = useRef(null);
+  const markerRef = useRef(null); // Cho mode picker/view
+  const geocoderRef = useRef(null);
+  // --- MỚI: Ref để lưu trữ mảng các HTML markers trong chế độ explorer ---
+  const markersArrayRef = useRef([]);
 
-  // State để quản lý việc map đã load xong chưa
   const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const navigate = useNavigate(); // Hook để chuyển trang
 
-  // 1. KHỞI TẠO MAP (Chạy 1 lần)
+  // 1. KHỞI TẠO MAP
   useEffect(() => {
     if (mapRef.current) return;
 
@@ -36,12 +35,20 @@ const MapboxMap = ({
       container: mapContainerRef.current,
       style: "mapbox://styles/mapbox/streets-v12",
       center: initialCoords,
-      zoom: mode === "explorer" ? 10 : 13, // Explorer thì nhìn xa hơn
+      zoom: mode === "explorer" ? 10 : 13,
     });
+
+    const resizeObserver = new ResizeObserver(() => {
+      if (mapRef.current) mapRef.current.resize();
+    });
+    if (mapContainerRef.current) resizeObserver.observe(mapContainerRef.current);
+
+    setTimeout(() => {
+        if (mapRef.current) mapRef.current.resize();
+    }, 200);
 
     mapRef.current.on("load", () => {
       setIsMapLoaded(true);
-      // Thêm Navigation Control (Zoom +/-)
       mapRef.current.addControl(
         new mapboxgl.NavigationControl(),
         "bottom-right"
@@ -49,246 +56,228 @@ const MapboxMap = ({
     });
 
     return () => {
+      resizeObserver.disconnect();
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
       }
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 2. XỬ LÝ LOGIC THEO TỪNG MODE (Chạy khi map load xong hoặc props đổi)
+  // 2. XỬ LÝ LOGIC CHÍNH
   useEffect(() => {
     if (!isMapLoaded || !mapRef.current) return;
 
-    // Reset những thứ cũ nếu cần (ví dụ xóa marker cũ)
-    if (markerRef.current) markerRef.current.remove();
+    // Dọn dẹp
+    cleanUp();
 
-    /* --- CASE 1: PICKER (Chọn vị trí) --- */
+    // Setup theo mode
     if (mode === "picker") {
       setupPickerMode();
     } else if (mode === "view") {
-
-    /* --- CASE 2: VIEW (Xem 1 vị trí) --- */
       setupViewMode();
     } else if (mode === "explorer") {
-
-    /* --- CASE 3: EXPLORER (Xem nhiều vị trí) --- */
       setupExplorerMode();
     }
-  }, [isMapLoaded, mode, initialCoords, data]);
 
-  // --- HÀM XỬ LÝ: PICKER ---
-  const setupPickerMode = () => {
-    // 1. Thêm thanh tìm kiếm (chỉ add 1 lần)
-    if (!document.querySelector(".mapboxgl-ctrl-geocoder")) {
-      const geocoder = new MapboxGeocoder({
-        accessToken: mapboxgl.accessToken,
-        mapboxgl: mapboxgl,
-        marker: false,
-        placeholder: "Tìm địa chỉ...",
-        countries: "vn",
-      });
-      mapRef.current.addControl(geocoder, "top-left");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMapLoaded, mode, JSON.stringify(initialCoords), JSON.stringify(data)]);
 
-      geocoder.on("result", (e) => {
-        const [lng, lat] = e.result.center;
-        updateMarkerAndCallback(lng, lat, e.result.place_name);
-      });
+  // --- HELPER: Dọn dẹp (Đã cập nhật) ---
+  const cleanUp = () => {
+    if (!mapRef.current) return;
+
+    // Xóa marker đơn (picker/view)
+    if (markerRef.current) {
+        markerRef.current.remove();
+        markerRef.current = null;
+    }
+    // Xóa geocoder
+    if (geocoderRef.current && mapRef.current.hasControl(geocoderRef.current)) {
+        mapRef.current.removeControl(geocoderRef.current);
+        geocoderRef.current = null;
     }
 
-    // 2. Tạo Marker kéo thả được
+    // --- MỚI: Xóa tất cả HTML markers của explorer mode ---
+    if (markersArrayRef.current.length > 0) {
+        markersArrayRef.current.forEach(marker => marker.remove());
+        markersArrayRef.current = [];
+    }
+  };
+
+  // --- MODE 1: PICKER (Giữ nguyên) ---
+  const setupPickerMode = () => {
+    geocoderRef.current = new MapboxGeocoder({
+      accessToken: mapboxgl.accessToken,
+      mapboxgl: mapboxgl,
+      marker: false,
+      placeholder: "Tìm địa chỉ...",
+      countries: "vn",
+    });
+    mapRef.current.addControl(geocoderRef.current, "top-left");
+
+    geocoderRef.current.on("result", (e) => {
+      const [lng, lat] = e.result.center;
+      updateMarkerAndCallback(lng, lat, e.result.place_name);
+    });
+
     markerRef.current = new mapboxgl.Marker({
       draggable: true,
-      color: "#E53935", // Màu đỏ
+      color: "#E53935",
     })
       .setLngLat(initialCoords)
       .addTo(mapRef.current);
 
-    // 3. Sự kiện kéo marker
     markerRef.current.on("dragend", () => {
       const { lng, lat } = markerRef.current.getLngLat();
       updateMarkerAndCallback(lng, lat);
     });
 
-    // 4. Click vào bản đồ để đặt marker
     mapRef.current.on("click", (e) => {
+      if (e.originalEvent.target.closest(".mapboxgl-ctrl")) return;
       const { lng, lat } = e.lngLat;
       updateMarkerAndCallback(lng, lat);
     });
 
-    // Fly tới vị trí ban đầu
     mapRef.current.flyTo({ center: initialCoords, zoom: 14 });
   };
 
   const updateMarkerAndCallback = (lng, lat, address = "") => {
-    markerRef.current.setLngLat([lng, lat]);
+    if (markerRef.current) markerRef.current.setLngLat([lng, lat]);
     mapRef.current.flyTo({ center: [lng, lat], zoom: 14 });
     if (onLocationSelect) {
       onLocationSelect(lng, lat, address);
     }
   };
 
-  // --- HÀM XỬ LÝ: VIEW (Đơn giản nhất) ---
+  // --- MODE 2: VIEW (Giữ nguyên) ---
   const setupViewMode = () => {
     markerRef.current = new mapboxgl.Marker({ color: "#E53935" })
       .setLngLat(initialCoords)
-      .setPopup(
-        new mapboxgl.Popup({ offset: 25 }).setHTML(
-          "<h6>Vị trí bất động sản</h6>"
-        )
-      ) // Có thể thêm popup
+      .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML("<h6>Vị trí bất động sản</h6>"))
       .addTo(mapRef.current);
 
     mapRef.current.flyTo({ center: initialCoords, zoom: 14 });
   };
 
-  // --- HÀM XỬ LÝ: EXPLORER (Nâng cao cho tương lai) ---
+  // --- MODE 3: EXPLORER (Logic: Marker Giá nhỏ -> Click ra Card to) ---
   const setupExplorerMode = () => {
-    // Nếu chưa có data thì thôi
     if (!data || data.length === 0) return;
 
-    // Chuẩn bị dữ liệu GeoJSON
-    const geoJsonData = {
-      type: "FeatureCollection",
-      features: data.map((item) => ({
-        type: "Feature",
-        geometry: item.location.coords, // Lấy từ DB {type: Point, coordinates: [lng, lat]}
-        properties: {
-          id: item._id,
-          title: item.title,
-          price: item.price,
-          image: item.images[0]?.url,
-        },
-      })),
-    };
+    // Lọc dữ liệu sạch
+    const validListings = data.filter(
+      (item) =>
+        item.location &&
+        item.location.coords &&
+        Array.isArray(item.location.coords.coordinates) &&
+        item.location.coords.coordinates.length === 2
+    );
 
-    // Kiểm tra source đã có chưa để update hoặc add mới
-    const sourceId = "listings-source";
-    if (mapRef.current.getSource(sourceId)) {
-      mapRef.current.getSource(sourceId).setData(geoJsonData);
-    } else {
-      mapRef.current.addSource(sourceId, {
-        type: "geojson",
-        data: geoJsonData,
-        cluster: true, // BẬT CHẾ ĐỘ GOM NHÓM
-        clusterMaxZoom: 14,
-        clusterRadius: 50, // Bán kính gom nhóm (px)
+    // Duyệt qua từng bài đăng
+    validListings.forEach((item) => {
+      // --- BƯỚC 1: TẠO MARKER GIÁ TIỀN (Hiển thị mặc định) ---
+      const el = document.createElement("div");
+      el.className = "price-marker"; 
+      // Style inline cho Marker giá tiền (nhỏ gọn, màu đen)
+      el.innerText = item.price || "LH";
+      Object.assign(el.style, {
+        backgroundColor: "#222",
+        color: "#fff",
+        fontWeight: "bold",
+        fontSize: "13px",
+        padding: "6px 10px",
+        borderRadius: "6px",
+        boxShadow: "0 3px 6px rgba(0,0,0,0.3)",
+        cursor: "pointer",
+        border: "1px solid #444",
+        whiteSpace: "nowrap",
       });
 
-      // 1. Layer vòng tròn Cluster (Khi zoom out)
-      mapRef.current.addLayer({
-        id: "clusters",
-        type: "circle",
-        source: sourceId,
-        filter: ["has", "point_count"],
-        paint: {
-          "circle-color": [
-            "step",
-            ["get", "point_count"],
-            "#51bbd6",
-            10,
-            "#f1f075",
-            30,
-            "#f28cb1",
-          ],
-          "circle-radius": [
-            "step",
-            ["get", "point_count"],
-            20,
-            100,
-            30,
-            750,
-            40,
-          ],
-        },
-      });
+      // Tạo Marker Mapbox
+      const marker = new mapboxgl.Marker({
+        element: el,
+        anchor: "bottom", // Neo ở đáy
+        offset: [0, -5],  // Dịch lên một chút
+      })
+        .setLngLat(item.location.coords.coordinates)
+        .addTo(mapRef.current);
 
-      // 2. Layer số đếm trong Cluster
-      mapRef.current.addLayer({
-        id: "cluster-count",
-        type: "symbol",
-        source: sourceId,
-        filter: ["has", "point_count"],
-        layout: {
-          "text-field": "{point_count_abbreviated}",
-          "text-font": ["DIN Offc Pro Medium", "Arial Unicode MS Bold"],
-          "text-size": 12,
-        },
-      });
+      // --- BƯỚC 2: XỬ LÝ SỰ KIỆN CLICK VÀO MARKER ---
+      el.addEventListener("click", (e) => {
+        e.stopPropagation(); // Ngăn click xuyên qua bản đồ
 
-      // 3. Layer điểm đơn lẻ (Khi zoom in hoặc không bị gom) -> Dùng ảnh hoặc chấm tròn
-      mapRef.current.addLayer({
-        id: "unclustered-point",
-        type: "circle",
-        source: sourceId,
-        filter: ["!", ["has", "point_count"]],
-        paint: {
-          "circle-color": "#E53935",
-          "circle-radius": 8,
-          "circle-stroke-width": 1,
-          "circle-stroke-color": "#fff",
-        },
-      });
+        // Đóng các popup khác đang mở (nếu muốn chỉ hiện 1 cái)
+        const popups = document.getElementsByClassName("mapboxgl-popup");
+        if (popups.length) popups[0].remove();
 
-      // Sự kiện click vào điểm đơn lẻ -> Hiện Popup
-      mapRef.current.on("click", "unclustered-point", (e) => {
-        const coordinates = e.features[0].geometry.coordinates.slice();
-        const { title, price, image } = e.features[0].properties;
+        // --- BƯỚC 3: TẠO NỘI DUNG CARD (POPUP) ---
+        // Chuẩn bị dữ liệu
+        const imageUrl = item.images?.[0]?.url || "https://via.placeholder.com/150";
+        const title = item.title;
+        const price = item.price || "Liên hệ";
+        const areaDisplay = item.area ? `(${item.area} m²)` : "";
+        const isVip = false; 
 
-        // HTML string cho popup (Sau này có thể làm phức tạp hơn)
-        const popupContent = `
-                <div style="font-family: sans-serif; width: 200px;">
-                    <img src="${image}" style="width: 100%; height: 100px; object-fit: cover; border-radius: 4px;"/>
-                    <h4 style="font-size: 14px; margin: 5px 0;">${title}</h4>
-                    <p style="color: red; font-weight: bold;">${price}</p>
+        // Tạo thẻ DIV chứa nội dung Card
+        const popupNode = document.createElement("div");
+        popupNode.className = "property-marker-card"; // Dùng lại class CSS Card của bạn
+        // Reset style để nó hiển thị đúng trong popup (tránh bị transform của marker cũ ảnh hưởng)
+        popupNode.style.transform = "none"; 
+        popupNode.style.marginTop = "0";
+        popupNode.style.position = "relative"; // Để căn chỉnh nút X
+
+        // HTML nội dung (Giữ nguyên cấu trúc bạn đã làm)
+        popupNode.innerHTML = `
+            <div class="close-btn" style="
+                position: absolute; top: 8px; right: 8px; z-index: 20; 
+                background: rgba(0,0,0,0.6); color: white; width: 24px; height: 24px; 
+                border-radius: 50%; display: flex; align-items: center; justify-content: center; 
+                cursor: pointer; font-size: 14px; font-weight: bold;">
+                ✕
+            </div>
+
+            <div class="pm-image-container">
+                <img src="${imageUrl}" alt="${title}" class="pm-image" />
+                ${isVip ? '<span class="pm-tag-vip">VIP</span>' : ''}
+            </div>
+            <div class="pm-info-container">
+                <div class="pm-title" title="${title}">${title}</div>
+                <div class="pm-details">
+                    <span class="pm-price">${price}</span>
+                    <span class="pm-area">${areaDisplay}</span>
                 </div>
-            `;
+            </div>
+        `;
 
-        new mapboxgl.Popup()
-          .setLngLat(coordinates)
-          .setHTML(popupContent)
-          .addTo(mapRef.current);
-      });
-
-      // Sự kiện click vào Cluster -> Zoom vào
-      mapRef.current.on("click", "clusters", (e) => {
-        const features = mapRef.current.queryRenderedFeatures(e.point, {
-          layers: ["clusters"],
+        // Xử lý sự kiện trong Popup
+        // 1. Click nút X -> Đóng popup
+        popupNode.querySelector(".close-btn").addEventListener("click", (ev) => {
+            ev.stopPropagation(); // Không kích hoạt chuyển trang
+            marker.getPopup().remove(); // Lệnh đóng popup của Mapbox
         });
-        const clusterId = features[0].properties.cluster_id;
-        mapRef.current
-          .getSource(sourceId)
-          .getClusterExpansionZoom(clusterId, (err, zoom) => {
-            if (err) return;
-            mapRef.current.easeTo({
-              center: features[0].geometry.coordinates,
-              zoom: zoom,
-            });
-          });
+
+        // 2. Click vào phần còn lại -> Chuyển trang
+        popupNode.addEventListener("click", () => {
+            navigate(`/listings/${item._id}`);
+        });
+
+        // --- BƯỚC 4: GẮN POPUP VÀO MARKER ---
+        const popup = new mapboxgl.Popup({
+            closeButton: false, // Tắt nút X mặc định xấu xí của Mapbox
+            closeOnClick: true, // Click ra ngoài bản đồ cũng đóng
+            maxWidth: "300px",
+            offset: 15 // Cách marker giá tiền 1 đoạn
+        })
+        .setDOMContent(popupNode); // Dùng setDOMContent thay vì setHTML để giữ sự kiện navigate
+
+        marker.setPopup(popup); // Gắn popup vào marker
+        marker.togglePopup();   // Mở ngay lập tức
       });
 
-      // Đổi con chuột thành bàn tay khi hover
-      mapRef.current.on(
-        "mouseenter",
-        "clusters",
-        () => (mapRef.current.getCanvas().style.cursor = "pointer")
-      );
-      mapRef.current.on(
-        "mouseleave",
-        "clusters",
-        () => (mapRef.current.getCanvas().style.cursor = "")
-      );
-      mapRef.current.on(
-        "mouseenter",
-        "unclustered-point",
-        () => (mapRef.current.getCanvas().style.cursor = "pointer")
-      );
-      mapRef.current.on(
-        "mouseleave",
-        "unclustered-point",
-        () => (mapRef.current.getCanvas().style.cursor = "")
-      );
-    }
+      // 5. Lưu marker vào mảng để quản lý
+      markersArrayRef.current.push(marker);
+    });
   };
 
   return (

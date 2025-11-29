@@ -136,8 +136,8 @@ export const getListings = async (req, res) => {
       maxPrice,
       minArea,
       maxArea,
-      page = 1,
-      limit = 30,
+      page,
+      limit,
       sort,
       userLat,
       userLng,
@@ -203,8 +203,10 @@ export const getListings = async (req, res) => {
       if (maxA !== undefined) query.area.$lte = maxA;
     }
 
-    const pageNum = Math.max(1, Number(page));
-    const lim = Math.max(1, Number(limit));
+    const pageNum = page && Number(page) > 0 ? Number(page) : 1;
+
+    const defaultLimit = 30;
+    const lim = limit && Number(limit) > 0 ? Number(limit) : defaultLimit;
     const skip = (pageNum - 1) * lim;
 
     let sortObj = { createdAt: -1 };
@@ -224,7 +226,7 @@ export const getListings = async (req, res) => {
       .limit(lim);
 
     if (!listings || listings.length === 0) {
-      return res.status(404).json({
+      return res.status(200).json({
         message: "Không tìm thấy tin đăng nào phù hợp",
         listings: [],
       });

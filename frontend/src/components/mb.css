@@ -1,0 +1,172 @@
+/* =========================================
+   1. GHI ĐÈ STYLE MẶC ĐỊNH CỦA MAPBOX
+   (Bắt buộc để xóa padding thừa và nút X xấu)
+   ========================================= */
+
+/* Xóa padding và nền mặc định của khung popup chứa card */
+.mapboxgl-popup-content {
+  padding: 0 !important;       
+  background: transparent !important; 
+  box-shadow: none !important; 
+  border: none !important;     
+  border-radius: 8px !important;
+}
+
+/* Ẩn nút X mặc định (vì ta đã code nút X đẹp hơn bên trong) */
+.mapboxgl-popup-close-button {
+  display: none !important;
+}
+
+/* Chỉnh mũi tên tam giác bên dưới cho khớp màu trắng của Card */
+.mapboxgl-popup-tip {
+  border-top-color: white !important;
+  margin-top: -1px; /* Kéo lên xíu cho khít */
+}
+
+/* =========================================
+   2. STYLE CHO MARKER GIÁ TIỀN (Lúc chưa click)
+   ========================================= */
+
+.price-marker {
+  background-color: #222;
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+  cursor: pointer;
+  border: 1px solid #444;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  position: relative;
+  
+  /* --- THÊM 2 DÒNG NÀY ĐỂ FIX LỖI DÀI NGOẰNG --- */
+  width: fit-content;  /* Chỉ rộng vừa đủ nội dung */
+  display: flex;       /* Để căn giữa nội dung tốt hơn */
+  justify-content: center;
+  /* --------------------------------------------- */
+}
+
+/* Hiệu ứng khi di chuột vào giá */
+.price-marker:hover {
+  background-color: #E53935; /* Đổi sang màu đỏ */
+  transform: scale(1.1);
+  z-index: 100;
+  border-color: #E53935;
+}
+
+/* Mũi tên nhỏ bên dưới marker giá (giống bong bóng chat) */
+.price-marker::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 5px 5px 0;
+  border-style: solid;
+  border-color: #222 transparent transparent transparent;
+  transition: border-color 0.2s ease;
+}
+
+.price-marker:hover::after {
+  border-color: #E53935 transparent transparent transparent;
+}
+
+/* =========================================
+   3. STYLE CHO CARD THÔNG TIN (Popup khi click)
+   ========================================= */
+
+.property-marker-card {
+  display: flex;
+  background-color: white;
+  border-radius: 8px;
+  /* Bóng đổ đẹp cho card */
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25); 
+  width: 280px; 
+  overflow: hidden;
+  cursor: pointer;
+  /* Lưu ý: Bỏ transform translate ở đây vì Popup Mapbox đã tự căn vị trí rồi */
+}
+
+/* Hiệu ứng hover nhẹ vào card */
+.property-marker-card:hover {
+  background-color: #f9f9f9;
+}
+
+/* Phần chứa ảnh bên trái */
+.pm-image-container {
+  width: 110px; /* Tăng nhẹ độ rộng ảnh cho cân đối */
+  height: 90px; /* Tăng chiều cao */
+  flex-shrink: 0;
+  position: relative;
+}
+
+.pm-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Tag VIP */
+.pm-tag-vip {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  background-color: #E53935;
+  color: white;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* Phần thông tin bên phải */
+.pm-info-container {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* Căn giữa theo chiều dọc */
+  overflow: hidden;
+  flex: 1;
+}
+
+/* Tiêu đề */
+.pm-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a202c;
+  line-height: 1.3;
+  margin-bottom: 6px;
+  
+  /* Cắt dòng nếu tiêu đề quá dài (tối đa 2 dòng) */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: sans-serif;
+}
+
+/* Container giá và diện tích */
+.pm-details {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-family: sans-serif;
+}
+
+.pm-price {
+  color: #E53935; /* Đỏ đậm */
+  font-weight: 800;
+  font-size: 15px;
+}
+
+.pm-area {
+  color: #718096; /* Xám */
+  font-size: 12px;
+  font-weight: 500;
+}
