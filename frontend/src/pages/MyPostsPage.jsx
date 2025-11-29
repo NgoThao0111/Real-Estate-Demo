@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useListStore } from "../store/list.js";
 import ListingCard from "../components/ListingCard";
 import CreateListingModal from "../components/CreateListingModal.jsx";
-import SortViewOpts, { sortListings } from "../components/SortViewOpts";
+import SortViewOpts, { sortListings, filterListings } from "../components/SortViewOpts";
 
 const MyPostsPage = () => {
   const { fetchMyListings, deleteListing } = useListStore();
@@ -13,9 +13,11 @@ const MyPostsPage = () => {
   const [editOpen, setEditOpen] = useState(false);
   const [sortBy, setSortBy] = useState("newest");
   const [viewType, setViewType] = useState("grid");
+  const [searchQuery, setSearchQuery] = useState("");
 
-  // Sort listings using the utility function
-  const sortedListings = sortListings(listings, sortBy);
+  // Filter and sort listings
+  const filteredListings = filterListings(listings, searchQuery);
+  const sortedListings = sortListings(filteredListings, sortBy);
 
   const load = async () => {
     setLoading(true);
@@ -51,12 +53,14 @@ const MyPostsPage = () => {
 
         {/* Sorting and View Options */}
         <SortViewOpts
-          listings={listings}
+          listings={filteredListings}
           sortBy={sortBy}
           setSortBy={setSortBy}
           viewType={viewType}
           setViewType={setViewType}
           countText="bài đăng"
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
         />
 
         <SimpleGrid 

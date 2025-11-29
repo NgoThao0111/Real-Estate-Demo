@@ -2,20 +2,22 @@ import { useEffect, useState } from "react";
 import { Container, SimpleGrid, Spinner, Center, Text, Heading, useColorModeValue } from "@chakra-ui/react";
 import ListingCard from "../components/ListingCard";
 import SlideShow from "../components/SlideShow";
-import SortViewOpts, { sortListings } from "../components/SortViewOpts";
+import SortViewOpts, { sortListings, filterListings } from "../components/SortViewOpts";
 import { useListStore } from "../store/list.js";
 
 const AllListings = () => {
   const { listings, loading, error, fetchListings } = useListStore();
   const [sortBy, setSortBy] = useState("newest");
   const [viewType, setViewType] = useState("grid");
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     fetchListings();
   }, [fetchListings]);
 
-  // Sort listings using the utility function
-  const sortedListings = sortListings(listings, sortBy);
+  // Filter and sort listings
+  const filteredListings = filterListings(listings, searchQuery);
+  const sortedListings = sortListings(filteredListings, sortBy);
 
     if (loading) {
         return (
@@ -51,12 +53,14 @@ const AllListings = () => {
 
         {/* Sorting and View Options */}
         <SortViewOpts
-          listings={listings}
+          listings={filteredListings}
           sortBy={sortBy}
           setSortBy={setSortBy}
           viewType={viewType}
           setViewType={setViewType}
           countText="dự án"
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
         />
         {(!sortedListings || sortedListings.length === 0) ? (
           <Center>
