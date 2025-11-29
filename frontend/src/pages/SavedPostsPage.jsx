@@ -2,7 +2,7 @@ import { Box, Container, SimpleGrid, Heading, Button, Stack, useColorModeValue }
 import { useEffect, useState } from "react";
 import { useListStore } from "../store/list.js";
 import ListingCard from "../components/ListingCard";
-import SortViewOpts, { sortListings } from "../components/SortViewOpts";
+import SortViewOpts, { sortListings, filterListings } from "../components/SortViewOpts";
 
 const SavedPostsPage = () => {
   const { fetchSavedListings, toggleSaveListing } = useListStore();
@@ -10,9 +10,11 @@ const SavedPostsPage = () => {
   const [loading, setLoading] = useState(false);
   const [sortBy, setSortBy] = useState("newest");
   const [viewType, setViewType] = useState("grid");
+  const [searchQuery, setSearchQuery] = useState("");
 
-  // Sort listings using the utility function
-  const sortedListings = sortListings(listings, sortBy);
+  // Filter and sort listings
+  const filteredListings = filterListings(listings, searchQuery);
+  const sortedListings = sortListings(filteredListings, sortBy);
 
   const load = async () => {
     setLoading(true);
@@ -42,12 +44,14 @@ const SavedPostsPage = () => {
 
         {/* Sorting and View Options */}
         <SortViewOpts
-          listings={listings}
+          listings={filteredListings}
           sortBy={sortBy}
           setSortBy={setSortBy}
           viewType={viewType}
           setViewType={setViewType}
           countText="bài đã lưu"
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
         />
 
         <SimpleGrid 
