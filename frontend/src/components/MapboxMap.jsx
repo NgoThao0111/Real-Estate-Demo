@@ -3,31 +3,212 @@ import mapboxgl from "mapbox-gl";
 import MapboxGeocoder from "@mapbox/mapbox-gl-geocoder";
 import "mapbox-gl/dist/mapbox-gl.css";
 import "@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css";
-import { Box } from "@chakra-ui/react";
-import { useNavigate } from "react-router-dom"; // Import useNavigate
-import "../components/mb.css";
 
-// Lấy token từ biến môi trường
+// --- CHAKRA & REACT IMPORTS ---
+import { 
+  Box, 
+  Image, 
+  Text, 
+  Flex, 
+  Badge, 
+  IconButton, 
+  useTheme 
+} from "@chakra-ui/react";
+import { CloseIcon } from "@chakra-ui/icons"; 
+import { Global, css } from "@emotion/react"; 
+import { createRoot } from "react-dom/client"; 
+import { useNavigate } from "react-router-dom";
+
+// Lấy token
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
 
+// =============================================================================
+// 1. SUB-COMPONENT: ListingPopup (Đã Design lại đẹp hơn)
+// =============================================================================
+const ListingPopup = ({ item, onClose, onNavigate }) => {
+  const imageUrl = item.images?.[0]?.url || "https://via.placeholder.com/150";
+  const isVip = false; // Logic VIP tùy chỉnh
+
+  return (
+    <Flex
+      w="340px"           // Tăng chiều rộng để thoáng hơn
+      h="120px"           // Chiều cao cố định để cân đối
+      bg="white" 
+      borderRadius="2xl"  // Bo góc mạnh (2xl) cho hiện đại
+      overflow="hidden" 
+      boxShadow="0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1)" // Đổ bóng mềm mại hơn
+      position="relative"
+      onClick={() => onNavigate(item._id)}
+      cursor="pointer"
+      role="group"        // Để xử lý hover cho các phần tử con
+      transition="transform 0.2s, box-shadow 0.2s"
+      _hover={{ 
+        transform: "translateY(-2px)", // Nhấc nhẹ khi hover
+        boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.15)"
+      }}
+      className="chakra-popup-card"
+      fontFamily="body"
+    >
+      {/* Nút Close: Tinh tế hơn, nằm góc trên phải */}
+      <IconButton
+        aria-label="Close popup"
+        icon={<CloseIcon />}
+        size="xs"
+        variant="ghost" // Dùng variant ghost để không bị thô
+        position="absolute"
+        top={3}
+        right={4}
+        zIndex={10}
+        color="gray.400"
+        _hover={{ bg: "red.50", color: "red.500" }} // Hover đỏ nhẹ
+        onClick={(e) => {
+          e.stopPropagation();
+          onClose();
+        }}
+      />
+
+      {/* CỘT TRÁI: ẢNH */}
+      <Box w="130px" h="100%" flexShrink={0} position="relative">
+        <Image 
+          src={imageUrl} 
+          alt={item.title} 
+          w="100%" h="100%" 
+          objectFit="cover" 
+        />
+        {isVip && (
+          <Badge 
+            position="absolute" top={2} left={2} 
+            colorScheme="yellow" variant="solid" fontSize="10px"
+            boxShadow="md" px={2} borderRadius="md"
+          >
+            VIP
+          </Badge>
+        )}
+      </Box>
+
+      {/* CỘT PHẢI: THÔNG TIN */}
+      <Flex direction="column" justify="space-between" p={3} flex={1} overflow="hidden">
+        {/* Tiêu đề */}
+        <Text 
+          fontSize="15px" 
+          fontWeight="700" 
+          color="gray.800"
+          noOfLines={2} 
+          lineHeight="1.3" 
+          title={item.title}
+          mb={1}
+          _groupHover={{ color: "blue.600" }} // Đổi màu title khi hover cả card
+          transition="color 0.2s"
+        >
+          {item.title}
+        </Text>
+
+        {/* Giá và Diện tích */}
+        <Flex align="flex-end" justify="space-between" w="100%">
+          <Text color="red.500" fontWeight="800" fontSize="17px" lineHeight="1">
+            {item.price || "Liên hệ"}
+          </Text>
+          
+          <Flex align="center" color="gray.500" fontSize="13px" fontWeight="medium">
+            {/* Icon thước đo diện tích (SVG) */}
+            <Box as="span" mr={1} display="flex" alignItems="center">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 22V4c0-.5.2-1 .6-1.4C5 2.2 5.5 2 6 2h12c.5 0 1 .2 1.4.6.4.4.6.9.6 1.4v18"></path>
+                    <path d="M4 10h16"></path>
+                </svg>
+            </Box>
+            {item.area ? `${item.area} m²` : ""}
+          </Flex>
+        </Flex>
+      </Flex>
+    </Flex>
+  );
+};
+
+// =============================================================================
+// 2. MAIN COMPONENT: MapboxMap
+// =============================================================================
 const MapboxMap = ({
-  mode = "view",
+  mode = "view", // "view" | "picker" | "explorer"
   data = [],
-  initialCoords = [105.854444, 21.028511], // Mặc định Hà Nội
+  initialCoords = [105.854444, 21.028511], // Hà Nội
   onLocationSelect,
   height = "400px",
 }) => {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
-  const markerRef = useRef(null); // Cho mode picker/view
+  const markerRef = useRef(null);
   const geocoderRef = useRef(null);
-  // --- MỚI: Ref để lưu trữ mảng các HTML markers trong chế độ explorer ---
-  const markersArrayRef = useRef([]);
-
+  const markersArrayRef = useRef([]); // Lưu trữ các marker html
+  
   const [isMapLoaded, setIsMapLoaded] = useState(false);
-  const navigate = useNavigate(); // Hook để chuyển trang
+  const navigate = useNavigate();
+  const theme = useTheme();
 
-  // 1. KHỞI TẠO MAP
+  // --- GLOBAL STYLES (Thay thế file mb.css) ---
+  const GlobalStyles = css`
+    /* 1. Ghi đè Popup mặc định của Mapbox */
+    .mapboxgl-popup-content {
+      padding: 0 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      border: none !important;
+    }
+    .mapboxgl-popup-close-button {
+      display: none !important;
+    }
+    /* Chỉnh mũi tên (tip) cho khớp với popup mới */
+    .mapboxgl-popup-tip {
+      border-top-color: white !important; 
+      margin-top: -1px;
+    }
+
+    /* 2. Style cho Marker Giá Tiền */
+    .price-marker {
+      background-color: var(--chakra-colors-gray-900);
+      color: white;
+      font-weight: 700;
+      font-size: 13px;
+      padding: 6px 12px;
+      border-radius: 99px; /* Bo tròn kiểu pill cho hiện đại */
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+      cursor: pointer;
+      border: 2px solid white; /* Thêm viền trắng cho nổi bật trên bản đồ */
+      white-space: nowrap;
+      
+      /* Căn chỉnh */
+      width: fit-content;
+      display: flex;
+      justify-content: center;
+      transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Hiệu ứng nảy */
+    }
+
+    /* Hover effect */
+    .price-marker:hover {
+      background-color: var(--chakra-colors-red-500);
+      border-color: white;
+      transform: scale(1.15);
+      z-index: 100;
+    }
+
+    /* Mũi tên nhỏ bên dưới marker */
+    .price-marker::after {
+      content: '';
+      position: absolute;
+      bottom: -5px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-width: 6px 6px 0;
+      border-style: solid;
+      border-color: var(--chakra-colors-gray-900) transparent transparent transparent;
+      transition: border-color 0.2s ease;
+    }
+    .price-marker:hover::after {
+      border-color: var(--chakra-colors-red-500) transparent transparent transparent;
+    }
+  `;
+
+  // --- INIT MAP ---
   useEffect(() => {
     if (mapRef.current) return;
 
@@ -44,15 +225,12 @@ const MapboxMap = ({
     if (mapContainerRef.current) resizeObserver.observe(mapContainerRef.current);
 
     setTimeout(() => {
-        if (mapRef.current) mapRef.current.resize();
+       if (mapRef.current) mapRef.current.resize();
     }, 200);
 
     mapRef.current.on("load", () => {
       setIsMapLoaded(true);
-      mapRef.current.addControl(
-        new mapboxgl.NavigationControl(),
-        "bottom-right"
-      );
+      mapRef.current.addControl(new mapboxgl.NavigationControl(), "bottom-right");
     });
 
     return () => {
@@ -65,48 +243,36 @@ const MapboxMap = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 2. XỬ LÝ LOGIC CHÍNH
+  // --- HANDLE MODES ---
   useEffect(() => {
     if (!isMapLoaded || !mapRef.current) return;
-
-    // Dọn dẹp
     cleanUp();
 
-    // Setup theo mode
-    if (mode === "picker") {
-      setupPickerMode();
-    } else if (mode === "view") {
-      setupViewMode();
-    } else if (mode === "explorer") {
-      setupExplorerMode();
-    }
+    if (mode === "picker") setupPickerMode();
+    else if (mode === "view") setupViewMode();
+    else if (mode === "explorer") setupExplorerMode();
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMapLoaded, mode, JSON.stringify(initialCoords), JSON.stringify(data)]);
 
-  // --- HELPER: Dọn dẹp (Đã cập nhật) ---
   const cleanUp = () => {
     if (!mapRef.current) return;
-
-    // Xóa marker đơn (picker/view)
     if (markerRef.current) {
         markerRef.current.remove();
         markerRef.current = null;
     }
-    // Xóa geocoder
     if (geocoderRef.current && mapRef.current.hasControl(geocoderRef.current)) {
         mapRef.current.removeControl(geocoderRef.current);
         geocoderRef.current = null;
     }
-
-    // --- MỚI: Xóa tất cả HTML markers của explorer mode ---
+    // Clean up explorer markers
     if (markersArrayRef.current.length > 0) {
         markersArrayRef.current.forEach(marker => marker.remove());
         markersArrayRef.current = [];
     }
   };
 
-  // --- MODE 1: PICKER (Giữ nguyên) ---
+  // --- MODE: PICKER ---
   const setupPickerMode = () => {
     geocoderRef.current = new MapboxGeocoder({
       accessToken: mapboxgl.accessToken,
@@ -122,10 +288,7 @@ const MapboxMap = ({
       updateMarkerAndCallback(lng, lat, e.result.place_name);
     });
 
-    markerRef.current = new mapboxgl.Marker({
-      draggable: true,
-      color: "#E53935",
-    })
+    markerRef.current = new mapboxgl.Marker({ draggable: true, color: "#E53935" })
       .setLngLat(initialCoords)
       .addTo(mapRef.current);
 
@@ -146,151 +309,100 @@ const MapboxMap = ({
   const updateMarkerAndCallback = (lng, lat, address = "") => {
     if (markerRef.current) markerRef.current.setLngLat([lng, lat]);
     mapRef.current.flyTo({ center: [lng, lat], zoom: 14 });
-    if (onLocationSelect) {
-      onLocationSelect(lng, lat, address);
-    }
+    if (onLocationSelect) onLocationSelect(lng, lat, address);
   };
 
-  // --- MODE 2: VIEW (Giữ nguyên) ---
+  // --- MODE: VIEW ---
   const setupViewMode = () => {
     markerRef.current = new mapboxgl.Marker({ color: "#E53935" })
       .setLngLat(initialCoords)
-      .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML("<h6>Vị trí bất động sản</h6>"))
+      .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML("<h6>Vị trí BĐS</h6>"))
       .addTo(mapRef.current);
-
     mapRef.current.flyTo({ center: initialCoords, zoom: 14 });
   };
 
-  // --- MODE 3: EXPLORER (Logic: Marker Giá nhỏ -> Click ra Card to) ---
+  // --- MODE: EXPLORER ---
   const setupExplorerMode = () => {
     if (!data || data.length === 0) return;
 
-    // Lọc dữ liệu sạch
     const validListings = data.filter(
       (item) =>
-        item.location &&
-        item.location.coords &&
-        Array.isArray(item.location.coords.coordinates) &&
-        item.location.coords.coordinates.length === 2
+        item.location?.coords?.coordinates?.length === 2
     );
 
-    // Duyệt qua từng bài đăng
     validListings.forEach((item) => {
-      // --- BƯỚC 1: TẠO MARKER GIÁ TIỀN (Hiển thị mặc định) ---
+      // 1. Tạo HTML Element cho Marker Giá
       const el = document.createElement("div");
       el.className = "price-marker"; 
-      // Style inline cho Marker giá tiền (nhỏ gọn, màu đen)
       el.innerText = item.price || "LH";
-      Object.assign(el.style, {
-        backgroundColor: "#222",
-        color: "#fff",
-        fontWeight: "bold",
-        fontSize: "13px",
-        padding: "6px 10px",
-        borderRadius: "6px",
-        boxShadow: "0 3px 6px rgba(0,0,0,0.3)",
-        cursor: "pointer",
-        border: "1px solid #444",
-        whiteSpace: "nowrap",
-      });
 
-      // Tạo Marker Mapbox
+      // 2. Tạo Marker Mapbox
       const marker = new mapboxgl.Marker({
         element: el,
-        anchor: "bottom", // Neo ở đáy
-        offset: [0, -5],  // Dịch lên một chút
+        anchor: "bottom",
+        offset: [0, -5],
       })
         .setLngLat(item.location.coords.coordinates)
         .addTo(mapRef.current);
 
-      // --- BƯỚC 2: XỬ LÝ SỰ KIỆN CLICK VÀO MARKER ---
+      // 3. Sự kiện Click Marker -> Render Popup React
       el.addEventListener("click", (e) => {
-        e.stopPropagation(); // Ngăn click xuyên qua bản đồ
+        e.stopPropagation();
 
-        // Đóng các popup khác đang mở (nếu muốn chỉ hiện 1 cái)
         const popups = document.getElementsByClassName("mapboxgl-popup");
         if (popups.length) popups[0].remove();
 
-        // --- BƯỚC 3: TẠO NỘI DUNG CARD (POPUP) ---
-        // Chuẩn bị dữ liệu
-        const imageUrl = item.images?.[0]?.url || "https://via.placeholder.com/150";
-        const title = item.title;
-        const price = item.price || "Liên hệ";
-        const areaDisplay = item.area ? `(${item.area} m²)` : "";
-        const isVip = false; 
-
-        // Tạo thẻ DIV chứa nội dung Card
         const popupNode = document.createElement("div");
-        popupNode.className = "property-marker-card"; // Dùng lại class CSS Card của bạn
-        // Reset style để nó hiển thị đúng trong popup (tránh bị transform của marker cũ ảnh hưởng)
-        popupNode.style.transform = "none"; 
-        popupNode.style.marginTop = "0";
-        popupNode.style.position = "relative"; // Để căn chỉnh nút X
+        const root = createRoot(popupNode);
 
-        // HTML nội dung (Giữ nguyên cấu trúc bạn đã làm)
-        popupNode.innerHTML = `
-            <div class="close-btn" style="
-                position: absolute; top: 8px; right: 8px; z-index: 20; 
-                background: rgba(0,0,0,0.6); color: white; width: 24px; height: 24px; 
-                border-radius: 50%; display: flex; align-items: center; justify-content: center; 
-                cursor: pointer; font-size: 14px; font-weight: bold;">
-                ✕
-            </div>
+        // Render ListingPopup
+        root.render(
+            <ListingPopup 
+                item={item}
+                onClose={() => {
+                    marker.getPopup().remove(); 
+                }}
+                onNavigate={(id) => {
+                    navigate(`/listings/${id}`);
+                }}
+            />
+        );
 
-            <div class="pm-image-container">
-                <img src="${imageUrl}" alt="${title}" class="pm-image" />
-                ${isVip ? '<span class="pm-tag-vip">VIP</span>' : ''}
-            </div>
-            <div class="pm-info-container">
-                <div class="pm-title" title="${title}">${title}</div>
-                <div class="pm-details">
-                    <span class="pm-price">${price}</span>
-                    <span class="pm-area">${areaDisplay}</span>
-                </div>
-            </div>
-        `;
-
-        // Xử lý sự kiện trong Popup
-        // 1. Click nút X -> Đóng popup
-        popupNode.querySelector(".close-btn").addEventListener("click", (ev) => {
-            ev.stopPropagation(); // Không kích hoạt chuyển trang
-            marker.getPopup().remove(); // Lệnh đóng popup của Mapbox
-        });
-
-        // 2. Click vào phần còn lại -> Chuyển trang
-        popupNode.addEventListener("click", () => {
-            navigate(`/listings/${item._id}`);
-        });
-
-        // --- BƯỚC 4: GẮN POPUP VÀO MARKER ---
         const popup = new mapboxgl.Popup({
-            closeButton: false, // Tắt nút X mặc định xấu xí của Mapbox
-            closeOnClick: true, // Click ra ngoài bản đồ cũng đóng
-            maxWidth: "300px",
-            offset: 15 // Cách marker giá tiền 1 đoạn
+          closeButton: false,
+          closeOnClick: true,
+          maxWidth: "360px", // Tăng max width để vừa với card mới
+          offset: 15 
         })
-        .setDOMContent(popupNode); // Dùng setDOMContent thay vì setHTML để giữ sự kiện navigate
+        .setDOMContent(popupNode);
 
-        marker.setPopup(popup); // Gắn popup vào marker
-        marker.togglePopup();   // Mở ngay lập tức
+        marker.setPopup(popup);
+        marker.togglePopup();
+
+        popup.on('close', () => {
+             setTimeout(() => root.unmount(), 0);
+        });
       });
 
-      // 5. Lưu marker vào mảng để quản lý
       markersArrayRef.current.push(marker);
     });
   };
 
   return (
-    <Box
-      ref={mapContainerRef}
-      w="100%"
-      h={height}
-      borderRadius="md"
-      overflow="hidden"
-      border="1px solid"
-      borderColor="gray.200"
-      position="relative"
-    />
+    <>
+      <Global styles={GlobalStyles} />
+      <Box
+        ref={mapContainerRef}
+        w="100%"
+        h={height}
+        borderRadius="md"
+        overflow="hidden"
+        border="1px solid"
+        borderColor="gray.200"
+        position="relative"
+        shadow="sm"
+      />
+    </>
   );
 };
 
