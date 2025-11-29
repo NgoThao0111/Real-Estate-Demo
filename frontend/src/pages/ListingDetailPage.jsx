@@ -6,6 +6,9 @@ import {
   Spinner,
   Center,
   Text,
+  Box,
+  Heading,
+  VStack, // Thêm VStack để xếp chồng ảnh và map
 } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -14,6 +17,8 @@ import { useUserStore } from "../store/user.js";
 import { useChatStore } from "../store/chat.js";
 import ListingImageSection from "../components/ListingImageSection.jsx";
 import ListingInfoSection from "../components/ListingInfoSection.jsx";
+// 1. Import Component MapboxMap
+import MapboxMap from "../components/MapboxMap.jsx";
 
 const ListingDetailPage = () => {
   const { id } = useParams();
@@ -22,7 +27,7 @@ const ListingDetailPage = () => {
   const { getListingById } = useListStore();
   const { user } = useUserStore();
   const { createOrFindConversation } = useChatStore();
-  
+
   const [listing, setListing] = useState(null);
   const [loading, setLoading] = useState(true);
   const [chatLoading, setChatLoading] = useState(false);
@@ -66,6 +71,9 @@ const ListingDetailPage = () => {
     );
   }
 
+  // 2. Lấy tọa độ từ dữ liệu Listing
+  const coords = listing.location?.coords?.coordinates;
+
   const handleContact = async () => {
     if (!user) {
       toast({
@@ -89,7 +97,6 @@ const ListingDetailPage = () => {
       return;
     }
 
-    // Kiểm tra nếu người dùng đang cố gắng nhắn tin với chính mình
     if (listing.owner._id === user.id) {
       toast({
         title: "Thông báo",
@@ -105,7 +112,6 @@ const ListingDetailPage = () => {
     try {
       const res = await createOrFindConversation(listing.owner._id);
       if (res.success) {
-        // Điều hướng đến trang chat với conversation ID
         navigate(`/chat?conversation=${res.data._id}`);
       } else {
         toast({
@@ -131,7 +137,7 @@ const ListingDetailPage = () => {
   const handleSave = () => {
     if (!user) {
       toast({
-        title: "Đăng nhập", 
+        title: "Đăng nhập",
         description: "Vui lòng đăng nhập để lưu bài đăng",
         status: "warning",
         duration: 3000,
@@ -151,13 +157,47 @@ const ListingDetailPage = () => {
   return (
     <Container maxW="1200px" py={8}>
       <Grid templateColumns={{ base: "1fr", lg: "1fr 400px" }} gap={8}>
-        {/* Left Container - Images + Seller Info */}
+        {/* Left Container */}
         <GridItem>
-          <ListingImageSection 
-            listing={listing}
-            onContact={handleContact}
-            chatLoading={chatLoading}
-          />
+          {/* Dùng VStack để xếp ảnh và map theo chiều dọc, cách nhau 8 đơn vị */}
+          <VStack spacing={8} align="stretch">
+            
+            {/* Phần Ảnh */}
+            <ListingImageSection
+              listing={listing}
+              onContact={handleContact}
+              chatLoading={chatLoading}
+            />
+
+            {/* --- 3. PHẦN BẢN ĐỒ (Thêm mới) --- */}
+            <Box 
+                p={5} 
+                border="1px solid" 
+                borderColor="gray.200" 
+                borderRadius="lg" 
+                boxShadow="sm"
+                bg="white"
+            >
+                <Heading size="md" mb={4}>📍 Vị trí bất động sản</Heading>
+                
+                <Text color="gray.600" mb={4}>
+                    {listing.location.detail}, {listing.location.ward}, {listing.location.province}
+                </Text>
+
+                {coords && coords.length === 2 ? (
+                    <MapboxMap 
+                        mode="view" 
+                        initialCoords={coords} 
+                        height="400px" 
+                    />
+                ) : (
+                    <Box h="200px" bg="gray.50" display="flex" alignItems="center" justifyContent="center" borderRadius="md">
+                        <Text color="gray.500">Chưa có thông tin vị trí trên bản đồ</Text>
+                    </Box>
+                )}
+            </Box>
+
+          </VStack>
         </GridItem>
 
         {/* Right Container - Property Details + Actions */}
