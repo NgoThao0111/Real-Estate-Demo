@@ -144,9 +144,14 @@ const SlideShow = ({ listings = [] }) => {
         zIndex={2}
       >
         <VStack align="start" spacing={3}>
-          <Badge colorScheme="blue" fontSize="xs">
-            Mới nhất
-          </Badge>
+          <HStack>
+            <Badge colorScheme="blue" fontSize="xs">
+            {recentListings[currentSlide]?.property_type.name}
+            </Badge>
+            <Badge colorScheme="blue" bg="blue.600" color="white" fontSize="xs">
+            {(!recentListings[currentSlide]?.rental_type) ? 'Còn trống' : (recentListings[currentSlide]?.rental_type === 'sale' ? 'Bán' : 'Cho thuê')}
+            </Badge>
+          </HStack>
           <Heading
             size={{ base: "m", md: "lg" }}
             color={useColorModeValue("white", "white")}
