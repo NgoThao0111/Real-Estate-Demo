@@ -1,8 +1,9 @@
-import { Box, Container, SimpleGrid, Heading, Text, Button, Stack } from "@chakra-ui/react";
+import { Box, Container, SimpleGrid, Heading, Button, Stack, useColorModeValue } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { useListStore } from "../store/list.js";
 import ListingCard from "../components/ListingCard";
 import CreateListingModal from "../components/CreateListingModal.jsx";
+import SortViewOpts, { sortListings } from "../components/SortViewOpts";
 
 const MyPostsPage = () => {
   const { fetchMyListings, deleteListing } = useListStore();
@@ -10,6 +11,11 @@ const MyPostsPage = () => {
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState(null);
   const [editOpen, setEditOpen] = useState(false);
+  const [sortBy, setSortBy] = useState("newest");
+  const [viewType, setViewType] = useState("grid");
+
+  // Sort listings using the utility function
+  const sortedListings = sortListings(listings, sortBy);
 
   const load = async () => {
     setLoading(true);
@@ -34,13 +40,30 @@ const MyPostsPage = () => {
   return (
     <Box py={8}>
       <Container maxW="1140px">
-        <Stack direction="row" justify="space-between" align="center" mb={6}>
-          <Heading>Bài đăng của tôi</Heading>
-          <Text color="gray.600">{!loading ? `${listings.length} bài` : 'Đang tải...'}</Text>
-        </Stack>
+        <Heading 
+          size={{ base: "lg", md: "xl" }}
+          textAlign="center"
+          color={useColorModeValue("gray.900", "white")}
+          mb={8}
+        >
+          Bài đăng của tôi
+        </Heading>
 
-        <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6}>
-          {listings.map((l) => (
+        {/* Sorting and View Options */}
+        <SortViewOpts
+          listings={listings}
+          sortBy={sortBy}
+          setSortBy={setSortBy}
+          viewType={viewType}
+          setViewType={setViewType}
+          countText="bài đăng"
+        />
+
+        <SimpleGrid 
+          columns={viewType === "grid" ? { base: 1, md: 3 } : { base: 1 }} 
+          spacing={viewType === "grid" ? 6 : 4}
+        >
+          {sortedListings.map((l) => (
             <Box key={l._id}>
               <ListingCard listing={l} />
               <Stack direction="row" spacing={2} mt={2}>
