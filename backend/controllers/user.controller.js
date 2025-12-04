@@ -184,15 +184,23 @@ export const updateUserInfo = async (req, res) => {
     }
 }
 
-export const getSession = async (req, res) => {
-    if(req.session.user) {
-        return res.json({
-            user: req.session.user
-        });
+export const checkSession = (req, res) => {
+  // --- THÊM DÒNG NÀY ĐỂ DEBUG ---
+  console.log("--> Check Session API được gọi!"); 
+  console.log("Session User:", req.session?.user);
+  // ------------------------------
+
+  try {
+    if (req.session && req.session.user) {
+      return res.status(200).json({ message: "Session active", user: req.session.user });
     } else {
-        return res.json({user: null});
+      return res.status(200).json({ message: "No active session", user: null });
     }
-}
+  } catch (error) {
+    console.error("Lỗi Check Session:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
 
 export const logoutUser = async (req, res) => {
     req.session.destroy(() => {
