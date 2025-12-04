@@ -15,7 +15,6 @@ import {
 } from "@chakra-ui/react";
 import { MdPhotoLibrary } from 'react-icons/md';
 import { ImStarEmpty, ImStarFull } from "react-icons/im";
-// Import các icon mới
 import { FaBed, FaBath } from "react-icons/fa";
 import { BsGridFill } from "react-icons/bs";
 
@@ -30,14 +29,12 @@ const ListingCard = ({ listing }) => {
   const [propertyTypeName, setPropertyTypeName] = useState('');
   const getPropertyTypeById = usePropertyTypeStore((s) => s.getPropertyTypeById);
   
-  // Xử lý ảnh (String URL cũ hoặc Cloudinary Object mới)
   const img = listing.images && listing.images.length
     ? typeof listing.images[0] === "string"
       ? listing.images[0]
       : listing.images[0].url
     : null;
 
-  // Ghép chuỗi địa chỉ
   const location = listing.location 
     ? `${listing.location.detail || ''}, ${listing.location.ward || ''}, ${listing.location.province || ''}` 
     : '';
@@ -45,18 +42,15 @@ const ListingCard = ({ listing }) => {
   const imgCount = listing.images ? listing.images.length : 0;
   const toast = useToast();
 
-  // Xử lý Lưu/Bỏ lưu
   const savedIds = useUserStore((s) => s.savedListings || []);
   const toggleSave = useUserStore((s) => s.toggleSaveListing);
   const fallbackToggle = useListStore((s) => s.toggleSaveListing);
   const isSaved = savedIds.includes(listing._id);
 
-  // --- HÀM HELPER: Format giá tiền ---
   const formatPrice = (price) => {
     if (!price) return "Liên hệ";
     const amount = Number(price);
-    if (isNaN(amount)) return price; // Trả về nguyên gốc nếu không phải số
-
+    if (isNaN(amount)) return price;
     if (amount >= 1000000000) {
       return (amount / 1000000000).toFixed(1).replace(/\.0$/, '') + ' tỷ';
     } else if (amount >= 1000000) {
@@ -66,7 +60,6 @@ const ListingCard = ({ listing }) => {
     }
   };
 
-  // --- HÀM HELPER: Format thời gian tương đối ---
   const formatRelativeTime = (dateStr) => {
     if (!dateStr) return "";
     const d = new Date(dateStr);
@@ -91,7 +84,6 @@ const ListingCard = ({ listing }) => {
   
   const lastUpdatedText = formatRelativeTime(listing.updatedAt || listing.createdAt);
 
-  // Lấy tên Loại bất động sản
   useEffect(() => {
     let mounted = true;
     const load = async () => {
@@ -99,12 +91,10 @@ const ListingCard = ({ listing }) => {
         if (mounted) setPropertyTypeName("unknown");
         return;
       }
-      // Trường hợp đã populate
       if (typeof listing.property_type === "object" && listing.property_type?.name) {
         if (mounted) setPropertyTypeName(listing.property_type.name);
         return;
       }
-      // Trường hợp chưa populate (chỉ có ID)
       const id = typeof listing.property_type === "object" ? (listing.property_type._id || listing.property_type) : listing.property_type;
 
       try {
@@ -140,7 +130,7 @@ const ListingCard = ({ listing }) => {
       }}
       onClick={() => navigate(`/listings/${listing._id}`)}
     >
-      {/* --- PHẦN HÌNH ẢNH --- */}
+      {/* --- ẢNH --- */}
       <Box position="relative">
         {img ? (
           <Image src={img} alt={listing.title} objectFit="cover" w="100%" h="200px"/>
@@ -150,14 +140,12 @@ const ListingCard = ({ listing }) => {
           </Box>
         )}
 
-        {/* Badge thời gian */}
         {lastUpdatedText && (
           <Box position="absolute" bottom={2} left={2} bg="rgba(0,0,0,0.6)" color="white" px={2} py={1} borderRadius="md" fontSize="xs">
             {lastUpdatedText}
           </Box>
         )}
 
-        {/* Badge số lượng ảnh */}
         {imgCount > 0 && (
           <Box position="absolute" bottom={2} right={2} bg="rgba(0,0,0,0.6)" color="white" px={2} py={1} borderRadius="md" fontSize="xs" display="flex" alignItems="center" gap={1}>
             <MdPhotoLibrary size="14px" />
@@ -165,7 +153,6 @@ const ListingCard = ({ listing }) => {
           </Box>
         )}
 
-        {/* Nút Save/Unsave */}
         <IconButton
           aria-label={isSaved ? 'Bỏ lưu' : 'Lưu'}
           icon={isSaved ? <ImStarFull /> : <ImStarEmpty />}
@@ -176,15 +163,10 @@ const ListingCard = ({ listing }) => {
           bg="white"
           _hover={{ bg: "gray.100", color: "yellow.500" }}
           onClick={async (e) => {
-            e.stopPropagation(); // Ngăn chặn sự kiện click lan ra thẻ cha (navigate)
+            e.stopPropagation();
             try {
               const res = toggleSave ? await toggleSave(listing._id) : await fallbackToggle(listing._id);
-              toast({ 
-                title: res.success ? res.message : 'Lỗi', 
-                status: res.success ? 'success' : 'error', 
-                isClosable: true, 
-                duration: 2000 
-              });
+              toast({ title: res.success ? res.message : 'Lỗi', status: res.success ? 'success' : 'error', isClosable: true, duration: 2000 });
             } catch (err) {
               toast({ title: 'Lỗi kết nối', status: 'error', isClosable: true });
             }
@@ -192,25 +174,25 @@ const ListingCard = ({ listing }) => {
         />
       </Box>
 
-      {/* --- PHẦN NỘI DUNG --- */}
+      {/* --- NỘI DUNG --- */}
       <Box p={4}>
         <Stack spacing={1} mb={3}>
-          {/* Badge loại BĐS */}
           <Badge colorScheme="blue" width="fit-content" fontSize="0.7em" borderRadius="sm">
             {propertyTypeName}
           </Badge>
 
-          {/* Tiêu đề */}
-          <Text fontWeight="bold" fontSize="md" noOfLines={2} lineHeight="1.4" h="2.8em">
-            {listing.title}
-          </Text>
+          {/* TITLE TOOLTIP */}
+          <Tooltip label={listing.title} hasArrow placement="top-start">
+            <Text fontWeight="bold" fontSize="md" noOfLines={1} lineHeight="1.4">
+              {listing.title}
+            </Text>
+          </Tooltip>
 
-          {/* Giá tiền */}
           <Text color="blue.600" fontWeight="extrabold" fontSize="lg">
             {formatPrice(listing.price)} {listing.rental_type === "rent" && "/tháng"}
           </Text>
 
-          {/* Địa chỉ (có Tooltip) */}
+          {/* ADDRESS TOOLTIP */}
           <Tooltip label={location} hasArrow placement="top">
             <Text color="gray.500" fontSize="sm" noOfLines={1} cursor="default">
               {location}
@@ -218,12 +200,9 @@ const ListingCard = ({ listing }) => {
           </Tooltip>
         </Stack>
 
-        {/* --- PHẦN THÔNG SỐ (BED - BATH - AREA) --- */}
         <Divider my={3} borderColor="gray.200" />
         
         <Flex justifyContent="space-between" alignItems="center" textAlign="center">
-          
-          {/* Cột 1: Phòng ngủ */}
           <Flex direction="column" align="center" width="33%">
             <HStack spacing={1}>
                 <Icon as={FaBed} color="gray.400" />
@@ -234,10 +213,8 @@ const ListingCard = ({ listing }) => {
             <Text fontSize="10px" color="gray.500" textTransform="uppercase" mt="-2px">Ngủ</Text>
           </Flex>
 
-          {/* Vạch ngăn cách */}
           <Box w="1px" h="24px" bg="gray.200" />
 
-          {/* Cột 2: Phòng tắm */}
           <Flex direction="column" align="center" width="33%">
              <HStack spacing={1}>
                 <Icon as={FaBath} color="gray.400" />
@@ -248,10 +225,8 @@ const ListingCard = ({ listing }) => {
             <Text fontSize="10px" color="gray.500" textTransform="uppercase" mt="-2px">Tắm</Text>
           </Flex>
 
-          {/* Vạch ngăn cách */}
           <Box w="1px" h="24px" bg="gray.200" />
 
-          {/* Cột 3: Diện tích */}
           <Flex direction="column" align="center" width="33%">
              <HStack spacing={1}>
                 <Icon as={BsGridFill} color="gray.400" />
@@ -261,7 +236,6 @@ const ListingCard = ({ listing }) => {
             </HStack>
             <Text fontSize="10px" color="gray.500" textTransform="uppercase" mt="-2px">m²</Text>
           </Flex>
-
         </Flex>
       </Box>
     </Box>
