@@ -12,6 +12,7 @@ export const createList = async (req, res) => {
   try {
     const ownerId = req.session.user.id;
 
+    // --- CẬP NHẬT: Thêm bedroom, bathroom vào destructuring ---
     const {
       title,
       description,
@@ -21,14 +22,17 @@ export const createList = async (req, res) => {
       property_type,
       rental_type,
       location,
-      amenities
+      amenities,
+      bedroom, // Mới
+      bathroom // Mới
     } = req.body;
+
     const province = location?.province;
     const ward = location?.ward;
     const detail = location?.detail;
     const longitude = location?.longitude;
     const latitude = location?.latitude;
-    const validAmenities = Array.isArray(amenities) ? amenities: [];
+    const validAmenities = Array.isArray(amenities) ? amenities : [];
 
     if (
       !title ||
@@ -44,6 +48,7 @@ export const createList = async (req, res) => {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
+    // Xử lý ảnh (Giữ nguyên)
     let images = [];
     if (req.body.images) {
       if (Array.isArray(req.body.images)) images = req.body.images;
@@ -59,7 +64,6 @@ export const createList = async (req, res) => {
     }
 
     let cloudinaryImages = [];
-
     if (images.length > 0) {
       cloudinaryImages = await Promise.all(
         images.map((img) =>
@@ -72,7 +76,6 @@ export const createList = async (req, res) => {
       return res.status(500).json({ message: "Image upload failed" });
     }
 
-    // save only secure_urls or public_ids depending on needs
     const savedImages = cloudinaryImages.map((img) => ({
       url: img.secure_url,
       public_id: img.public_id,
@@ -81,16 +84,19 @@ export const createList = async (req, res) => {
     const finalLat = latitude ? parseFloat(latitude) : 21.028511;
     const finalLng = longitude ? parseFloat(longitude) : 105.854444;
 
+    // --- CẬP NHẬT: Lưu các trường số liệu mới ---
     const list = new Listing({
       title: title,
       description: description,
-      area: area,
+      area: Number(area),             // Ép kiểu sang số
       price: price,
       status: status,
       property_type: property_type,
       rental_type: rental_type,
       images: savedImages,
       owner: ownerId,
+      bedroom: bedroom ? Number(bedroom) : 0, // Mới: Ép kiểu sang số
+      bathroom: bathroom ? Number(bathroom) : 0, // Mới: Ép kiểu sang số
       location: {
         province: province,
         ward: ward,
@@ -146,8 +152,7 @@ export const getListings = async (req, res) => {
 
     const query = {};
 
-    //Nếu client gửi lên userLat, userLng và radius
-    if(userLat && userLng && radius) {
+    if (userLat && userLng && radius) {
       const radiusInMeters = parseFloat(radius) * 1000;
       query["location.coords"] = {
         $near: {
@@ -179,24 +184,24 @@ export const getListings = async (req, res) => {
       (minPrice !== undefined && isNaN(minP)) ||
       (maxPrice !== undefined && isNaN(maxP))
     ) {
-      return res
-        .status(400)
-        .json({ message: "minPrice and maxPrice must be numbers" });
+      return res.status(400).json({ message: "minPrice and maxPrice must be numbers" });
     }
     if (
       (minArea !== undefined && isNaN(minA)) ||
       (maxArea !== undefined && isNaN(maxA))
     ) {
-      return res
-        .status(400)
-        .json({ message: "minArea and maxArea must be numbers" });
+      return res.status(400).json({ message: "minArea and maxArea must be numbers" });
     }
 
     if (minP !== undefined || maxP !== undefined) {
+      // Lưu ý: Nếu price trong DB vẫn là String thì so sánh $gte/$lte có thể không chính xác
+      // Tốt nhất nên convert Price trong DB sang Number nếu có thể.
       query.price = {};
       if (minP !== undefined) query.price.$gte = minP;
       if (maxP !== undefined) query.price.$lte = maxP;
     }
+    
+    // Diện tích giờ là Number nên so sánh sẽ chính xác hơn
     if (minA !== undefined || maxA !== undefined) {
       query.area = {};
       if (minA !== undefined) query.area.$gte = minA;
@@ -204,7 +209,6 @@ export const getListings = async (req, res) => {
     }
 
     const pageNum = page && Number(page) > 0 ? Number(page) : 1;
-
     const defaultLimit = 30;
     const lim = limit && Number(limit) > 0 ? Number(limit) : defaultLimit;
     const skip = (pageNum - 1) * lim;
@@ -258,7 +262,6 @@ export const getListingById = async (req, res) => {
   }
 };
 
-// Lấy danh sách tin đăng của người dùng hiện tại
 export const getMyListings = async (req, res) => {
   try {
     if (!req.session || !req.session.user)
@@ -300,21 +303,13 @@ export const updateListing = async (req, res) => {
         newImages = req.body.images.split(",").map(s => s.trim()).filter(Boolean);
     }
 
-    // Chuyển tất cả về một dạng duy nhất: old -> object, base64 mới -> string
     const oldImages = listing.images || [];
-
-    // Ảnh mới = chuỗi base64 => không có public_id
     const base64Images = newImages.filter(img => typeof img === "string" && img.startsWith("data:"));
-
-    // Ảnh giữ lại = object: { url, public_id }
     const keptImages = newImages.filter(img => typeof img === "object" && img.url);
-
-    // Ảnh bị xóa = ảnh cũ mà không nằm trong keptImages
     const removedImages = oldImages.filter(old =>
       !keptImages.some(k => k.public_id === old.public_id)
     );
 
-    // Xóa ảnh cũ trên Cloudinary
     await Promise.all(
       removedImages.map(async (img) => {
         if (img.public_id) {
@@ -323,7 +318,6 @@ export const updateListing = async (req, res) => {
       })
     );
 
-    // Upload ảnh base64 mới lên Cloudinary
     const uploadedImages = await Promise.all(
       base64Images.map(img =>
         cloudinary.uploader.upload(img, { folder: "products" })
@@ -335,10 +329,9 @@ export const updateListing = async (req, res) => {
       public_id: i.public_id
     }));
 
-    // Tổng hợp ảnh cuối cùng
     const finalImages = [...keptImages, ...uploadedConverted];
 
-    // -------- Cập nhật các trường khác --------
+    // -------- Cập nhật các trường --------
     const {
       title,
       description,
@@ -348,25 +341,34 @@ export const updateListing = async (req, res) => {
       property_type,
       rental_type,
       location,
-      amenities
+      amenities,
+      bedroom, // Mới
+      bathroom // Mới
     } = req.body;
 
     listing.title = title ?? listing.title;
     listing.description = description ?? listing.description;
-    listing.area = area ?? listing.area;
+    
+    // Cập nhật area (đảm bảo là số)
+    if (area !== undefined) listing.area = Number(area);
+    
     listing.price = price ?? listing.price;
     listing.status = status ?? listing.status;
     listing.property_type = property_type ?? listing.property_type;
     listing.rental_type = rental_type ?? listing.rental_type;
     listing.amenities = Array.isArray(amenities) ? amenities : listing.amenities;
     listing.images = finalImages;
+    
+    // Cập nhật bedroom/bathroom (Mới)
+    if (bedroom !== undefined) listing.bedroom = Number(bedroom);
+    if (bathroom !== undefined) listing.bathroom = Number(bathroom);
 
-    if(location) {
+    if (location) {
       listing.location.province = location.province ?? listing.location.province;
       listing.location.ward = location.ward ?? listing.location.ward;
       listing.location.detail = location.detail ?? listing.location.detail;
 
-      if(location.longitude && location.latitude) {
+      if (location.longitude && location.latitude) {
         listing.location.coords = {
           type: "Point",
           coordinates: [
@@ -409,7 +411,6 @@ export const deleteListing = async (req, res) => {
       return res.status(403).json({ message: "Bạn không có quyền xóa bài đăng này" });
     }
 
-    // Xóa ảnh trên Cloudinary
     await Promise.all(
       listing.images.map(async (img) => {
         if (img.public_id) {
