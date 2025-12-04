@@ -70,11 +70,27 @@ const HomePage = () => {
 
   return (
     <>
-      <HomePanel />
+      <Box 
+        data-aos="fade-in" 
+        data-aos-duration="100"
+      >
+        <HomePanel />
+      </Box>
 
       {/* --- SECTION BẢN ĐỒ KHÁM PHÁ --- */}
-      <Container maxW={"1140px"} mt={10}>
-        <Box mb={6}>
+      <Container 
+        maxW={"1140px"} 
+        mt={10}
+        data-aos="fade-up"
+        data-aos-duration="800"
+        data-aos-delay="200"
+      >
+        <Box 
+          mb={6}
+          data-aos="fade-right"
+          data-aos-duration="800"
+          data-aos-delay="300"
+        >
           <Heading as="h3" size="lg" mb={2}>
             Bản đồ bất động sản
           </Heading>
@@ -93,6 +109,9 @@ const HomePage = () => {
           borderColor="gray.200"
           position="relative"
           bg="gray.100"
+          data-aos="zoom-in"
+          data-aos-duration="500"
+          data-aos-delay="400"
         >
           {/* QUAN TRỌNG: Luôn hiển thị bản đồ, bất kể có dữ liệu hay không */}
           <MapboxMap
@@ -105,16 +124,41 @@ const HomePage = () => {
       </Container>
 
       {/* --- SECTION DANH SÁCH BÀI ĐĂNG --- */}
-      <Container maxW={"1140px"} mt={12} textAlign="left">
-        <Heading as="h2" size="lg" mb={2}>
+      <Container 
+        maxW={"1140px"} 
+        mt={12} 
+        textAlign="left"
+        data-aos="fade-up"
+        data-aos-duration="400"
+        data-aos-delay="200"
+      >
+        <Heading 
+          as="h2" 
+          size="lg" 
+          mb={2}
+          data-aos="fade-right"
+          data-aos-duration="400"
+          data-aos-delay="300"
+        >
           Khám phá các bài đăng mới nhất
         </Heading>
-        <Text color={subText}>
+        <Text 
+          color={subText}
+          data-aos="fade-right"
+          data-aos-duration="400"
+          data-aos-delay="300"
+        >
           Tổng hợp các bài đăng nhà đất, căn hộ và đất nền được tuyển chọn.
         </Text>
       </Container>
 
-      <Container maxW={"1140px"} py={8}>
+      <Container 
+        maxW={"1140px"} 
+        py={8}
+        data-aos="fade-up"
+        data-aos-duration="400"
+        data-aos-delay="300"
+      >
         {!listings || listings.length === 0 ? (
           <Center>
             <Text>Chưa có bài đăng nào.</Text>
@@ -143,18 +187,40 @@ const HomePage = () => {
 
             return (
               <>
-                <SimpleGrid columns={{ base: 1, sm: 2, md: 3 }} spacing={6}>
-                  {top.map((l) => (
-                    <ListingCard key={l._id || l.id} listing={l} />
+                <SimpleGrid 
+                  columns={{ base: 1, sm: 2, md: 3 }} 
+                  spacing={6}
+                  data-aos="fade-up"
+                  data-aos-duration="800"
+                  data-aos-delay="300"
+                >
+                  {top.map((l, index) => (
+                    <Box
+                      key={l._id || l.id}
+                      data-aos="zoom-in"
+                      data-aos-duration="800"
+                      data-aos-delay={500 + (index * 100)}
+                    >
+                      <ListingCard listing={l} />
+                    </Box>
                   ))}
                 </SimpleGrid>
 
-                <Box mt={8} textAlign="center">
+                <Box 
+                  mt={8} 
+                  textAlign="center"
+                  data-aos="fade-up"
+                  data-aos-duration="400"
+                  data-aos-delay="400"
+                >
                   <Button
                     size="lg"
                     colorScheme="blue"
                     variant="outline"
                     onClick={() => navigate("/listings")}
+                    data-aos="pulse"
+                    data-aos-duration="500"
+                    data-aos-delay="400"
                   >
                     Xem tất cả bài đăng
                   </Button>
@@ -166,23 +232,57 @@ const HomePage = () => {
       </Container>
 
       {/* Features section (Giữ nguyên) */}
-      <Container maxW={"1140px"} mt={6} mb={12}>
-        <Box textAlign="center" mb={6}>
-          <Heading as="h3" size="lg">
+      <Container 
+        maxW={"1140px"} 
+        mt={6} 
+        mb={12}
+        data-aos="fade-up"
+        data-aos-duration="800"
+        data-aos-delay="200"
+      >
+        <Box 
+          textAlign="center" 
+          mb={6}
+          data-aos="fade-down"
+          data-aos-duration="800"
+          data-aos-delay="300"
+        >
+          <Heading 
+            as="h3" 
+            size="lg"
+            data-aos="zoom-in"
+            data-aos-duration="800"
+            data-aos-delay="400"
+          >
             Tại sao chọn RealEstate Demo?
           </Heading>
-          <Text color={subText} mt={2}>
+          <Text 
+            color={subText} 
+            mt={2}
+            data-aos="fade-up"
+            data-aos-duration="800"
+            data-aos-delay="500"
+          >
             Đối tác tin cậy giúp bạn tìm bất động sản phù hợp.
           </Text>
         </Box>
 
-        <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6}>
+        <SimpleGrid 
+          columns={{ base: 1, md: 3 }} 
+          spacing={6}
+          data-aos="fade-up"
+          data-aos-duration="800"
+          data-aos-delay="600"
+        >
           <Box
             bg={contentBg}
             borderRadius="md"
             p={6}
             boxShadow={cardShadow}
             textAlign="center"
+            data-aos="flip-left"
+            data-aos-duration="800"
+            data-aos-delay="700"
           >
             <Box
               mx="auto"
@@ -194,13 +294,29 @@ const HomePage = () => {
               display="flex"
               alignItems="center"
               justifyContent="center"
+              data-aos="zoom-in"
+              data-aos-duration="600"
+              data-aos-delay="800"
             >
               <FiUsers size={24} color="#2B6CB0" />
             </Box>
-            <Heading as="h4" size="md" mb={2}>
+            <Heading 
+              as="h4" 
+              size="md" 
+              mb={2}
+              data-aos="fade-up"
+              data-aos-duration="600"
+              data-aos-delay="900"
+            >
               Chuyên gia môi giới
             </Heading>
-            <Text color={subText} fontSize="sm">
+            <Text 
+              color={subText} 
+              fontSize="sm"
+              data-aos="fade-up"
+              data-aos-duration="600"
+              data-aos-delay="1000"
+            >
               Đội ngũ tư vấn chuyên nghiệp đồng hành cùng bạn trong mọi bước.
             </Text>
           </Box>
@@ -211,6 +327,9 @@ const HomePage = () => {
             p={6}
             boxShadow={cardShadow}
             textAlign="center"
+            data-aos="flip-up"
+            data-aos-duration="800"
+            data-aos-delay="800"
           >
             <Box
               mx="auto"
@@ -222,13 +341,29 @@ const HomePage = () => {
               display="flex"
               alignItems="center"
               justifyContent="center"
+              data-aos="zoom-in"
+              data-aos-duration="600"
+              data-aos-delay="900"
             >
               <FiGrid size={24} color="#2B6CB0" />
             </Box>
-            <Heading as="h4" size="md" mb={2}>
+            <Heading 
+              as="h4" 
+              size="md" 
+              mb={2}
+              data-aos="fade-up"
+              data-aos-duration="600"
+              data-aos-delay="1000"
+            >
               Nguồn lựa chọn đa dạng
             </Heading>
-            <Text color={subText} fontSize="sm">
+            <Text 
+              color={subText} 
+              fontSize="sm"
+              data-aos="fade-up"
+              data-aos-duration="600"
+              data-aos-delay="1100"
+            >
               Hàng nghìn tin đăng đã được kiểm duyệt, dễ dàng tìm được bất động
               sản phù hợp.
             </Text>
@@ -240,6 +375,9 @@ const HomePage = () => {
             p={6}
             boxShadow={cardShadow}
             textAlign="center"
+            data-aos="flip-right"
+            data-aos-duration="800"
+            data-aos-delay="900"
           >
             <Box
               mx="auto"
@@ -251,13 +389,29 @@ const HomePage = () => {
               display="flex"
               alignItems="center"
               justifyContent="center"
+              data-aos="zoom-in"
+              data-aos-duration="600"
+              data-aos-delay="1000"
             >
               <FiCheckCircle size={24} color="#2B6CB0" />
             </Box>
-            <Heading as="h4" size="md" mb={2}>
+            <Heading 
+              as="h4" 
+              size="md" 
+              mb={2}
+              data-aos="fade-up"
+              data-aos-duration="600"
+              data-aos-delay="1100"
+            >
               Quy trình liền mạch
             </Heading>
-            <Text color={subText} fontSize="sm">
+            <Text 
+              color={subText} 
+              fontSize="sm"
+              data-aos="fade-up"
+              data-aos-duration="600"
+              data-aos-delay="1200"
+            >
               Ứng dụng công nghệ giúp trải nghiệm mua bán, thuê mướn trở nên
               suôn sẻ.
             </Text>
@@ -266,18 +420,41 @@ const HomePage = () => {
       </Container>
 
       {/* CTA Register Banner */}
-      <Container maxW={"1140px"} mt={12} mb={12}>
+      <Container 
+        maxW={"1140px"} 
+        mt={12} 
+        mb={12}
+        data-aos="fade-up"
+        data-aos-duration="1000"
+        data-aos-delay="200"
+      >
         <Box
           bg="blue.600"
           color="white"
           p={{ base: 6, md: 10 }}
           borderRadius="lg"
           textAlign="center"
+          data-aos="zoom-in"
+          data-aos-duration="800"
+          data-aos-delay="400"
         >
-          <Heading as="h3" size="lg" mb={2}>
+          <Heading 
+            as="h3" 
+            size="lg" 
+            mb={2}
+            data-aos="fade-down"
+            data-aos-duration="600"
+            data-aos-delay="600"
+          >
             Cùng tham gia RealEstate Demo
           </Heading>
-          <Text color="whiteAlpha.800" mb={4}>
+          <Text 
+            color="whiteAlpha.800" 
+            mb={4}
+            data-aos="fade-up"
+            data-aos-duration="600"
+            data-aos-delay="700"
+          >
             Tạo tài khoản để lưu tìm kiếm và nhận thông báo cá nhân hóa.
           </Text>
           <Button
@@ -285,12 +462,19 @@ const HomePage = () => {
             color="black"
             _hover={{ bg: "yellow.300" }}
             onClick={() => navigate("/register")}
+            data-aos="bounce"
+            data-aos-duration="800"
+            data-aos-delay="800"
           >
             Đăng ký ngay
           </Button>
         </Box>
       </Container>
-      <Container padding={4}></Container>
+      <Container 
+        padding={4}
+        data-aos="fade-in"
+        data-aos-duration="500"
+      ></Container>
     </>
   );
 };

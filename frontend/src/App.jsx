@@ -8,6 +8,7 @@ import ChatPage from "./pages/ChatPage.jsx";
 import AllListings from "./pages/AllListings.jsx";
 import ListingDetailPage from "./pages/ListingDetailPage.jsx";
 import ChatWidget from "./components/ChatWidget.jsx";
+import AOSComponent from "./components/AOSComponent.jsx";
 import { Routes, Route } from "react-router-dom";
 import { useUserStore } from "./store/user.js";
 
@@ -16,39 +17,39 @@ function App() {
   const { user } = useUserStore();
 
   return (
-    <>
-    <Box>
-      <Box 
-        position="fixed"
-        top={0}
-        left={0}
-        right={0}
-        zIndex={1000}
-        borderBottom={"2px"}
-        borderColor={"blue.300"}
-      >
-        <Navbar />
-      </Box>
+    <AOSComponent>
+      <Box>
+        <Box 
+          position="fixed"
+          top={0}
+          left={0}
+          right={0}
+          zIndex={1000}
+          borderBottom={"2px"}
+          borderColor={"blue.300"}
+        >
+          <Navbar />
+        </Box>
 
-      <Box 
-        minH={"100vh"}  
-        bg={useColorModeValue("gray.100", "gray.900")}
-        pt={"64px"} 
-      >
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/home-panel" element={<HomePanel />} />
-          <Route path="/listings" element={<AllListings />} />
-          <Route path="/listings/:id" element={<ListingDetailPage />} />
-          <Route path="/my-posts" element={<MyPostsPage />} />
-          <Route path="/saved-posts" element={<SavedPostsPage />} />
-          <Route path="/chat" element={<ChatPage />} />
-        </Routes>
-      </Box>
+        <Box 
+          minH={"100vh"}  
+          bg={useColorModeValue("gray.100", "gray.900")}
+          pt={"64px"} 
+        >
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/home-panel" element={<HomePanel />} />
+            <Route path="/listings" element={<AllListings />} />
+            <Route path="/listings/:id" element={<ListingDetailPage />} />
+            <Route path="/my-posts" element={<MyPostsPage />} />
+            <Route path="/saved-posts" element={<SavedPostsPage />} />
+            <Route path="/chat" element={<ChatPage />} />
+          </Routes>
+        </Box>
 
-      {user && <ChatWidget />}
-    </Box>
-    </>
+        {user && <ChatWidget />}
+      </Box>
+    </AOSComponent>
   )
 }
 

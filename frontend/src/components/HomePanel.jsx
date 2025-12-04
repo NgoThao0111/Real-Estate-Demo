@@ -5,142 +5,327 @@ import {
   Heading,
   Text,
   Input,
-  Select,
   Button,
-  SimpleGrid,
-  Stat,
-  StatLabel,
-  StatNumber,
-  Stack,
-  Center,
+  HStack,
+  VStack,
   InputGroup,
   InputLeftElement,
   Icon,
-  useColorModeValue
+  useColorModeValue,
+  Image,
+  Tab,
+  Tabs,
+  TabList,
+  TabPanel,
+  TabPanels,
+  Alert,
+  AlertIcon,
+  Flex
 } from "@chakra-ui/react";
-import { FiSearch } from "react-icons/fi";
+import { FiMapPin, FiStar } from "react-icons/fi";
 import { useListStore } from "../store/list.js";
 import { useNavigate } from "react-router-dom";
 
 const HomePanel = () => {
-  const { listings, loading, error, fetchListings } = useListStore();
-  const [keyword, setKeyword] = useState("");
-  const [type, setType] = useState("");
+  const { listings, fetchListings } = useListStore();
   const navigate = useNavigate();
+  
+  // Theme colors
   const contentBg = useColorModeValue("white", "gray.800");
-  const subText = useColorModeValue("gray.200", "white");
-  const cardShadow = useColorModeValue("lg", "dark-lg");
-
+  const bgGradient = useColorModeValue(
+    "linear(to-b, white 10%, gray.50 90%)", 
+    "linear(to-b, gray.900 10%, gray.800 90%)"
+  );
+  const tabActiveBg = useColorModeValue("white", "gray.700");
+  const tabInactiveBg = useColorModeValue("whiteAlpha.500", "gray.600");
+  
+  // State management
+  const [activeTab, setActiveTab] = useState(0); // 0 for sell, 1 for buy
+  const [location, setLocation] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [error, setError] = useState("");
+  
   useEffect(() => {
-    // Allow skipping automatic API calls in development to avoid Vite proxy errors
-    // Set `VITE_SKIP_API=true` in `frontend/.env` to disable automatic fetching
     if (import.meta.env.VITE_SKIP_API === 'true') return;
     fetchListings();
   }, [fetchListings]);
 
-  const onSearch = () => {
-    // simple navigation to results (implement actual query handling later)
-    const params = new URLSearchParams();
-    if (keyword) params.set("q", keyword);
-    if (type) params.set("type", type);
-    navigate(`/?${params.toString()}`);
+  // Generate location suggestions from listings
+  const suggestions = Array.from(new Set(
+    listings.map(item => item.location?.province || item.location?.ward || item.location?.detail)
+      .filter(Boolean)
+  )).slice(0, 8);
+
+  const handleSelect = (value) => {
+    setLocation(value);
+    setShowSuggestions(false);
   };
 
-  return (
-    <Box>
-      {/* HERO */}
-      <Box
-        h={{ base: "340px", md: "420px" }}
-        bgImage={"url('https://th.bing.com/th/id/R.882fba727d519950a5f7184aef7e582b?rik=e%2faiVMLLFj2BhA&pid=ImgRaw&r=0')"}
-        bgSize="cover"
-        bgPos="center"
-        display="flex"
-        alignItems="center"
-        justifyContent="center"
-        position="relative"
-      >
-        <Box position="absolute" inset={0} bgGradient="linear(to-b, rgba(2,6,23,0.6), rgba(2,6,23,0.2))" />
+  const handleSearch = (type) => {
+    if (location.trim() === '') {
+      setError('Vui lòng nhập địa điểm để tìm kiếm.');
+      return;
+    }
+    setError('');
+    
+    const params = new URLSearchParams();
+    params.set("location", location);
+    params.set("type", type);
+    navigate(`/listings?${params.toString()}`);
+  };
 
-        <Container maxW="1140px" zIndex={2} textAlign="center">
-          <Heading color="white" fontSize={{ base: "3xl", md: "5xl" }} mb={3}>
-            Tìm ngôi nhà mơ ước của bạn
-          </Heading>
-          <Text color={subText} mb={6} fontSize={{ base: "sm", md: "md" }}>
-            Cách dễ nhất để mua, bán và cho thuê bất động sản.
-          </Text>
+  const renderSearchPanel = (type) => (
+    <VStack spacing={6}>
+      <Box position="relative" w="full">
+        <InputGroup>
+          <InputLeftElement>
+            <Icon as={FiMapPin} color="gray.400" />
+          </InputLeftElement>
+          <Input
+            placeholder="Tìm kiếm địa điểm"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            onFocus={() => setShowSuggestions(true)}
+            onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+            size="lg"
+            borderRadius="lg"
+            bg="white"
+            border="1px solid"
+            borderColor="gray.300"
+          />
+        </InputGroup>
 
+        {showSuggestions && suggestions.length > 0 && (
           <Box
-            display="flex"
-            alignItems="center"
-            justifyContent="center"
-            mt={4}
+            position="absolute"
+            top="full"
+            left={0}
+            right={0}
+            mt={1}
+            bg="white"
+            border="1px solid"
+            borderColor="gray.200"
+            borderRadius="md"
+            zIndex={10}
+            maxH="200px"
+            overflowY="auto"
+            boxShadow="lg"
           >
-            <Box
-              w={{ base: "100%", md: "84%" }}
-              bg={contentBg}
-              p={3}
-              borderRadius="32px"
-              boxShadow={cardShadow}
-            >
-              <Stack direction={{ base: "column", md: "row" }} spacing={3} align="center">
-                <InputGroup flex={1}>
-                  <InputLeftElement pointerEvents="none">
-                    <Icon as={FiSearch} color="gray.400" />
-                  </InputLeftElement>
-                  <Input
-                    placeholder="Nhập từ khóa, địa chỉ, thành phố..."
-                    borderRadius="full"
-                    value={keyword}
-                    onChange={(e) => setKeyword(e.target.value)}
-                    borderWidth={0}
-                    _placeholder={{ color: "gray.400" }}
-                  />
-                </InputGroup>
-
-                <Select
-                  w={{ base: "100%", md: "215px" }}
-                  placeholder="Chọn loại bất động sản"
-                  borderRadius="full"
-                  value={type}
-                  onChange={(e) => setType(e.target.value)}
+            <VStack align="stretch" spacing={0}>
+              {suggestions.map((item, index) => (
+                <Text
+                  key={index}
+                  cursor="pointer"
+                  p={3}
+                  _hover={{ bg: "blue.50", color: "blue.500" }}
+                  onClick={() => handleSelect(item)}
+                  borderBottom={index < suggestions.length - 1 ? "1px solid" : "none"}
+                  borderBottomColor="gray.100"
                 >
-                  <option value="house">Nhà đất</option>
-                  <option value="apartment">Chung cư</option>
-                </Select>
-
-                <Button colorScheme="blue" px={8} borderRadius="full" onClick={onSearch}>
-                  Tìm kiếm
-                </Button>
-              </Stack>
-            </Box>
+                  {item}
+                </Text>
+              ))}
+            </VStack>
           </Box>
-        </Container>
+        )}
       </Box>
 
-      {/* STATS */}
-      <Container maxW="1140px" mt={8}>
-        <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6}>
-          <Box bg={contentBg}  borderRadius="md" p={6} boxShadow={cardShadow}>
-            <Stat>
-              <StatLabel>Số lượng bất động sản</StatLabel>
-              <StatNumber fontSize="2xl">1,000,000+</StatNumber>
-            </Stat>
-          </Box>
+      <HStack spacing={4} w="full">
+        <Button
+          flex={1}
+          size="lg"
+          colorScheme="blue"
+          onClick={() => handleSearch(type)}
+          _hover={{ transform: "translateY(-2px)", shadow: "lg" }}
+          transition="all 0.2s"
+        >
+          Tìm kiếm
+        </Button>
+        <Button
+          flex={1}
+          size="lg"
+          variant="outline"
+          colorScheme="blue"
+          onClick={() => handleSearch(type)}
+          _hover={{ transform: "translateY(-2px)", shadow: "lg" }}
+          transition="all 0.2s"
+        >
+          Tìm kiếm nâng cao
+        </Button>
+      </HStack>
 
-          <Box bg={contentBg}  borderRadius="md" p={6} boxShadow={cardShadow}>
-            <Stat>
-              <StatLabel>Khách hàng hài lòng</StatLabel>
-              <StatNumber fontSize="2xl">10,000+</StatNumber>
-            </Stat>
-          </Box>
+      {error && (
+        <Alert status="error" borderRadius="md">
+          <AlertIcon />
+          {error}
+        </Alert>
+      )}
+    </VStack>
+  );
 
-          <Box bg={contentBg}  borderRadius="md" p={6} boxShadow={cardShadow}>
-            <Stat>
-              <StatLabel>Thâm niên trong ngành</StatLabel>
-              <StatNumber fontSize="2xl">50+</StatNumber>
-            </Stat>
-          </Box>
-        </SimpleGrid>
+  return (
+    <Box
+      position="relative"
+      minH="100vh"
+      pt={{ base: "80px", md: "100px" }}
+      pb={{ base: "40px", md: "60px" }}
+      overflow="hidden"
+    >
+      {/* Background Image */}
+      <Box
+        position="absolute"
+        top={0}
+        left={0}
+        w="100%"
+        h="100%"
+        zIndex={0}
+      >
+        <Image
+          src="hero-image.jpg"
+          alt="Real Estate Background"
+          w="100%"
+          h="100%"
+          objectFit="cover"
+          objectPosition="center"
+        />
+      </Box>
+      
+      <Container maxW="1100px" position="absolute" zIndex={2}>
+        <Flex direction={{ base: "column", lg: "row" }} align="start" minH="60vh">
+          {/* Content */}
+          <VStack 
+            align={{ base: "center", lg: "start" }} 
+            spacing={8} 
+            flex={1}
+            textAlign={{ base: "center", lg: "left" }}
+            maxW={{ base: "100%", lg: "700px" }}
+            mx="auto"
+          >
+            <VStack align="start" spacing={4}>
+              <Heading 
+                fontSize={{ base: "3xl", md: "4xl", lg: "5xl" }}
+                lineHeight={1.2}
+                color="rgba(1, 2, 24, 0.8)"
+                fontWeight="bold"
+                maxW="600px"
+              >
+                Tìm bất động sản tốt nhất của bạn
+              </Heading>
+              <Text 
+                fontSize={{ base: "md", md: "lg" }}
+                color="whiteAlpha.900"
+                maxW="500px"
+                textShadow="1px 0.5px 2px rgba(0,0,0,0.8)"
+              >
+                Khám phá hàng nghìn bất động sản chất lượng với giá tốt nhất thị trường
+              </Text>
+            </VStack>
+
+            {/* Search Form */}
+            <Box maxW="600px" w="full">
+              <Tabs 
+                index={activeTab} 
+                onChange={setActiveTab}
+                variant="soft-rounded"
+                colorScheme="blue"
+              >
+                <TabList mb={0} bg="whiteAlpha.200" borderRadius="lg" p={1} justifyContent="flex-start">
+                  <Tab
+                    px={6}
+                    py={3}
+                    fontSize="lg"
+                    fontWeight="semibold"
+                    borderRadius="lg"
+                    bg={activeTab === 0 ? "white" : "transparent"}
+                    color={activeTab === 0 ? "blue.600" : "whiteAlpha.800"}
+                    _hover={{ 
+                      bg: activeTab === 0 ? "white" : "whiteAlpha.200",
+                      color: activeTab === 0 ? "blue.600" : "white"
+                    }}
+                    transition="all 0.2s"
+                  >
+                    Bán
+                  </Tab>
+                  <Tab
+                    px={6}
+                    py={3}
+                    fontSize="lg"
+                    fontWeight="semibold"
+                    borderRadius="lg"
+                    bg={activeTab === 1 ? "white" : "transparent"}
+                    color={activeTab === 1 ? "blue.600" : "whiteAlpha.800"}
+                    _hover={{ 
+                      bg: activeTab === 1 ? "white" : "whiteAlpha.200",
+                      color: activeTab === 1 ? "blue.600" : "white"
+                    }}
+                    transition="all 0.2s"
+                  >
+                    Mua
+                  </Tab>
+                </TabList>
+
+                <TabPanels 
+                  bg="white" 
+                  borderRadius="xl" 
+                  mt={4}
+                  shadow="2xl"
+                  border="1px solid"
+                  borderColor="gray.200"
+                >
+                  <TabPanel p={8}>
+                    {renderSearchPanel("sell")}
+                  </TabPanel>
+                  <TabPanel p={8}>
+                    {renderSearchPanel("buy")}
+                  </TabPanel>
+                </TabPanels>
+              </Tabs>
+            </Box>
+
+            {/* Rating Section */}
+            <VStack 
+              align={{ base: "center", lg: "start" }} 
+              spacing={3}
+              data-aos="fade-up"
+              data-aos-duration="800"
+              data-aos-delay="2100"
+            >
+              <HStack 
+                spacing={1}
+                data-aos="zoom-in"
+                data-aos-duration="600"
+                data-aos-delay="200"
+              >
+                {[...Array(5)].map((_, i) => (
+                  <Icon 
+                    key={i} 
+                    as={FiStar} 
+                    w={5} 
+                    h={5} 
+                    color="blue.400" 
+                    fill="currentColor"
+                    data-aos="flip-left"
+                    data-aos-duration="400"
+                    data-aos-delay={(i * 10)}
+                  />
+                ))}
+              </HStack>
+              <Text 
+                fontSize="md" 
+                color={useColorModeValue("gray.700", "gray.300")}
+                fontWeight="medium"
+                data-aos="fade-up"
+                data-aos-duration="600"
+                data-aos-delay="800"
+              >
+                <Text as="span" fontWeight="bold" color={useColorModeValue("gray.800", "white")}>
+                  4.9/5
+                </Text>
+                <Text as="span" ml={2}>từ 658 đánh giá</Text>
+              </Text>
+            </VStack>
+          </VStack>
+        </Flex>
       </Container>
     </Box>
   );
