@@ -1,5 +1,6 @@
-import { useColorModeValue, IconButton, HStack, Select, Flex, Text, Input, InputGroup, InputLeftElement } from "@chakra-ui/react";
-import { ViewIcon, HamburgerIcon, SearchIcon } from "@chakra-ui/icons";
+import { useColorModeValue, IconButton, HStack, Select, Flex, Text } from "@chakra-ui/react";
+import { ViewIcon, HamburgerIcon } from "@chakra-ui/icons";
+import { FiGrid, FiList } from "react-icons/fi";
 
 const SortViewOpts = ({ 
   listings = [], 
@@ -7,55 +8,46 @@ const SortViewOpts = ({
   setSortBy, 
   viewType, 
   setViewType,
-  countText = "dự án",
-  searchQuery = "",
-  setSearchQuery
+  countText = "Properties Found"
 }) => {
   // Define theme-aware colors
   const contentBg = useColorModeValue("white", "gray.800");
+  const textColor = useColorModeValue("gray.600", "gray.300");
 
   return (
     <Flex
       justify="space-between"
       align="center"
-      mb={6}
+      mb={8}
       flexDirection={{ base: "column", md: "row" }}
-      gap={4}
+      gap={6}
+      p={4}
+      bg={contentBg}
+      borderRadius="lg"
+      shadow="sm"
     >
-      {/* Search Input on the left */}
-      <HStack spacing={4} flexWrap="wrap" flex={1}>
-        <InputGroup maxW={{ base: "100%", md: "300px" }}>
-          <InputLeftElement pointerEvents="none">
-            <SearchIcon color="gray.300" />
-          </InputLeftElement>
-          <Input
-            placeholder="Tìm kiếm theo tiêu đề, địa điểm..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery && setSearchQuery(e.target.value)}
-            size="sm"
-            bg={contentBg}
-            borderRadius="md"
-          />
-        </InputGroup>
-      </HStack>
+      {/* Properties count on the left */}
+      <Text color={textColor} fontSize="2xl" fontWeight="bold">
+        {listings.length} {countText}
+      </Text>
 
-      {/* Count, Sort, and View Options on the right */}
-      <HStack spacing={4} flexWrap="wrap">
-        <Text color={useColorModeValue("gray.600", "gray.300")} fontSize="sm">
-          Hiện đang có {listings.length} {countText}
-        </Text>
-        
-        <HStack spacing={2}>
-          <Text color={useColorModeValue("gray.600", "gray.300")} fontSize="sm">
-            Sắp xếp:
+      {/* Sort and View Options on the right */}
+      <HStack spacing={6} flexWrap="wrap">
+        <HStack spacing={3}>
+          <Text color={textColor} fontSize="md" fontWeight="medium">
+            Sắp xếp theo
           </Text>
           <Select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            size="sm"
+            size="md"
             w="auto"
-            minW="140px"
+            minW="180px"
             bg={contentBg}
+            border="1px solid"
+            borderColor={useColorModeValue("gray.300", "gray.600")}
+            borderRadius="md"
+            fontSize="md"
           >
             <option value="newest">Mới nhất</option>
             <option value="oldest">Cũ nhất</option>
@@ -64,6 +56,25 @@ const SortViewOpts = ({
             <option value="area-small">Diện tích nhỏ đến lớn</option>
             <option value="area-large">Diện tích lớn đến nhỏ</option>
           </Select>
+        </HStack>
+        
+        <HStack spacing={2}>
+          <IconButton
+            icon={<FiList size={20} />}
+            size="md"
+            variant={viewType === "list" ? "solid" : "outline"}
+            colorScheme={viewType === "list" ? "blue" : "gray"}
+            onClick={() => setViewType("list")}
+            aria-label="List view"
+          />
+          <IconButton
+            icon={<FiGrid size={20} />}
+            size="md"
+            variant={viewType === "grid" ? "solid" : "outline"}
+            colorScheme={viewType === "grid" ? "blue" : "gray"}
+            onClick={() => setViewType("grid")}
+            aria-label="Grid view"
+          />
         </HStack>
       </HStack>
     </Flex>

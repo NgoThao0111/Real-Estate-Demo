@@ -50,7 +50,6 @@ const SlideShow = ({ listings = [] }) => {
     return (
       <Box
         h={{ base: "340px", md: "420px" }}
-        bgImage={"url('https://th.bing.com/th/id/R.882fba727d519950a5f7184aef7e582b?rik=e%2faiVMLLFj2BhA&pid=ImgRaw&r=0')"}
         bgSize="cover"
         bgPos="center"
         position="relative"
