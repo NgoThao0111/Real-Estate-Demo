@@ -10,11 +10,11 @@ const listingSchema = new mongoose.Schema(
       type: String,
     },
     area: {
-      type: String,
+      type: Number,
       required: true,
     },
     price: {
-      type: String,
+      type: Number,
       required: true,
     },
     status: {
@@ -69,6 +69,17 @@ const listingSchema = new mongoose.Schema(
           required: true,
         },
       },
+    },
+
+    bedroom: {
+      type: Number,
+      default: 0,
+      index: true,
+    },
+
+    bathroom: {
+      type: Number,
+      default: 0,
     },
 
     //Mối quan hệ M-N với Utility, thêm thuộc tính amount
