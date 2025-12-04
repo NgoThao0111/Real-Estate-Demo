@@ -91,7 +91,8 @@ const HomePanel = () => {
             borderRadius="lg"
             bg="white"
             border="1px solid"
-            borderColor="gray.300"
+            borderColor={useColorModeValue("blue.100", "blue.700")}
+            _placeholder={{ color: useColorModeValue("gray.400", "gray.600") }}
           />
         </InputGroup>
 
@@ -170,23 +171,27 @@ const HomePanel = () => {
       pt={{ base: "80px", md: "100px" }}
       pb={{ base: "40px", md: "60px" }}
       overflow="hidden"
+      bgGradient={useColorModeValue(
+        "linear(to-br, white 10%, blue.100 50%, blue.100 100%)",
+        "linear(to-br, gray.900 10%, blue.900 50%, blue.900 100%)"
+      )}
     >
       {/* Background Image */}
       <Box
         position="absolute"
-        top={0}
-        left={0}
-        w="100%"
-        h="100%"
-        zIndex={0}
+        bottom={0}
+        left={600}
+        w={{ base: "90%", md: "70%", lg: "65%" }}
+        h={{ base: "90%", md: "85%", lg: "95%" }}
+        zIndex={1}
       >
         <Image
-          src="hero-image.jpg"
+          src="hero-image.png"
           alt="Real Estate Background"
           w="100%"
           h="100%"
-          objectFit="cover"
-          objectPosition="center"
+          objectFit="contain"
+          objectPosition="bottom right"
         />
       </Box>
       
@@ -205,7 +210,7 @@ const HomePanel = () => {
               <Heading 
                 fontSize={{ base: "3xl", md: "4xl", lg: "5xl" }}
                 lineHeight={1.2}
-                color="rgba(1, 2, 24, 0.8)"
+                color={useColorModeValue("rgba(1, 2, 24, 0.8)", "rgba(255, 255, 255, 0.8)")}
                 fontWeight="bold"
                 maxW="600px"
               >
@@ -213,9 +218,8 @@ const HomePanel = () => {
               </Heading>
               <Text 
                 fontSize={{ base: "md", md: "lg" }}
-                color="whiteAlpha.900"
+                color={useColorModeValue("rgba(1, 2, 24, 0.8)", "whiteAlpha.800")}
                 maxW="500px"
-                textShadow="1px 0.5px 2px rgba(0,0,0,0.8)"
               >
                 Khám phá hàng nghìn bất động sản chất lượng với giá tốt nhất thị trường
               </Text>
@@ -237,10 +241,10 @@ const HomePanel = () => {
                     fontWeight="semibold"
                     borderRadius="lg"
                     bg={activeTab === 0 ? "white" : "transparent"}
-                    color={activeTab === 0 ? "blue.600" : "whiteAlpha.800"}
+                    color={activeTab === 0 ? "blue.600" : useColorModeValue("blue.600", "whiteAlpha.800")}
                     _hover={{ 
                       bg: activeTab === 0 ? "white" : "whiteAlpha.200",
-                      color: activeTab === 0 ? "blue.600" : "white"
+                      color: activeTab === 0 ? "blue.600" : "blue.800"
                     }}
                     transition="all 0.2s"
                   >
@@ -253,10 +257,10 @@ const HomePanel = () => {
                     fontWeight="semibold"
                     borderRadius="lg"
                     bg={activeTab === 1 ? "white" : "transparent"}
-                    color={activeTab === 1 ? "blue.600" : "whiteAlpha.800"}
+                    color={activeTab === 1 ? "blue.600" : useColorModeValue("blue.600", "whiteAlpha.800")}
                     _hover={{ 
                       bg: activeTab === 1 ? "white" : "whiteAlpha.200",
-                      color: activeTab === 1 ? "blue.600" : "white"
+                      color: activeTab === 1 ? "blue.600" : "blue.800"
                     }}
                     transition="all 0.2s"
                   >
@@ -265,12 +269,12 @@ const HomePanel = () => {
                 </TabList>
 
                 <TabPanels 
-                  bg="white" 
+                  bg={useColorModeValue("white", "blue.850")}
                   borderRadius="xl" 
                   mt={4}
                   shadow="2xl"
                   border="1px solid"
-                  borderColor="gray.200"
+                  borderColor={useColorModeValue("gray.800", "blue.700")}
                 >
                   <TabPanel p={8}>
                     {renderSearchPanel("sell")}
