@@ -20,6 +20,11 @@ import {
   Box,
   Image,
   IconButton,
+  NumberInput,
+  NumberInputField,
+  NumberInputStepper,
+  NumberIncrementStepper,
+  NumberDecrementStepper,
 } from "@chakra-ui/react";
 import { FiX } from "react-icons/fi";
 import { useEffect, useState } from "react";
@@ -45,6 +50,7 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
     fetchPropertyTypes();
   }, [fetchPropertyTypes]);
 
+  // --- CẬP NHẬT: Thêm bedroom, bathroom vào state ---
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -53,6 +59,8 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
     status: "available",
     property_type: "",
     rental_type: "rent",
+    bedroom: 0, // Mới
+    bathroom: 0, // Mới
     images: [],
     location: {
       province: "",
@@ -77,6 +85,10 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
           typeof defaultValues.property_type === "object"
             ? defaultValues.property_type._id
             : defaultValues.property_type || "",
+        // --- CẬP NHẬT: Load bedroom/bathroom từ defaultValues nếu có ---
+        bedroom: defaultValues.bedroom || 0,
+        bathroom: defaultValues.bathroom || 0,
+        // ----------------------------------------------------------------
         images: defaultValues.images || [],
         location: {
           ...prev.location,
@@ -88,7 +100,7 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
     }
   }, [isOpen, JSON.stringify(defaultValues)]);
 
-  // Handle input
+  // Handle input thường
   const handleChange = (e) => {
     const { name, value } = e.target;
 
@@ -104,6 +116,14 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Handle input số (cho number input của chakra)
+  const handleNumberChange = (name, valueString) => {
+    setForm((prev) => ({
+        ...prev,
+        [name]: Number(valueString)
+    }))
+  }
+
   const handleLocationSelect = (lng, lat, address) => {
     setForm((prev) => ({
       ...prev,
@@ -118,7 +138,6 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
   const handleImagesChange = async (e) => {
     const files = Array.from(e.target.files);
 
-    // convert each file to a base64 promise
     const toBase64 = (file) =>
       new Promise((resolve) => {
         const reader = new FileReader();
@@ -126,13 +145,11 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
         reader.readAsDataURL(file);
       });
 
-    // wait for ALL files to finish reading
     const base64Images = await Promise.all(files.map((file) => toBase64(file)));
 
-    // update state
     setForm((prev) => ({
       ...prev,
-      images: [...prev.images, ...base64Images], // append
+      images: [...prev.images, ...base64Images],
     }));
   };
 
@@ -174,6 +191,7 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
       return;
     }
 
+    // --- CẬP NHẬT: Thêm bedroom, bathroom vào payload ---
     const payload = {
       title: form.title,
       description: form.description,
@@ -182,6 +200,8 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
       status: form.status,
       property_type: form.property_type,
       rental_type: form.rental_type,
+      bedroom: form.bedroom, // Mới
+      bathroom: form.bathroom, // Mới
       images: form.images,
       location: {
         province: form.location.province,
@@ -197,17 +217,15 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
       let res;
 
       if (isEdit) {
-        // Cập nhật listing
         res = await updateListing(defaultValues._id, payload);
       } else {
-        // Tạo mới listing
         res = await createListing(payload);
       }
 
       if (res.success) {
         toast({
           title: isEdit ? "Cập nhật thành công" : "Tạo bài đăng thành công",
-          description: "Tạo bài đăng thành công.",
+          description: "Thao tác thành công.",
           status: "success",
         });
 
@@ -221,6 +239,8 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
           status: "available",
           property_type: "",
           rental_type: "rent",
+          bedroom: 0,
+          bathroom: 0,
           images: [],
           location: {
             province: "",
@@ -262,7 +282,7 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
         parseFloat(form.location.latitude),
       ];
     }
-    return [105.854444, 21.028511]; //Hà nội
+    return [105.854444, 21.028511];
   };
 
   return (
@@ -279,51 +299,95 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
             {/* Tiêu đề */}
             <FormControl isRequired>
               <FormLabel>Tiêu đề</FormLabel>
-              <Input name="title" value={form.title} onChange={handleChange} />
+              <Input name="title" value={form.title} onChange={handleChange} placeholder="VD: Bán nhà mặt phố..." />
             </FormControl>
 
             {/* Mô tả */}
             <FormControl>
-              <FormLabel>Mô tả</FormLabel>
+              <FormLabel>Mô tả chi tiết</FormLabel>
               <Textarea
                 name="description"
                 value={form.description}
                 onChange={handleChange}
+                placeholder="Mô tả về tiện ích, hướng nhà..."
+                rows={4}
               />
             </FormControl>
 
-            {/* Diện tích & Giá */}
+            {/* HÀNG 1: Giá & Diện tích */}
             <HStack>
-              <FormControl>
-                <FormLabel>Diện tích (m²)</FormLabel>
-                <Input name="area" value={form.area} onChange={handleChange} />
-              </FormControl>
+                <FormControl isRequired width="50%">
+                    <FormLabel>Giá (VNĐ)</FormLabel>
+                    <Input
+                        name="price"
+                        type="number"
+                        value={form.price}
+                        onChange={handleChange}
+                        placeholder="Nhập số tiền..."
+                    />
+                </FormControl>
 
-              <FormControl isRequired>
-                <FormLabel>Giá</FormLabel>
-                <Input
-                  name="price"
-                  value={form.price}
-                  onChange={handleChange}
-                />
-              </FormControl>
+                <FormControl isRequired width="50%">
+                    <FormLabel>Diện tích (m²)</FormLabel>
+                    <Input 
+                        name="area" 
+                        type="number"
+                        value={form.area} 
+                        onChange={handleChange}
+                        placeholder="Nhập số..."
+                    />
+                </FormControl>
             </HStack>
+
+            {/* --- CẬP NHẬT: HÀNG 2: Phòng ngủ & Phòng tắm --- */}
+            <HStack>
+                <FormControl width="50%">
+                    <FormLabel>Phòng ngủ</FormLabel>
+                    <NumberInput 
+                        min={0} 
+                        value={form.bedroom} 
+                        onChange={(str) => handleNumberChange('bedroom', str)}
+                    >
+                        <NumberInputField />
+                        <NumberInputStepper>
+                            <NumberIncrementStepper />
+                            <NumberDecrementStepper />
+                        </NumberInputStepper>
+                    </NumberInput>
+                </FormControl>
+
+                <FormControl width="50%">
+                    <FormLabel>Phòng tắm</FormLabel>
+                    <NumberInput 
+                        min={0} 
+                        value={form.bathroom} 
+                        onChange={(str) => handleNumberChange('bathroom', str)}
+                    >
+                        <NumberInputField />
+                        <NumberInputStepper>
+                            <NumberIncrementStepper />
+                            <NumberDecrementStepper />
+                        </NumberInputStepper>
+                    </NumberInput>
+                </FormControl>
+            </HStack>
+            {/* ------------------------------------------------ */}
 
             {/* Loại tài sản & rental type */}
             <HStack>
               <FormControl isRequired>
                 <FormLabel>Loại tài sản</FormLabel>
                 {loadingTypes ? (
-                  <Spinner />
+                  <Spinner size="sm" />
                 ) : errorTypes ? (
-                  <Text color="red.400">Không tải được loại tài sản</Text>
+                  <Text color="red.400" fontSize="sm">Lỗi tải loại BĐS</Text>
                 ) : (
                   <Select
                     name="property_type"
                     value={form.property_type}
                     onChange={handleChange}
                   >
-                    <option value="">-- Chọn một loại --</option>
+                    <option value="">-- Chọn loại --</option>
                     {propertyTypes.map((type) => (
                       <option key={type._id} value={type._id}>
                         {type.name}
@@ -334,7 +398,7 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
               </FormControl>
 
               <FormControl>
-                <FormLabel>Loại cho thuê</FormLabel>
+                <FormLabel>Hình thức</FormLabel>
                 <Select
                   name="rental_type"
                   value={form.rental_type}
@@ -349,15 +413,16 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
             {/* Ảnh */}
             <FormControl>
               <HStack justify="space-between" mb={2}>
-                <FormLabel m={0}>Ảnh (chọn nhiều ảnh)</FormLabel>
+                <FormLabel m={0}>Hình ảnh</FormLabel>
                 <Button
                   as="label"
                   htmlFor="images-upload"
-                  colorScheme="blue"
-                  size="sm"
+                  colorScheme="teal"
+                  size="xs"
                   cursor="pointer"
+                  variant="outline"
                 >
-                  Chọn ảnh
+                  + Thêm ảnh
                 </Button>
               </HStack>
 
@@ -370,22 +435,22 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
                 display={"none"}
               />
 
-              {form.images.length > 0 && (
-                <Box mt={2} display="flex" gap={3} flexWrap="wrap">
+              {form.images.length > 0 ? (
+                <Box mt={2} display="flex" gap={2} flexWrap="wrap">
                   {form.images.map((img, idx) => (
                     <Box
                       key={idx}
                       position="relative"
-                      boxSize="80px"
+                      boxSize="70px"
                       borderRadius="md"
                       overflow="hidden"
                       border="1px solid"
-                      borderColor="gray.300"
+                      borderColor="gray.200"
                     >
                       <Image
                         src={typeof img === "string" ? img : img.url}
                         alt={`image-${idx}`}
-                        boxSize="80px"
+                        boxSize="100%"
                         objectFit="cover"
                       />
                       <IconButton
@@ -393,81 +458,78 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
                         size="xs"
                         aria-label="remove"
                         position="absolute"
-                        top="4px"
-                        right="4px"
+                        top="2px"
+                        right="2px"
                         borderRadius="full"
-                        bg="whiteAlpha.800"
-                        _hover={{ bg: "white", transform: "scale(1.1)" }}
-                        color="red.500"
-                        boxShadow="sm"
+                        colorScheme="red"
                         onClick={() => removeImage(idx)}
                       />
                     </Box>
                   ))}
                 </Box>
+              ) : (
+                <Text fontSize="sm" color="gray.400" fontStyle="italic">Chưa có ảnh nào được chọn</Text>
               )}
             </FormControl>
 
-            {/* --- PHẦN ĐỊA CHỈ & BẢN ĐỒ (Đã cập nhật) --- */}
-            <Box borderTop="1px solid #eee" pt={4}>
-              <Text fontWeight="bold" mb={3}>
+            {/* --- PHẦN ĐỊA CHỈ & BẢN ĐỒ --- */}
+            <Box borderTop="1px solid" borderColor="gray.100" pt={4}>
+              <Text fontWeight="bold" mb={3} color="blue.600">
                 Địa chỉ & Vị trí
               </Text>
 
+              <HStack mb={3}>
+                <FormControl isRequired>
+                    <FormLabel fontSize="sm">Tỉnh / TP</FormLabel>
+                    <Input
+                        name="location.province"
+                        value={form.location.province}
+                        onChange={handleChange}
+                        placeholder="Hà Nội"
+                    />
+                </FormControl>
+                 <FormControl>
+                    <FormLabel fontSize="sm">Quận / Huyện</FormLabel>
+                    <Input
+                        name="location.ward"
+                        value={form.location.ward}
+                        onChange={handleChange}
+                        placeholder="Hai Bà Trưng"
+                    />
+                </FormControl>
+              </HStack>
+              
               <FormControl isRequired mb={3}>
-                <FormLabel fontSize="sm">Thành phố</FormLabel>
+                <FormLabel fontSize="sm">Địa chỉ chi tiết (Số nhà, đường)</FormLabel>
                 <Input
-                  name="location.province"
-                  value={form.location.province}
+                  name="location.detail"
+                  value={form.location.detail}
                   onChange={handleChange}
+                  placeholder="Số 10, ngõ 5..."
                 />
               </FormControl>
 
-              <HStack mb={3}>
-                <FormControl>
-                  <FormLabel fontSize="sm">Phường</FormLabel>
-                  <Input
-                    name="location.ward"
-                    value={form.location.ward}
-                    onChange={handleChange}
-                  />
-                </FormControl>
-
-                <FormControl isRequired>
-                  <FormLabel fontSize="sm">Địa chỉ chi tiết</FormLabel>
-                  <Input
-                    name="location.detail"
-                    value={form.location.detail}
-                    onChange={handleChange}
-                  />
-                </FormControl>
-              </HStack>
-
-              {/* SỬ DỤNG COMPONENT MAPBOXMAP */}
               <FormControl isRequired>
                 <FormLabel>
                   Ghim vị trí trên bản đồ{" "}
                   <Text as="span" color="red.500" fontSize="sm">
-                    (Bắt buộc)
+                    *
                   </Text>
                 </FormLabel>
 
-                {/* Render Map khi modal mở */}
                 {isOpen && (
                   <MapboxMap
                     mode="picker"
                     initialCoords={getInitialCoords()}
                     onLocationSelect={handleLocationSelect}
-                    height="350px"
+                    height="300px"
                   />
                 )}
 
-                <Text fontSize="xs" mt={2} color="blue.600">
+                <Text fontSize="xs" mt={2} color={form.location.latitude ? "green.600" : "red.500"}>
                   {form.location.latitude
-                    ? `Đã chọn: ${parseFloat(form.location.latitude).toFixed(
-                        5
-                      )}, ${parseFloat(form.location.longitude).toFixed(5)}`
-                    : "Vui lòng chọn vị trí trên bản đồ"}
+                    ? `✓ Đã chọn: ${parseFloat(form.location.latitude).toFixed(5)}, ${parseFloat(form.location.longitude).toFixed(5)}`
+                    : "• Vui lòng click vào bản đồ để chọn vị trí chính xác"}
                 </Text>
               </FormControl>
             </Box>
@@ -475,16 +537,16 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
         </ModalBody>
 
         <ModalFooter>
+          <Button variant="ghost" mr={3} onClick={onClose}>
+            Hủy
+          </Button>
           <Button
             type="submit"
             colorScheme="blue"
             isLoading={submitting}
-            mr={3}
+            loadingText={isEdit ? "Đang cập nhật..." : "Đang đăng..."}
           >
-            {isEdit ? "Cập nhật" : "Đăng tin"}
-          </Button>
-          <Button variant="ghost" onClick={onClose}>
-            Hủy
+            {isEdit ? "Lưu thay đổi" : "Đăng tin ngay"}
           </Button>
         </ModalFooter>
       </ModalContent>

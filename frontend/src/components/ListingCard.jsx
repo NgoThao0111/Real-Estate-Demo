@@ -1,6 +1,23 @@
-import { Box, Image, Text, Badge, Stack, Button, IconButton, useToast, useColorModeValue } from "@chakra-ui/react";
+import { 
+  Box, 
+  Image, 
+  Text, 
+  Badge, 
+  Stack, 
+  IconButton, 
+  useToast, 
+  useColorModeValue,
+  Flex,
+  Icon,
+  HStack,
+  Divider,
+  Tooltip
+} from "@chakra-ui/react";
 import { MdPhotoLibrary } from 'react-icons/md';
 import { ImStarEmpty, ImStarFull } from "react-icons/im";
+import { FaBed, FaBath } from "react-icons/fa";
+import { BsGridFill } from "react-icons/bs";
+
 import { useUserStore } from "../store/user.js";
 import { useListStore } from "../store/list.js";
 import { useEffect, useState } from "react";
@@ -11,12 +28,17 @@ const ListingCard = ({ listing }) => {
   const navigate = useNavigate();
   const [propertyTypeName, setPropertyTypeName] = useState('');
   const getPropertyTypeById = usePropertyTypeStore((s) => s.getPropertyTypeById);
+  
   const img = listing.images && listing.images.length
-  ? typeof listing.images[0] === "string"
-    ? listing.images[0]            // old string URL
-    : listing.images[0].url        // Cloudinary object
-  : null;
-  const location = listing.location ? `${listing.location.detail || ''}, ${listing.location.ward || ''}, ${listing.location.province || ''}` : '';
+    ? typeof listing.images[0] === "string"
+      ? listing.images[0]
+      : listing.images[0].url
+    : null;
+
+  const location = listing.location 
+    ? `${listing.location.detail || ''}, ${listing.location.ward || ''}, ${listing.location.province || ''}` 
+    : '';
+    
   const imgCount = listing.images ? listing.images.length : 0;
   const toast = useToast();
 
@@ -24,6 +46,19 @@ const ListingCard = ({ listing }) => {
   const toggleSave = useUserStore((s) => s.toggleSaveListing);
   const fallbackToggle = useListStore((s) => s.toggleSaveListing);
   const isSaved = savedIds.includes(listing._id);
+
+  const formatPrice = (price) => {
+    if (!price) return "Liên hệ";
+    const amount = Number(price);
+    if (isNaN(amount)) return price;
+    if (amount >= 1000000000) {
+      return (amount / 1000000000).toFixed(1).replace(/\.0$/, '') + ' tỷ';
+    } else if (amount >= 1000000) {
+      return (amount / 1000000).toFixed(0) + ' triệu';
+    } else {
+      return amount.toLocaleString('vi-VN') + ' đ';
+    }
+  };
 
   const formatRelativeTime = (dateStr) => {
     if (!dateStr) return "";
@@ -46,32 +81,26 @@ const ListingCard = ({ listing }) => {
     const year = Math.floor(day / 365);
     return `${year} năm trước`;
   };
+  
   const lastUpdatedText = formatRelativeTime(listing.updatedAt || listing.createdAt);
 
   useEffect(() => {
     let mounted = true;
     const load = async () => {
-      // nếu không có loại bất động sản, mặc định là không xác định
       if (!listing?.property_type) {
         if (mounted) setPropertyTypeName("unknown");
         return;
       }
-
-      // đối tượng đã được điền đầy đủ với tên
       if (typeof listing.property_type === "object" && listing.property_type?.name) {
         if (mounted) setPropertyTypeName(listing.property_type.name);
         return;
       }
-
-      // xác định id (có thể là chuỗi hoặc đối tượng có _id)
       const id = typeof listing.property_type === "object" ? (listing.property_type._id || listing.property_type) : listing.property_type;
 
       try {
         const res = await getPropertyTypeById(id);
         if (!mounted) return;
-
         if (res.success) {
-          // xử lý cả hai dạng: res.data.propertyType hoặc res.data
           const data = res.data?.propertyType || res.data;
           setPropertyTypeName(data?.name || "unknown");
         } else {
@@ -81,133 +110,133 @@ const ListingCard = ({ listing }) => {
         if (mounted) setPropertyTypeName("unknown");
       }
     };
-
     load();
     return () => { mounted = false; };
   }, [listing.property_type, getPropertyTypeById]);
 
   return (
     <Box 
-      borderWidth="2px" 
+      borderWidth="1px" 
       borderRadius="lg" 
       overflow="hidden" 
       bg={useColorModeValue("white", "gray.800")} 
       shadow="sm"
+      transition="all 0.3s"
       _hover={{
-        bg: useColorModeValue("gray.50", "gray.700"),
-        shadow: "md",
+        transform: "translateY(-5px)",
+        shadow: "lg",
         borderColor: "blue.300",
         cursor: "pointer"
       }}
       onClick={() => navigate(`/listings/${listing._id}`)}
     >
+      {/* --- ẢNH --- */}
       <Box position="relative">
         {img ? (
-          <Image src={img} alt={listing.title} objectFit="cover" w="100%" h="180px"/>
+          <Image src={img} alt={listing.title} objectFit="cover" w="100%" h="200px"/>
         ) : (
-          <Box w="100%" h="180px" bg={useColorModeValue("gray.200", "gray.600")} display="flex" alignItems="center" justifyContent="center">
+          <Box w="100%" h="200px" bg={useColorModeValue("gray.200", "gray.600")} display="flex" alignItems="center" justifyContent="center">
             <Text color="gray.500">No image</Text>
           </Box>
         )}
 
         {lastUpdatedText && (
-          <Box
-            position="absolute"
-            bottom={2}
-            left={2}
-            bg="rgba(0,0,0,0.55)"
-            color="white"
-            px={2}
-            py={1}
-            borderRadius="md"
-            fontSize="xs"
-          >
+          <Box position="absolute" bottom={2} left={2} bg="rgba(0,0,0,0.6)" color="white" px={2} py={1} borderRadius="md" fontSize="xs">
             {lastUpdatedText}
           </Box>
         )}
 
         {imgCount > 0 && (
-          <Box
-            position="absolute"
-            bottom={2}
-            right={2}
-            bg="rgba(0,0,0,0.55)"
-            color="white"
-            px={2}
-            py={1}
-            borderRadius="md"
-            fontSize="xs"
-            display="flex"
-            alignItems="center"
-            gap={2}
-          >
+          <Box position="absolute" bottom={2} right={2} bg="rgba(0,0,0,0.6)" color="white" px={2} py={1} borderRadius="md" fontSize="xs" display="flex" alignItems="center" gap={1}>
             <MdPhotoLibrary size="14px" />
-            <Text>{imgCount} ảnh</Text>
+            <Text>{imgCount}</Text>
           </Box>
         )}
 
         <IconButton
           aria-label={isSaved ? 'Bỏ lưu' : 'Lưu'}
           icon={isSaved ? <ImStarFull /> : <ImStarEmpty />}
-          position="absolute"
-          top={2}
-          right={2}
-          px={2}
-          py={2}
-          color={isSaved ? 'yellow.400' : 'white'}
-          bg="rgba(0,0,0,0.55)"
-          _hover={{
-            color: 'yellow.400',                          
-            bg: "rgba(0,0,0,0.65)"
-          }}
-          _groupHover={{
-            color: 'yellow.400'                           
-          }}
+          position="absolute" top={2} right={2}
+          size="sm"
+          variant="solid"
+          color={isSaved ? 'yellow.400' : 'gray.600'}
+          bg="white"
+          _hover={{ bg: "gray.100", color: "yellow.500" }}
           onClick={async (e) => {
             e.stopPropagation();
             try {
               const res = toggleSave ? await toggleSave(listing._id) : await fallbackToggle(listing._id);
-              if (res.success) {
-                toast({ title: res.message, status: 'success', isClosable: true });
-              } else {
-                toast({ title: res.message || 'Lỗi', status: 'error', isClosable: true });
-              }
+              toast({ title: res.success ? res.message : 'Lỗi', status: res.success ? 'success' : 'error', isClosable: true, duration: 2000 });
             } catch (err) {
-              toast({ title: err.message || 'Lỗi khi lưu', status: 'error', isClosable: true });
+              toast({ title: 'Lỗi kết nối', status: 'error', isClosable: true });
             }
           }}
         />
       </Box>
 
+      {/* --- NỘI DUNG --- */}
       <Box p={4}>
-        <Stack spacing={2}>
-          <Text 
-            fontWeight="bold" 
-            fontSize="md"
-            noOfLines={2}
-          >
-            {listing.title}
-          </Text>
-          <Text color="blue.500" fontWeight="bold" fontSize={"md"}>
-              {listing.price
-              ? `${Number(listing.price).toLocaleString("vi-VN")} ${
-                  listing.rental_type === "rent" ? "VNĐ/tháng" : "VNĐ"
-                }`
-              : "—"}
-          </Text>
-          <Text color={useColorModeValue("gray.600", "gray.200")} fontSize="sm" noOfLines={2}>
-            {location}
-          </Text>
-        </Stack>
-
-        <Box mt={4} display="flex" justifyContent="space-between" alignItems="center">
-          <Badge colorScheme="green" alignSelf="start">
+        <Stack spacing={1} mb={3}>
+          <Badge colorScheme="blue" width="fit-content" fontSize="0.7em" borderRadius="sm">
             {propertyTypeName}
           </Badge>
-          <Text fontSize="sm" color="gray.500">
-            {listing.area ? `${listing.area} m²` : ''}
+
+          {/* TITLE TOOLTIP */}
+          <Tooltip label={listing.title} hasArrow placement="top-start">
+            <Text fontWeight="bold" fontSize="md" noOfLines={1} lineHeight="1.4">
+              {listing.title}
+            </Text>
+          </Tooltip>
+
+          <Text color="blue.600" fontWeight="extrabold" fontSize="lg">
+            {formatPrice(listing.price)} {listing.rental_type === "rent" && "/tháng"}
           </Text>
-        </Box>
+
+          {/* ADDRESS TOOLTIP */}
+          <Tooltip label={location} hasArrow placement="top">
+            <Text color="gray.500" fontSize="sm" noOfLines={1} cursor="default">
+              {location}
+            </Text>
+          </Tooltip>
+        </Stack>
+
+        <Divider my={3} borderColor="gray.200" />
+        
+        <Flex justifyContent="space-between" alignItems="center" textAlign="center">
+          <Flex direction="column" align="center" width="33%">
+            <HStack spacing={1}>
+                <Icon as={FaBed} color="gray.400" />
+                <Text fontWeight="bold" fontSize="md" color="gray.700">
+                  {listing.bedroom || 0}
+                </Text>
+            </HStack>
+            <Text fontSize="10px" color="gray.500" textTransform="uppercase" mt="-2px">Ngủ</Text>
+          </Flex>
+
+          <Box w="1px" h="24px" bg="gray.200" />
+
+          <Flex direction="column" align="center" width="33%">
+             <HStack spacing={1}>
+                <Icon as={FaBath} color="gray.400" />
+                <Text fontWeight="bold" fontSize="md" color="gray.700">
+                  {listing.bathroom || 0}
+                </Text>
+            </HStack>
+            <Text fontSize="10px" color="gray.500" textTransform="uppercase" mt="-2px">Tắm</Text>
+          </Flex>
+
+          <Box w="1px" h="24px" bg="gray.200" />
+
+          <Flex direction="column" align="center" width="33%">
+             <HStack spacing={1}>
+                <Icon as={BsGridFill} color="gray.400" />
+                <Text fontWeight="bold" fontSize="md" color="gray.700">
+                  {listing.area || 0}
+                </Text>
+            </HStack>
+            <Text fontSize="10px" color="gray.500" textTransform="uppercase" mt="-2px">m²</Text>
+          </Flex>
+        </Flex>
       </Box>
     </Box>
   );
