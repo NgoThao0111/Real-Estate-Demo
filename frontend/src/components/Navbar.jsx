@@ -43,9 +43,6 @@ const Navbar = () => {
     <Box 
       bg={useColorModeValue("white", "gray.800")} 
       boxShadow={"sm"}
-      data-aos="fade-down"
-      data-aos-duration="800"
-      data-aos-delay="100"
     >
     <Container maxW="container.xl" px={4}>
       <Flex
@@ -60,9 +57,6 @@ const Navbar = () => {
         <Flex 
           alignItems="center" 
           gap={6}
-          data-aos="fade-right"
-          data-aos-duration="800"
-          data-aos-delay="200"
         >
           <Link to="/">
             <Text
@@ -80,9 +74,6 @@ const Navbar = () => {
             spacing={8} 
             display={{ base: "none", sm: "flex" }} 
             fontSize={{ base: "10", sm: "16" }}
-            data-aos="fade-up"
-            data-aos-duration="800"
-            data-aos-delay="400"
           >
             <Link to="/">
               <Text 
@@ -100,18 +91,12 @@ const Navbar = () => {
         <HStack 
           spacing={5} 
           alignItems={"center"}
-          data-aos="fade-left"
-          data-aos-duration="800"
-          data-aos-delay="300"
         >
           {!user ? (
             <>
               <Button 
                 bgColor={"transparent"} 
                 onClick={() => openAuth('login')}
-                data-aos="zoom-in"
-                data-aos-duration="600"
-                data-aos-delay="500"
               >
                 Đăng nhập
               </Button>
@@ -119,21 +104,12 @@ const Navbar = () => {
               <Button 
                 bgColor={"transparent"} 
                 onClick={() => openAuth('register')}
-                data-aos="zoom-in"
-                data-aos-duration="600"
-                data-aos-delay="600"
               >
                 Đăng ký
               </Button>
             </>
           ) : (
-            <Box
-              data-aos="fade-in"
-              data-aos-duration="600"
-              data-aos-delay="400"
-            >
-              <UserMenu user={user} logoutUser={logoutUser} />
-            </Box>
+            <UserMenu user={user} logoutUser={logoutUser} />
           )}
           <Button 
             colorScheme="blue" 
@@ -144,9 +120,6 @@ const Navbar = () => {
               }
               openCreate();
             }}
-            data-aos="pulse"
-            data-aos-duration="800"
-            data-aos-delay="700"
           >
             Đăng tin mới
           </Button>
