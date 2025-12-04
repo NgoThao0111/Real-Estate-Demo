@@ -141,6 +141,15 @@ app.get('/', (req, res) => {
     res.send('Server is up and running');
 });
 
+app.get('/api/check-session', (req, res) => {
+    if (req.session.user) {
+        // In ra thời gian còn lại của cookie
+        console.log("Cookie expires in:", req.session.cookie.maxAge / 1000, "seconds");
+        return res.json({ status: 'Live', user: req.session.user });
+    }
+    return res.status(401).json({ status: 'Expired' });
+});
+
 // --- KHỞI CHẠY SERVER ---
 // Quan trọng: Phải dùng httpServer.listen
 httpServer.listen(PORT, () => {
