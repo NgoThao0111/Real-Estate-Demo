@@ -40,7 +40,13 @@ const Navbar = () => {
   }, []);
 
   return (
-    <Box bg={useColorModeValue("white", "gray.800")} boxShadow={"sm"}>
+    <Box 
+      bg={useColorModeValue("white", "gray.800")} 
+      boxShadow={"sm"}
+      data-aos="fade-down"
+      data-aos-duration="800"
+      data-aos-delay="100"
+    >
     <Container maxW="container.xl" px={4}>
       <Flex
         h={16}
@@ -51,7 +57,13 @@ const Navbar = () => {
           sm: "row",
         }}
       >
-        <Flex alignItems="center" gap={6}>
+        <Flex 
+          alignItems="center" 
+          gap={6}
+          data-aos="fade-right"
+          data-aos-duration="800"
+          data-aos-delay="200"
+        >
           <Link to="/">
             <Text
               fontSize={{ base: "22px", sm: "28px" }}
@@ -64,7 +76,14 @@ const Navbar = () => {
             </Text>
           </Link>
 
-          <HStack spacing={8} display={{ base: "none", sm: "flex" }} fontSize={{ base: "10", sm: "16" }}>
+          <HStack 
+            spacing={8} 
+            display={{ base: "none", sm: "flex" }} 
+            fontSize={{ base: "10", sm: "16" }}
+            data-aos="fade-up"
+            data-aos-duration="800"
+            data-aos-delay="400"
+          >
             <Link to="/">
               <Text 
                 color={linkColor} 
@@ -78,27 +97,57 @@ const Navbar = () => {
             </Link>
           </HStack>
         </Flex>
-        <HStack spacing={5} alignItems={"center"}>
+        <HStack 
+          spacing={5} 
+          alignItems={"center"}
+          data-aos="fade-left"
+          data-aos-duration="800"
+          data-aos-delay="300"
+        >
           {!user ? (
             <>
-              <Button bgColor={"transparent"} onClick={() => openAuth('login')}>
+              <Button 
+                bgColor={"transparent"} 
+                onClick={() => openAuth('login')}
+                data-aos="zoom-in"
+                data-aos-duration="600"
+                data-aos-delay="500"
+              >
                 Đăng nhập
               </Button>
               <Text color="muted">|</Text>
-              <Button bgColor={"transparent"} onClick={() => openAuth('register')}>
+              <Button 
+                bgColor={"transparent"} 
+                onClick={() => openAuth('register')}
+                data-aos="zoom-in"
+                data-aos-duration="600"
+                data-aos-delay="600"
+              >
                 Đăng ký
               </Button>
             </>
           ) : (
-            <UserMenu user={user} logoutUser={logoutUser} />
+            <Box
+              data-aos="fade-in"
+              data-aos-duration="600"
+              data-aos-delay="400"
+            >
+              <UserMenu user={user} logoutUser={logoutUser} />
+            </Box>
           )}
-          <Button colorScheme="blue" onClick={() => {
-            if (!user) {
-              openAuth('login');
-              return;
-            }
-            openCreate();
-          }}>
+          <Button 
+            colorScheme="blue" 
+            onClick={() => {
+              if (!user) {
+                openAuth('login');
+                return;
+              }
+              openCreate();
+            }}
+            data-aos="pulse"
+            data-aos-duration="800"
+            data-aos-delay="700"
+          >
             Đăng tin mới
           </Button>
         </HStack>

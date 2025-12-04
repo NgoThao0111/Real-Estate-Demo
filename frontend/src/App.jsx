@@ -10,6 +10,9 @@ import ChatPage from "./pages/ChatPage.jsx";
 import AllListings from "./pages/AllListings.jsx";
 import ListingDetailPage from "./pages/ListingDetailPage.jsx";
 import ChatWidget from "./components/ChatWidget.jsx";
+import AOSComponent from "./components/AOSComponent.jsx";
+import { Routes, Route } from "react-router-dom";
+import { useUserStore } from "./store/user.js";
 
 // 1. Import Hook từ AuthContext
 import { useAuthContext } from "./context/AuthContext.jsx";
