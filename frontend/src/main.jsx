@@ -5,10 +5,10 @@ import { ChakraProvider } from '@chakra-ui/react'
 import { BrowserRouter } from 'react-router-dom'
 
 import { SocketContextProvider } from './context/SocketContext.jsx'
-import { AuthContextProvider } from './context/AuthContext.jsx' // Bạn cần có cái này để quản lý user login
+import { AuthContextProvider } from './context/AuthContext.jsx' 
 
 createRoot(document.getElementById('root')).render(
-  // <StrictMode>
+  <StrictMode>
     <BrowserRouter>
       <ChakraProvider>
         <AuthContextProvider>
@@ -16,8 +16,7 @@ createRoot(document.getElementById('root')).render(
             <App />
           </SocketContextProvider>
         </AuthContextProvider>
-        
       </ChakraProvider>
     </BrowserRouter>
-  // </StrictMode>,
+  </StrictMode>
 )

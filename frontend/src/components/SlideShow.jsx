@@ -94,7 +94,6 @@ const SlideShow = ({ listings = [] }) => {
       display="flex"
       alignItems="flex-end"
       justifyContent="center"
-      mt={4}
     >
       <Box position="absolute" inset={0} bgGradient="linear(to-b, rgba(2,6,23,0.3), rgba(2,6,23,0.7))" />
       
@@ -136,6 +135,7 @@ const SlideShow = ({ listings = [] }) => {
 
       <Box
         w={{ base: "90%", md: "84%" }}
+        maxW={"1140px"}
         p={6}
         borderRadius="32px"
         position="relative"

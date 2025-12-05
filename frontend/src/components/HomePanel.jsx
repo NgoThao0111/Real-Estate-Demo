@@ -90,7 +90,7 @@ const HomePanel = () => {
             size="lg"
             borderRadius="lg"
             bg="white"
-            border="1px solid"
+            border="2px solid"
             borderColor={useColorModeValue("blue.100", "blue.700")}
             _placeholder={{ color: useColorModeValue("gray.400", "gray.600") }}
           />
@@ -104,7 +104,7 @@ const HomePanel = () => {
             right={0}
             mt={1}
             bg="white"
-            border="1px solid"
+            border="2px solid"
             borderColor="gray.200"
             borderRadius="md"
             zIndex={10}
@@ -167,8 +167,8 @@ const HomePanel = () => {
   return (
     <Box
       position="relative"
-      minH="100vh"
-      pt={{ base: "80px", md: "100px" }}
+      minH={`calc(100vh - 64px)`}
+      pt={{ base: "40px", md: "60px" }}
       pb={{ base: "40px", md: "60px" }}
       overflow="hidden"
       bgGradient={useColorModeValue(
@@ -274,7 +274,7 @@ const HomePanel = () => {
                   mt={4}
                   shadow="2xl"
                   border="1px solid"
-                  borderColor={useColorModeValue("gray.800", "blue.700")}
+                  borderColor={useColorModeValue("gray.500", "blue.700")}
                 >
                   <TabPanel p={8}>
                     {renderSearchPanel("sell")}
