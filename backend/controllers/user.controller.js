@@ -3,10 +3,10 @@ import bcrypt from 'bcryptjs';
 
 export const userRegister = async (req, res) => {
     try {
-        const {username, password, name, phone, role} = req.body;
+        const { username, password, name, phone, role } = req.body;
 
-        let user = await User.findOne({username});
-        if(user) {
+        let user = await User.findOne({ username });
+        if (user) {
             return res.status(400).json({
                 message: "Tên người dùng đã tồn tại"
             });
@@ -24,8 +24,10 @@ export const userRegister = async (req, res) => {
         });
 
         await user.save();
+
+        // --- SỬA: Dùng _id thay vì id ---
         req.session.user = {
-            id: user._id,
+            _id: user._id, 
             username: user.username,
             name: user.name
         }
@@ -45,10 +47,9 @@ export const userRegister = async (req, res) => {
 export const deleteUser = async (req, res) => {
     try {
         const id = req.params.id;
-
         const deleteUser = await User.findByIdAndDelete(id);
 
-        if(!deleteUser) {
+        if (!deleteUser) {
             return res.status(404).json({
                 message: "Not Found"
             })
@@ -67,30 +68,32 @@ export const deleteUser = async (req, res) => {
 
 export const loginUser = async (req, res) => {
     try {
-        const {username, password} = req.body;
+        const { username, password } = req.body;
 
-        if(!username || !password) {
+        if (!username || !password) {
             return res.status(400).json({
                 message: "Not Enough Information"
             })
         }
 
-        const user = await User.findOne({username});
+        const user = await User.findOne({ username });
 
-        if(!user) {
+        if (!user) {
             return res.status(401).json({
                 message: "Username wrong"
             })
         }
 
-    const match = await bcrypt.compare(password, user.password);
-        if(!match) {
+        const match = await bcrypt.compare(password, user.password);
+        if (!match) {
             return res.status(401).json({
                 message: "Password wrong"
             })
         }
+
+        // --- SỬA: Dùng _id thay vì id ---
         req.session.user = {
-            id: user._id,
+            _id: user._id,
             username: user.username,
             name: user.name
         }
@@ -109,19 +112,18 @@ export const loginUser = async (req, res) => {
 
 export const getUserInfor = async (req, res) => {
     try {
-        // Kiểm tra nếu user chưa đăng nhập
         if (!req.session || !req.session.user) {
             return res.status(401).json({
                 message: "Vui lòng đăng nhập"
             });
         }
 
-        const user_id = req.session.user.id;
-        
-        // Sửa lại cú pháp findById và thêm await
+        // --- SỬA: Gọi ._id thay vì .id ---
+        const user_id = req.session.user._id;
+
         const user = await User.findById(user_id).select("username name phone role createdAt");
-        
-        if(!user) {
+
+        if (!user) {
             return res.status(404).json({
                 message: "User không tồn tại"
             });
@@ -141,31 +143,33 @@ export const getUserInfor = async (req, res) => {
 
 export const updateUserInfo = async (req, res) => {
     try {
-        if(!req.session || !req.session.user) {
+        if (!req.session || !req.session.user) {
             return res.status(401).json({
                 message: "Vui long dang nhap"
             });
         }
 
-        const user_id = req.session.user.id;
-        const {name, phone} = req.body;
-        if(!name && !phone) {
+        // --- SỬA: Gọi ._id thay vì .id ---
+        const user_id = req.session.user._id;
+        
+        const { name, phone } = req.body;
+        if (!name && !phone) {
             return res.status(400).json({
                 message: "Vui long cung cap thong tin can cap nhat"
             });
         }
 
         const updateFields = {};
-        if(name) updateFields.name = name;
-        if(phone) updateFields.phone = phone;
+        if (name) updateFields.name = name;
+        if (phone) updateFields.phone = phone;
 
         const updatedUser = await User.findByIdAndUpdate(
-            user_id, 
+            user_id,
             { $set: updateFields },
             { new: true }
         ).select("name phone role createdAt");
 
-        if(!updatedUser) {
+        if (!updatedUser) {
             return res.status(404).json({
                 message: "User không tồn tại"
             });
@@ -185,21 +189,19 @@ export const updateUserInfo = async (req, res) => {
 }
 
 export const checkSession = (req, res) => {
-  // --- THÊM DÒNG NÀY ĐỂ DEBUG ---
-  console.log("--> Check Session API được gọi!"); 
-  console.log("Session User:", req.session?.user);
-  // ------------------------------
+    // Debug log
+    console.log("--> Check Session API:", req.session?.user);
 
-  try {
-    if (req.session && req.session.user) {
-      return res.status(200).json({ message: "Session active", user: req.session.user });
-    } else {
-      return res.status(200).json({ message: "No active session", user: null });
+    try {
+        if (req.session && req.session.user) {
+            return res.status(200).json({ message: "Session active", user: req.session.user });
+        } else {
+            return res.status(200).json({ message: "No active session", user: null });
+        }
+    } catch (error) {
+        console.error("Lỗi Check Session:", error);
+        return res.status(500).json({ message: "Server error" });
     }
-  } catch (error) {
-    console.error("Lỗi Check Session:", error);
-    return res.status(500).json({ message: "Server error" });
-  }
 };
 
 export const logoutUser = async (req, res) => {
@@ -212,15 +214,18 @@ export const logoutUser = async (req, res) => {
 
 export const toggleSaveListing = async (req, res) => {
     try {
-        if(!req.session || !req.session.user) return res.status(401).json({ message: "Vui lòng đăng nhập" });
-        const userId = req.session.user.id;
+        if (!req.session || !req.session.user) return res.status(401).json({ message: "Vui lòng đăng nhập" });
+        
+        // --- SỬA: Gọi ._id thay vì .id ---
+        const userId = req.session.user._id;
+        
         const listingId = req.params.listingId;
 
         const user = await User.findById(userId);
-        if(!user) return res.status(404).json({ message: "User không tồn tại" });
+        if (!user) return res.status(404).json({ message: "User không tồn tại" });
 
         const idx = user.savedListings ? user.savedListings.findIndex(id => id.toString() === listingId.toString()) : -1;
-        if(idx === -1) {
+        if (idx === -1) {
             // add
             user.savedListings = user.savedListings || [];
             user.savedListings.push(listingId);
@@ -241,10 +246,13 @@ export const toggleSaveListing = async (req, res) => {
 // Lấy danh sách tin đăng đã lưu của người dùng hiện tại
 export const getSavedListings = async (req, res) => {
     try {
-        if(!req.session || !req.session.user) return res.status(401).json({ message: "Vui lòng đăng nhập" });
-        const userId = req.session.user.id;
+        if (!req.session || !req.session.user) return res.status(401).json({ message: "Vui lòng đăng nhập" });
+        
+        // --- SỬA: Gọi ._id thay vì .id ---
+        const userId = req.session.user._id;
+        
         const user = await User.findById(userId).populate({ path: 'savedListings', options: { sort: { createdAt: -1 } } });
-        if(!user) return res.status(404).json({ message: "User không tồn tại" });
+        if (!user) return res.status(404).json({ message: "User không tồn tại" });
 
         return res.json({ message: "Lấy danh sách đã lưu thành công", listings: user.savedListings || [] });
     } catch (error) {
@@ -261,8 +269,9 @@ export const searchUsers = async (req, res) => {
         // Tìm user theo tên, trừ bản thân mình ra
         const users = await User.find({
             username: { $regex: query, $options: "i" },
-            _id: { $ne: req.session.user.id } 
-        }).select("username name role"); // Chỉ lấy info cần thiết
+            // --- SỬA: Gọi ._id thay vì .id ---
+            _id: { $ne: req.session.user._id }
+        }).select("username name role"); 
 
         res.json(users);
     } catch (error) {

@@ -146,7 +146,7 @@ const ChatContainer = ({ currentChat, isWidget }) => {
       <Flex direction="column" flex={1} p={2} gap={3} overflowY="auto" >
         {messages.map((msg) => {
           const senderId = typeof msg.sender === 'object' ? msg.sender._id : msg.sender;
-          const isOwn = senderId === currentUser._id;
+          const isOwn = senderId?.toString() === currentUser?._id?.toString();
 
           return (
             <Flex key={msg._id} justify={isOwn ? "flex-end" : "flex-start"}>
