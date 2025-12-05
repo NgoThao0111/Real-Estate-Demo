@@ -75,16 +75,10 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
           status: "success",
           isClosable: true,
         });
+        window.location.reload();
         onClose();
       }
       return;
-      // toast({
-      //   title: "Thông báo",
-      //   description: "Chức năng đăng nhập sẽ được bổ sung sau.",
-      //   status: "info",
-      //   isClosable: true,
-      // });
-      // return;
     } else {
       const { success, message } = await registerUser(formData);
       if (!success) {
@@ -101,6 +95,7 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
           status: "success",
           isClosable: true,
         });
+        window.location.reload();
         onClose();
       }
     }
