@@ -102,12 +102,25 @@ export const useUserStore = create((set) => ({
 
   //Logout
   logoutUser: async () => {
-    await axios.post("/api/users/logout", {}, { withCredentials: true });
-    set({
-      user: null,
-      error: null,
-      savedListings: [],
-    });
+    try {
+      // 1. Gọi API để Backend xóa cookie (connect.sid)
+      await axiosClient.post("api/users/logout");
+    } catch (error) {
+      console.log("Lỗi logout server:", error);
+    } finally {
+      // Xóa State trong Zustand
+      set({ user: null });
+
+      // Dọn Local Storage (Giữ lại mode)
+      Object.keys(localStorage).forEach((key) => {
+        if (key !== "chakra-ui-color-mode") {
+          localStorage.removeItem(key);
+        }
+      });
+
+      // 3. Chuyển hướng (nếu cần reload trang)
+      window.location.href = "/";
+    }
   },
 
   // Lấy danh sách ID tin đăng đã lưu cho người dùng hiện tại

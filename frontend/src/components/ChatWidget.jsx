@@ -40,6 +40,7 @@ const ChatWidget = () => {
   const headerBg = useColorModeValue("blue.600", "blue.500");
   const textColor = useColorModeValue("white", "white");
   const hoverBg = useColorModeValue("gray.100", "gray.700"); // Đưa ra ngoài vòng lặp
+  const bodyBg = useColorModeValue("gray.50", "gray.900");
 
   // Lấy danh sách tin nhắn khi user login
   useEffect(() => {
@@ -141,7 +142,7 @@ const ChatWidget = () => {
           <Box
             flex={1}
             overflowY="auto"
-            bg={useColorModeValue("gray.50", "gray.900")}
+            bg={bodyBg}
           >
             {/* TRƯỜNG HỢP 1: HIỆN DANH SÁCH TIN NHẮN */}
             {!currentChat && (
