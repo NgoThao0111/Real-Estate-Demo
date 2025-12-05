@@ -44,7 +44,7 @@ const Navbar = () => {
       bg={useColorModeValue("white", "gray.800")} 
       boxShadow={"sm"}
     >
-    <Container maxW="container.xl" px={4}>
+    <Container maxW={"1140px"} px={4}>
       <Flex
         h={16}
         alignItems={"center"}
