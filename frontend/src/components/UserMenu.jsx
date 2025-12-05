@@ -52,7 +52,7 @@ export default function UserMenu({ user, logoutUser }) {
             Nhắn tin
           </MenuItem>
 
-          <MenuItem 
+          {/* <MenuItem 
             icon=
             {colorMode === "light" ? (
               <MdOutlineDarkMode/>
@@ -62,7 +62,7 @@ export default function UserMenu({ user, logoutUser }) {
             onClick={toggleColorMode}
           >
             {colorMode === "light" ? "Chế độ tối" : "Chế độ sáng"}
-          </MenuItem>
+          </MenuItem> */}
           <MenuDivider />
 
           <MenuItem

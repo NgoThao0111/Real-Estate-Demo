@@ -103,22 +103,23 @@ export const useUserStore = create((set) => ({
   //Logout
   logoutUser: async () => {
     try {
-      // 1. Gọi API để Backend xóa cookie (connect.sid)
-      await axiosClient.post("api/users/logout");
+      // 1. Gọi API để Backend xóa session cookie
+      await axios.post("/api/users/logout", {}, { withCredentials: true });
     } catch (error) {
       console.log("Lỗi logout server:", error);
+      // Vẫn tiếp tục logout ở frontend dù API lỗi
     } finally {
-      // Xóa State trong Zustand
-      set({ user: null });
+      // 2. Xóa State trong Zustand
+      set({ user: null, savedListings: [] });
 
-      // Dọn Local Storage (Giữ lại mode)
+      // 3. Dọn Local Storage (Giữ lại color mode)
       Object.keys(localStorage).forEach((key) => {
         if (key !== "chakra-ui-color-mode") {
           localStorage.removeItem(key);
         }
       });
 
-      // 3. Chuyển hướng (nếu cần reload trang)
+      // 4. Chuyển hướng về trang chủ
       window.location.href = "/";
     }
   },

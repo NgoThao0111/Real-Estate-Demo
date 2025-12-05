@@ -31,10 +31,14 @@ export const userRegister = async (req, res) => {
             username: user.username,
             name: user.name
         }
+        
+        // Lưu thời gian login để tính session expiry
+        req.session.loginTime = Date.now();
 
         return res.status(201).json({
             message: "Đăng ký thành công",
-            user: req.session.user
+            user: req.session.user,
+            loginTime: req.session.loginTime
         });
     } catch (error) {
         console.log(error.message);
@@ -97,10 +101,14 @@ export const loginUser = async (req, res) => {
             username: user.username,
             name: user.name
         }
+        
+        // Lưu thời gian login để tính session expiry
+        req.session.loginTime = Date.now();
 
         res.json({
             message: "Login successfully",
-            user: req.session.user
+            user: req.session.user,
+            loginTime: req.session.loginTime
         })
     } catch (error) {
         console.log(error.message);
@@ -194,7 +202,21 @@ export const checkSession = (req, res) => {
 
     try {
         if (req.session && req.session.user) {
-            return res.status(200).json({ message: "Session active", user: req.session.user });
+            const SESSION_DURATION = 30 * 60 * 1000; // 30 phút
+            const loginTime = req.session.loginTime || Date.now();
+            const elapsedTime = Date.now() - loginTime;
+            const remainingTime = Math.max(0, SESSION_DURATION - elapsedTime);
+            
+            // Reset loginTime để extend session
+            req.session.loginTime = Date.now();
+            
+            return res.status(200).json({ 
+                message: "Session active", 
+                user: req.session.user,
+                loginTime: req.session.loginTime,
+                remainingTime: remainingTime,
+                sessionDuration: SESSION_DURATION
+            });
         } else {
             return res.status(200).json({ message: "No active session", user: null });
         }

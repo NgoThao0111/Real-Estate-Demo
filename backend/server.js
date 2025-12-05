@@ -34,7 +34,7 @@ const sessionMiddleware = session({
         secure: process.env.NODE_ENV === 'production',
         sameSite: process.env.NODE_ENV === 'production' ? 'none' : false, // 'lax' hoặc false cho dev
         httpOnly: true,
-        maxAge: 1000 * 30 // 1 ngày
+        maxAge: 1000 * 60 * 30 // Phiên đăng nhập 30p
     }
 });
 
