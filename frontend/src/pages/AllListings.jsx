@@ -5,12 +5,14 @@ import {
   Grid, 
   GridItem,
   SimpleGrid, 
+  VStack,
   Spinner, 
   Center, 
   Text, 
   useColorModeValue
 } from "@chakra-ui/react";
 import ListingCard from "../components/ListingCard";
+import HorizontalListingCard from "../components/HorizontalListingCard";
 import SearchOpt from "../components/SearchOpt";
 import SortViewOpts, { sortListings, filterListings } from "../components/SortViewOpts";
 import { useListStore } from "../store/list.js";
@@ -71,14 +73,27 @@ const AllListings = () => {
               countText="dự án đã tìm thấy"
             />
 
-            {/* Listings Grid */}
+            {/* Listings Grid/List */}
             {(!sortedListings || sortedListings.length === 0) ? (
               <Center minH="400px">
                 <Text fontSize="lg" color="gray.500">Không tìm thấy dự án nào.</Text>
               </Center>
+            ) : viewType === "list" ? (
+              <VStack spacing={6} align="stretch">
+                {sortedListings.map((l, index) => (
+                  <Box
+                    key={l._id || l.id}
+                    data-aos="fade-up"
+                    data-aos-duration="400"
+                    data-aos-delay={index * 50}
+                  >
+                    <HorizontalListingCard listing={l} />
+                  </Box>
+                ))}
+              </VStack>
             ) : (
               <SimpleGrid 
-                columns={viewType === "grid" ? { base: 1, md: 2 } : { base: 1 }} 
+                columns={{ base: 1, md: 2 }} 
                 spacing={6}
               >
                 {sortedListings.map((l, index) => (
