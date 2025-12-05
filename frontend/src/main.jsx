@@ -18,5 +18,5 @@ createRoot(document.getElementById('root')).render(
         </AuthContextProvider>
       </ChakraProvider>
     </BrowserRouter>
-  </StrictMode>,
+  </StrictMode>
 )
