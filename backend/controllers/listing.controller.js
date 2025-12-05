@@ -3,14 +3,14 @@ import Listing from "../models/listing.model.js";
 import cloudinary from "../config/cloudinary.js";
 
 export const createList = async (req, res) => {
-  if (!req.session || !req.session.user || !req.session.user.id) {
+  if (!req.session || !req.session.user || !req.session.user._id) {
     return res.status(401).json({
       message: "Unauthorized: User not logged in",
     });
   }
 
   try {
-    const ownerId = req.session.user.id;
+    const ownerId = req.session.user._id;
 
     // --- CẬP NHẬT: Thêm bedroom, bathroom vào destructuring ---
     const {
@@ -267,7 +267,7 @@ export const getMyListings = async (req, res) => {
     if (!req.session || !req.session.user)
       return res.status(401).json({ message: "Vui lòng đăng nhập" });
 
-    const userId = req.session.user.id;
+    const userId = req.session.user._id;
     const listings = await Listing.find({ owner: userId })
       .populate('owner', 'name profile')
       .populate('property_type', 'name')
@@ -285,7 +285,7 @@ export const updateListing = async (req, res) => {
     if (!req.session || !req.session.user)
       return res.status(401).json({ message: "Vui lòng đăng nhập" });
 
-    const userId = req.session.user.id;
+    const userId = req.session.user._id;
     const id = req.params.id;
 
     const listing = await Listing.findById(id);
@@ -397,7 +397,7 @@ export const deleteListing = async (req, res) => {
       return res.status(401).json({ message: "Vui lòng đăng nhập" });
     }
 
-    const userId = req.session.user.id;
+    const userId = req.session.user._id;
     const id = req.params.id;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
