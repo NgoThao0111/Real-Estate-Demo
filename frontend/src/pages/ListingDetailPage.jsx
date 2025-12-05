@@ -178,7 +178,7 @@ const ListingDetailPage = () => {
                 boxShadow="sm"
                 bg="white"
             >
-                <Heading size="md" mb={4}>📍 Vị trí bất động sản</Heading>
+                <Heading size="md" mb={4}>Vị trí bất động sản</Heading>
                 
                 <Text color="gray.600" mb={4}>
                     {listing.location.detail}, {listing.location.ward}, {listing.location.province}
