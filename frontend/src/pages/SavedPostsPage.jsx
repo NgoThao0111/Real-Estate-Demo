@@ -1,7 +1,10 @@
-import { Box, Container, SimpleGrid, Heading, Button, Stack, useColorModeValue } from "@chakra-ui/react";
+import { Box, Container, SimpleGrid, VStack, Heading, Button, Stack, useColorModeValue } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
+import AOS from "aos";
+import "aos/dist/aos.css";
 import { useListStore } from "../store/list.js";
 import ListingCard from "../components/ListingCard";
+import HorizontalListingCard from "../components/HorizontalListingCard";
 import SortViewOpts, { sortListings, filterListings } from "../components/SortViewOpts";
 
 const SavedPostsPage = () => {
@@ -23,7 +26,10 @@ const SavedPostsPage = () => {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { 
+    AOS.init({ duration: 400});
+    load(); 
+  }, []);
 
   const onUnsave = async (id) => {
     const res = await toggleSaveListing(id);
@@ -54,19 +60,32 @@ const SavedPostsPage = () => {
           setSearchQuery={setSearchQuery}
         />
 
-        <SimpleGrid 
-          columns={viewType === "grid" ? { base: 1, md: 3 } : { base: 1 }} 
-          spacing={viewType === "grid" ? 6 : 4}
-        >
-          {sortedListings.map((l) => (
-            <Box key={l._id}>
-              <ListingCard listing={l} />
-              <Stack direction="row" spacing={2} mt={2}>
-                <Button size="sm" colorScheme="red" variant="ghost" onClick={() => onUnsave(l._id)}>Bỏ lưu</Button>
-              </Stack>
-            </Box>
-          ))}
-        </SimpleGrid>
+        {viewType === "list" ? (
+          <VStack spacing={6} align="stretch">
+            {sortedListings.map((l, index) => (
+              <Box key={l._id} data-aos="fade-up" data-aos-delay={index * 50}>
+                <HorizontalListingCard listing={l} />
+                <Stack direction="row" spacing={2} mt={2}>
+                  <Button size="sm" colorScheme="red" variant="ghost" onClick={() => onUnsave(l._id)}>Bỏ lưu</Button>
+                </Stack>
+              </Box>
+            ))}
+          </VStack>
+        ) : (
+          <SimpleGrid 
+            columns={{ base: 1, md: 3 }} 
+            spacing={6}
+          >
+            {sortedListings.map((l, index) => (
+              <Box key={l._id} data-aos="fade-up" data-aos-delay={index * 100}>
+                <ListingCard listing={l} />
+                <Stack direction="row" spacing={2} mt={2}>
+                  <Button size="sm" colorScheme="red" variant="ghost" onClick={() => onUnsave(l._id)}>Bỏ lưu</Button>
+                </Stack>
+              </Box>
+            ))}
+          </SimpleGrid>
+        )}
       </Container>
     </Box>
   );

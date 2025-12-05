@@ -5,8 +5,11 @@ import {
   HStack,
   Text,
   useColorModeValue,
+  useColorMode,
+  IconButton,
   Box
 } from "@chakra-ui/react";
+import { MoonIcon, SunIcon } from "@chakra-ui/icons";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import AuthModal from "./AuthModal";
@@ -16,6 +19,7 @@ import UserMenu from "./UserMenu";
 
 const Navbar = () => {
   const linkColor = useColorModeValue('gray.700', 'gray.100');
+  const { colorMode, toggleColorMode } = useColorMode();
   const [authMode, setAuthMode] = useState(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -92,6 +96,12 @@ const Navbar = () => {
           spacing={5} 
           alignItems={"center"}
         >
+          <IconButton
+            icon={colorMode === "light" ? <MoonIcon/> : <SunIcon color="yellow" />}
+            onClick={toggleColorMode}
+            variant="ghost"
+            aria-label="Toggle color mode"
+          />
           {!user ? (
             <>
               <Button 
