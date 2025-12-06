@@ -10,7 +10,7 @@ const reportSchema = new mongoose.Schema({
 
     //Bài đăng bị báo cáo
     listing: {
-        type: mongoose.Schema.Typed.ObjectId,
+        type: mongoose.Schema.Types.ObjectId,
         ref: "Listing",
         required: true
     },
@@ -19,6 +19,11 @@ const reportSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+
+    detail: {
+        type: String,
+    },
+
     status: {
         type: String,
         enum: ['pending', 'reviewed', 'resolved'],
