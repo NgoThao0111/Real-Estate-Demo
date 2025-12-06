@@ -317,8 +317,8 @@ const HomePanel = () => {
     <Box
       position="relative"
       minH={`calc(100vh - 64px)`}
-      pt={{ base: "40px", md: "60px" }}
-      pb={{ base: "40px", md: "60px" }}
+      pt={"60px"}
+      pb={"60px"}
       overflow="hidden"
       bgGradient={bgGradient}
     >
@@ -364,15 +364,14 @@ const HomePanel = () => {
                 fontWeight="bold"
                 maxW="600px"
               >
-                Tìm bất động sản tốt nhất của bạn
+                Tìm bất động sản phù hợp nhất với bạn
               </Heading>
               <Text
                 fontSize={{ base: "md", md: "lg" }}
                 color={subTextColor}
                 maxW="500px"
               >
-                Khám phá hàng nghìn bất động sản chất lượng với giá tốt nhất thị
-                trường
+                Khám phá hàng nghìn bất động sản chất lượng với giá cả tốt nhất trên thị trường
               </Text>
             </VStack>
 
@@ -437,41 +436,6 @@ const HomePanel = () => {
                 </TabPanels>
               </Tabs>
             </Box>
-
-            {/* Rating Section */}
-            <VStack
-              align={{ base: "center", lg: "start" }}
-              spacing={3}
-              data-aos="fade-up"
-              data-aos-duration="800"
-              data-aos-delay="2100"
-            >
-              <HStack
-                spacing={1}
-                data-aos="zoom-in"
-                data-aos-duration="600"
-                data-aos-delay="200"
-              >
-                {[...Array(5)].map((_, i) => (
-                  <Icon
-                    key={i}
-                    as={FiStar}
-                    w={5}
-                    h={5}
-                    color="blue.400"
-                    fill="currentColor"
-                  />
-                ))}
-              </HStack>
-              <Text fontSize="md" color={ratingTextColor} fontWeight="medium">
-                <Text as="span" fontWeight="bold" color={ratingScoreColor}>
-                  4.9/5
-                </Text>
-                <Text as="span" ml={2}>
-                  từ 658 đánh giá
-                </Text>
-              </Text>
-            </VStack>
           </VStack>
         </Flex>
       </Container>
