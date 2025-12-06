@@ -1,111 +1,91 @@
 import { create } from "zustand";
-import api from "../lib/axios.js";
+import api from "../lib/axios.js"; // <--- SỬA: Dùng api instance
 
 export const useChatStore = create((set, get) => ({
-  conversations: [],
+  chats: [],
+  currentChat: null,
+  messages: [],
   loading: false,
   error: null,
 
-  // Lấy danh sách conversations
-  getConversations: async () => {
+  // Lấy danh sách cuộc trò chuyện
+  fetchChats: async () => {
+    set({ loading: true, error: null });
     try {
-      set({ loading: true, error: null });
-      const res = await api.get("/chats");
-      set({ conversations: res.data.conversations || [], loading: false });
-      return { success: true, data: res.data.conversations };
-    } catch (error) {
-      const message = error?.response?.data?.message || error.message;
-      set({ error: message, loading: false });
-      return { success: false, message };
+      const res = await api.get("/chats"); // Dùng api.get
+      set({ chats: res.data.conversations, loading: false });
+    } catch (err) {
+      console.log(err);
+      set({ loading: false, error: "Failed to fetch chats" });
     }
   },
 
-  updateLastMessage: (newMessage) => {
-    set((state) => {
-      // 1. Tìm cuộc trò chuyện cần update
-      const conversationId =
-        typeof newMessage.conversation === "object"
-          ? newMessage.conversation._id
-          : newMessage.conversation;
-
-      // Map để cập nhật tin nhắn cuối
-      let updatedConversations = state.conversations.map((chat) => {
-        if (chat._id === conversationId) {
-          return { ...chat, lastMessage: newMessage };
-        }
-        return chat;
-      });
-
-      // 2. Sắp xếp: Đưa cuộc trò chuyện mới nhất lên đầu (BỎ COMMENT RA)
-      updatedConversations.sort((a, b) => {
-        const dateA = new Date(a.lastMessage?.createdAt || 0);
-        const dateB = new Date(b.lastMessage?.createdAt || 0);
-        return dateB - dateA; // Mới nhất lên đầu
-      });
-
-      return { conversations: updatedConversations };
-    });
-  },
-
-  // Tạo hoặc tìm conversation với user cụ thể
-  createOrFindConversation: async (participantId) => {
+  // Chọn một cuộc trò chuyện
+  setCurrentChat: async (chat) => {
+    set({ currentChat: chat, messages: [], loading: true });
     try {
-      set({ loading: true, error: null });
-
-      // Kiểm tra xem đã có conversation với user này chưa
-      const existingConv = get().conversations.find((conv) =>
-        conv.participants.some((p) => p._id === participantId)
-      );
-
-      if (existingConv) {
-        set({ loading: false });
-        return { success: true, data: existingConv };
-      }
-
-      // Tạo conversation mới
-      const res = await api.post("/chats", {
-        participantIds: [participantId],
-        type: "private",
-      });
-
-      const newConv = res.data.conversation;
-      set({
-        conversations: [newConv, ...get().conversations],
-        loading: false,
-      });
-
-      return { success: true, data: newConv };
-    } catch (error) {
-      const message = error?.response?.data?.message || error.message;
-      set({ error: message, loading: false });
-      return { success: false, message };
+      const res = await api.get(`/chats/${chat._id}/messages`);
+      set({ messages: res.data.messages, loading: false });
+      
+      // Mark read ngay khi mở chat
+      // (Có thể gọi ngầm không cần await để nhanh)
+      api.put(`/chats/${chat._id}/read`); 
+      
+    } catch (err) {
+      console.log(err);
+      set({ loading: false });
     }
   },
 
   // Gửi tin nhắn
-  sendMessage: async (conversationId, content, type = "text") => {
-    try {
-      const res = await api.post(`/chats/${conversationId}/messages`, {
+  sendMessage: async (content, chatId) => {
+    // Optimistic Update (Thêm tin nhắn vào list trước khi server trả về)
+    const tempId = Date.now().toString();
+    const tempMsg = {
+        _id: tempId,
         content,
-        type,
-      });
-      return { success: true, data: res.data.data };
-    } catch (error) {
-      const message = error?.response?.data?.message || error.message;
-      return { success: false, message };
+        sender: { _id: "me" }, // Giả định người gửi là mình
+        createdAt: new Date().toISOString(),
+        pending: true // Cờ đánh dấu đang gửi
+    };
+
+    set((state) => ({ messages: [tempMsg, ...state.messages] }));
+
+    try {
+      const res = await api.post(`/chats/${chatId}/messages`, { content });
+      
+      // Server trả về tin nhắn thật -> Thay thế tin nhắn tạm
+      set((state) => ({
+        messages: state.messages.map((msg) => 
+            msg._id === tempId ? res.data.data : msg
+        ),
+      }));
+      
+      // Update lại lastMessage trong danh sách chat (để chat nhảy lên đầu)
+      get().fetchChats(); 
+
+    } catch (err) {
+      console.log(err);
+      // Xóa tin nhắn tạm nếu lỗi (hoặc hiện nút thử lại)
+      set((state) => ({
+        messages: state.messages.filter((msg) => msg._id !== tempId)
+      }));
     }
   },
 
-  // Lấy tin nhắn của conversation
-  getMessages: async (conversationId, page = 1, limit = 30) => {
-    try {
-      const res = await api.get(`/chats/${conversationId}/messages`, {
-        params: { page, limit },
-      });
-      return { success: true, data: res.data.messages };
-    } catch (error) {
-      const message = error?.response?.data?.message || error.message;
-      return { success: false, message };
+  // Nhận tin nhắn từ Socket (Real-time)
+  addMessage: (message) => {
+    const currentChat = get().currentChat;
+    
+    // Chỉ thêm nếu tin nhắn thuộc chat đang mở
+    if (currentChat && message.conversation === currentChat._id) {
+        set((state) => ({ messages: [message, ...state.messages] }));
+        
+        // Mark read ngay
+        api.put(`/chats/${currentChat._id}/read`);
     }
+    
+    // Luôn reload danh sách chat để cập nhật lastMessage
+    get().fetchChats();
   },
 }));

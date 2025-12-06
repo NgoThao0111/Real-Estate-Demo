@@ -7,11 +7,12 @@ import {
   IconButton,
   useDisclosure,
   useColorModeValue,
-  Box
+  Box,
+  Avatar // Import thêm Avatar nếu muốn hiển thị ảnh
 } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { HamburgerIcon} from "@chakra-ui/icons";
+import { HamburgerIcon } from "@chakra-ui/icons";
 import DrawerMenu from "./DrawerMenu";
 import AuthModal from "./AuthModal";
 import CreateListingModal from "./CreateListingModal";
@@ -31,14 +32,16 @@ const Navbar = () => {
     setIsAuthOpen(true);
   };
 
-  const { user, logoutUser, checkSession } = useUserStore();
+  // --- SỬA LỖI: Lấy checkAuth thay vì checkSession ---
+  const { user, logoutUser, checkAuth } = useUserStore();
 
   useEffect(() => {
-    checkSession();
-  }, []);
+    // Gọi hàm checkAuth mới để kiểm tra Cookie JWT
+    checkAuth();
+  }, [checkAuth]);
 
   return (
-    <Box bg={useColorModeValue("white", "gray.800")} boxShadow="sm">
+    <Box bg={useColorModeValue("white", "gray.800")} boxShadow="sm" position="sticky" top={0} zIndex={100}>
       <Container maxW="1140px" px={4}>
         <Flex h={16} align="center" justify="space-between">
           {/* Left: Logo */}
@@ -54,60 +57,65 @@ const Navbar = () => {
             </Text>
           </Link>
 
-          {/* Middle: Nav Links (hidden on mobile) */}
+          {/* Middle: Nav Links */}
           <HStack spacing={8} display={{ base: "none", lg: "flex" }}>
-            <Link to="/">
+            <Link to="/listings">
               <Text color={linkColor} _hover={{ color: "blue.500" }}>
                 Tìm kiếm
               </Text>
             </Link>
-            <Link to="/">
+            <Link to="/listings?rental_type=rent">
               <Text color={linkColor} _hover={{ color: "blue.500" }}>
                 Cho thuê
               </Text>
             </Link>
-            <Link to="/">
+            <Link to="/listings?rental_type=sell">
               <Text color={linkColor} _hover={{ color: "blue.500" }}>
-                Giao bán
+                Rao bán
               </Text>
             </Link>
           </HStack>
 
           {/* Right: Buttons */}
-          {!user ? (
-            <HStack display={{ base: "none", lg: "flex" }}>
-              <Button colorScheme="blue" onClick={() => openAuth("login")}>
-                Đăng nhập
-              </Button>
-              <Button variant={"outline"} onClick={() => openAuth("register")}>
-                Đăng ký
-              </Button>
-            </HStack>
-          ) : (
-            <HStack spacing={"4"}>
-              <UserMenu user={user} logoutUser={logoutUser} />
-              <Button
-                colorScheme="blue"
-                display={{base: "none", lg: "flex"}}
-                onClick={() => {
-                  setIsCreateOpen(true);
-                }}
-              >
-                Đăng tin mới
-              </Button>
-              {/* Mobile Menu Button */}
-              <IconButton
-                display={{ base: "flex", lg: "none" }}
-                icon={<HamburgerIcon />}
-                onClick={onOpen}
-                variant={"ghost"}
-                aria-label="Open Menu"
-              />
-            </HStack>
-          )}
+          <HStack spacing={4}>
+            {!user ? (
+              <HStack display={{ base: "none", lg: "flex" }}>
+                <Button colorScheme="blue" onClick={() => openAuth("login")}>
+                  Đăng nhập
+                </Button>
+                <Button variant={"outline"} onClick={() => openAuth("register")}>
+                  Đăng ký
+                </Button>
+              </HStack>
+            ) : (
+              <HStack spacing={4}>
+                {/* Nút Đăng tin mới */}
+                <Button
+                  colorScheme="blue"
+                  display={{base: "none", lg: "flex"}}
+                  onClick={() => setIsCreateOpen(true)}
+                >
+                  Đăng tin mới
+                </Button>
+                
+                {/* User Menu Dropdown */}
+                <UserMenu user={user} logoutUser={logoutUser} />
+              </HStack>
+            )}
+
+            {/* Mobile Menu Button (Luôn hiện trên mobile) */}
+            <IconButton
+              display={{ base: "flex", lg: "none" }}
+              icon={<HamburgerIcon />}
+              onClick={onOpen}
+              variant={"ghost"}
+              aria-label="Open Menu"
+            />
+          </HStack>
         </Flex>
       </Container>
 
+      {/* Drawer Mobile */}
       <DrawerMenu
         isOpen={isOpen}
         onClose={onClose}
@@ -117,11 +125,13 @@ const Navbar = () => {
         openCreate={() => setIsCreateOpen(true)}
       />
 
+      {/* Modals */}
       <AuthModal
         isOpen={isAuthOpen}
         onClose={() => setIsAuthOpen(false)}
         defaultMode={authMode}
       />
+      
       <CreateListingModal
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}

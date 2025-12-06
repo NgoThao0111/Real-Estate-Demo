@@ -1,27 +1,29 @@
 import { create } from "zustand";
-import api from "../lib/axios.js";
+import api from "../lib/axios.js"; // Import api instance (đã có interceptor & credentials)
 
 export const useUserStore = create((set) => ({
   user: null,
   savedListings: [],
   loading: false,
-  isCheckingSession: false,
+  isCheckingAuth: false, // Đổi tên cho đúng ý nghĩa JWT
   error: null,
+
+  // --- 1. REGISTER ---
   registerUser: async (userData) => {
     try {
-      if (
-        !userData.username ||
-        !userData.password ||
-        !userData.name ||
-        !userData.phone
-      ) {
+      if (!userData.username || !userData.password || !userData.name || !userData.phone) {
         throw new Error("Vui lòng điền tất cả các trường bắt buộc.");
       }
       if (userData.password !== userData.confirmPassword) {
         throw new Error("Mật khẩu và xác nhận mật khẩu không khớp.");
       }
+      
       set({ loading: true, error: null });
+      
+      // Gọi API đăng ký
       const res = await api.post("/users/register", userData);
+      
+      // Đăng ký thành công -> Server trả về user info + cookie token
       set({
         user: res.data.user,
         loading: false,
@@ -35,7 +37,7 @@ export const useUserStore = create((set) => ({
     }
   },
 
-  //Login
+  // --- 2. LOGIN ---
   loginUser: async (loginData) => {
     try {
       if (!loginData.username || !loginData.password) {
@@ -43,19 +45,22 @@ export const useUserStore = create((set) => ({
       }
 
       set({ loading: true, error: null });
-      const res = await api.post("/users/login", loginData, {
-        withCredentials: true,
-      });
+      
+      // Không cần { withCredentials: true } ở đây nữa vì api config đã có
+      const res = await api.post("/users/login", loginData);
 
+      // Login thành công -> Lưu user vào state
       set({
         user: res.data.user,
         loading: false,
         error: null,
       });
-      return {
-        success: true,
-        message: "Đăng nhập thành công",
-      };
+
+      // Sau khi login, tiện thể fetch luôn danh sách tin đã lưu
+      // (Dùng get().fetchSavedListings để tái sử dụng code)
+      // Nhưng vì hàm login là async, ta cứ để nó chạy ngầm hoặc gọi sau
+      
+      return { success: true, message: "Đăng nhập thành công" };
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message;
       set({
@@ -63,26 +68,22 @@ export const useUserStore = create((set) => ({
         error: errorMessage,
         user: null,
       });
-      return {
-        success: false,
-        message: errorMessage,
-      };
+      return { success: false, message: errorMessage };
     }
   },
 
-  //Check session nếu reload lại trang
-  checkSession: async () => {
-    set({ isCheckingSession: true });
+  // --- 3. CHECK AUTH (Thay thế checkSession) ---
+  checkAuth: async () => {
+    set({ isCheckingAuth: true });
     try {
-      const res = await api.get("/users/session", {
-        withCredentials: true,
-      });
+      // Gọi endpoint JWT chuẩn ở server.js
+      const res = await api.get("/check-auth");
 
-      set({
-        user: res.data.user || null,
-      });
-      // nếu đã đăng nhập, tải danh sách tin đăng đã lưu
-      if (res.data.user) {
+      const userData = res.data.user || null;
+      set({ user: userData });
+
+      // Nếu đã đăng nhập, tải danh sách tin đã lưu
+      if (userData) {
         try {
           const savedRes = await api.get("/users/saved");
           const saved = savedRes.data.listings || [];
@@ -92,37 +93,37 @@ export const useUserStore = create((set) => ({
         }
       }
     } catch (error) {
-      set({ user: null });
+      // Nếu lỗi 401 hoặc lỗi mạng -> Coi như chưa đăng nhập
+      set({ user: null, savedListings: [] });
     } finally {
-      set({ isCheckingSession: false });
+      set({ isCheckingAuth: false });
     }
   },
 
-  //Logout
+  // --- 4. LOGOUT ---
   logoutUser: async () => {
     try {
-      // 1. Gọi API để Backend xóa session cookie
-      await api.post("/users/logout", {}, { withCredentials: true });
+      // Gọi API để xóa cookie token
+      await api.post("/users/logout");
     } catch (error) {
       console.log("Lỗi logout server:", error);
-      // Vẫn tiếp tục logout ở frontend dù API lỗi
     } finally {
-      // 2. Xóa State trong Zustand
+      // Xóa state
       set({ user: null, savedListings: [] });
 
-      // 3. Dọn Local Storage (Giữ lại color mode)
+      // Dọn Local Storage
       Object.keys(localStorage).forEach((key) => {
         if (key !== "chakra-ui-color-mode") {
           localStorage.removeItem(key);
         }
       });
 
-      // 4. Chuyển hướng về trang chủ
+      // Chuyển hướng về trang chủ
       window.location.href = "/";
     }
   },
 
-  // Lấy danh sách ID tin đăng đã lưu cho người dùng hiện tại
+  // --- 5. SAVED LISTINGS ---
   fetchSavedListings: async () => {
     try {
       const res = await api.get("/users/saved");
@@ -135,21 +136,25 @@ export const useUserStore = create((set) => ({
     }
   },
 
-  // Bật/tắt lưu tin đăng thông qua API và cập nhật danh sách
   toggleSaveListing: async (listingId) => {
     try {
+      // 1. Gọi API toggle
       const res = await api.post(`/users/save/${listingId}`);
-      // cập nhật danh sách ID đã lưu
-      await (async () => {
-        try {
-          const r = await api.get("/users/saved");
-          const saved = r.data.listings || [];
-          set({ savedListings: saved.map((l) => l._id) });
-        } catch (e) {}
-      })();
+      
+      // 2. Cập nhật State Optimistic (Để UI phản hồi nhanh)
+      set((state) => {
+        const isSaved = state.savedListings.includes(listingId);
+        if (isSaved) {
+            return { savedListings: state.savedListings.filter(id => id !== listingId) };
+        } else {
+            return { savedListings: [...state.savedListings, listingId] };
+        }
+      });
+
       return { success: true, message: res.data.message };
     } catch (err) {
       const message = err?.response?.data?.message || err.message;
+      // Nếu lỗi, nên fetch lại để đồng bộ state cũ (Revert)
       return { success: false, message };
     }
   },

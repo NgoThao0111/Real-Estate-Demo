@@ -1,25 +1,18 @@
 import Conversation from "../models/conversation.model.js";
 import Message from "../models/message.model.js";
 
-// Helper: Kiểm tra Auth và trả về null nếu thất bại để chặn luồng code
-const requireAuth = (req, res) => {
-  if (!req.session || !req.session.user) {
-    res.status(401).json({ message: "Vui lòng đăng nhập" });
-    return null; // Trả về null để hàm gọi biết là failed
-  }
-  return req.session.user;
-};
+// ❌ BỎ HELPER: requireAuth (Vì đã có middleware verifyToken lo việc này)
 
 // POST /api/chats
 export const createConversation = async (req, res) => {
   try {
-    const user = requireAuth(req, res);
-    if (!user) return; // Dừng lại nếu requireAuth trả về null
+    // ✅ JWT: Lấy ID từ req.userId (do middleware gán)
+    const currentUserId = req.userId;
 
     const { participantIds = [], title, type = "private" } = req.body;
     
     // Đảm bảo không trùng lặp ID và ép kiểu về String để so sánh chuẩn
-    const uniqueIds = new Set([user._id, ...participantIds]);
+    const uniqueIds = new Set([currentUserId, ...participantIds]);
     const participants = Array.from(uniqueIds);
 
     // Kiểm tra xem đã có conversation giữa các participants này chưa
@@ -58,13 +51,12 @@ export const createConversation = async (req, res) => {
 // GET /api/chats -> list conversations for current user
 export const getConversations = async (req, res) => {
   try {
-    const user = requireAuth(req, res);
-    if (!user) return;
+    const currentUserId = req.userId; // ✅ JWT
 
     const { page = 1, limit = 20 } = req.query;
     const skip = (Math.max(1, Number(page)) - 1) * Number(limit);
 
-    const convs = await Conversation.find({ participants: user._id })
+    const convs = await Conversation.find({ participants: currentUserId })
       .sort({ updatedAt: -1 })
       .skip(skip)
       .limit(Number(limit))
@@ -75,7 +67,7 @@ export const getConversations = async (req, res) => {
       });
 
     return res.json({
-      message: "OK", // Đã sửa lỗi chính tả messsage
+      message: "OK",
       conversations: convs,
     });
   } catch (error) {
@@ -87,8 +79,7 @@ export const getConversations = async (req, res) => {
 // GET /api/chats/:id/message
 export const getMessages = async (req, res) => {
   try {
-    const user = requireAuth(req, res);
-    if (!user) return;
+    // const currentUserId = req.userId; // Hàm này không nhất thiết cần userId, chỉ cần biết đã login
 
     const convId = req.params.id;
     const { page = 1, limit = 30, before } = req.query;
@@ -103,7 +94,7 @@ export const getMessages = async (req, res) => {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(Number(limit))
-      .populate("sender", "username name profile"); // Thêm profile nếu cần hiển thị avatar
+      .populate("sender", "username name profile"); 
 
     return res.json({
       message: "OK",
@@ -118,28 +109,26 @@ export const getMessages = async (req, res) => {
 // PUT /api/chats/:id/read
 export const markMessagesRead = async (req, res) => {
   try {
-    const user = requireAuth(req, res);
-    if (!user) return;
+    const currentUserId = req.userId; // ✅ JWT
 
     const convId = req.params.id;
     const { messageIds } = req.body;
     const filter = { conversation: convId };
     
-    // Nếu có danh sách ID cụ thể thì lọc, không thì đánh dấu tất cả trong chat này
     if (Array.isArray(messageIds) && messageIds.length) {
       filter._id = { $in: messageIds };
     }
     
-    // Chỉ update những tin chưa được user này đọc để tối ưu hiệu năng
-    filter.readBy = { $ne: user._id };
+    // Chỉ update những tin chưa được user này đọc
+    filter.readBy = { $ne: currentUserId };
 
     const result = await Message.updateMany(filter, { 
-      $addToSet: { readBy: user._id } 
+      $addToSet: { readBy: currentUserId } 
     });
 
     return res.json({
       message: "Marked read",
-      updatedCount: result.modifiedCount, // Sử dụng kết quả trả về từ MongoDB
+      updatedCount: result.modifiedCount,
     });
   } catch (error) {
     console.error(error);
@@ -150,8 +139,7 @@ export const markMessagesRead = async (req, res) => {
 // POST /api/chats/:id/participants
 export const addParticipant = async (req, res) => {
   try {
-    const user = requireAuth(req, res);
-    if (!user) return;
+    const currentUserId = req.userId; // ✅ JWT
 
     const convId = req.params.id;
     const { participantId } = req.body;
@@ -162,12 +150,11 @@ export const addParticipant = async (req, res) => {
     }
 
     // Convert ObjectId sang String để so sánh chính xác
-    const isMember = conv.participants.some(id => id.toString() === user.id.toString());
+    const isMember = conv.participants.some(id => id.toString() === currentUserId);
     if (!isMember) {
         return res.status(403).json({ message: "Forbidden" });
     }
 
-    // Check xem người mới đã có trong nhóm chưa
     const isAlreadyAdded = conv.participants.some(id => id.toString() === participantId.toString());
     
     if (!isAlreadyAdded) {
@@ -175,7 +162,6 @@ export const addParticipant = async (req, res) => {
       await conv.save();
     }
 
-    // Sửa lỗi chính tả: 'participant' -> 'participants'
     await conv.populate("participants", "username name profile");
 
     return res.json({
@@ -191,8 +177,7 @@ export const addParticipant = async (req, res) => {
 // POST /api/chats/:id/messages
 export const sendMessage = async (req, res) => {
   try {
-    const user = requireAuth(req, res);
-    if (!user) return;
+    const currentUserId = req.userId; // ✅ JWT: Lấy ID người gửi
 
     const convId = req.params.id;
     const { content, type = "text" } = req.body;
@@ -200,10 +185,10 @@ export const sendMessage = async (req, res) => {
     // 1. Tạo tin nhắn mới
     const newMessage = await Message.create({
       conversation: convId,
-      sender: user._id,
+      sender: currentUserId, // ✅ Dùng biến này thay vì user.id
       content,
       type,
-      readBy: [user._id],
+      readBy: [currentUserId],
     });
 
     // 2. Populate thông tin người gửi

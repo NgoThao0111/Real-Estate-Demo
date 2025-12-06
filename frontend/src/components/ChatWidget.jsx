@@ -19,6 +19,7 @@ import ChatContainer from "./ChatContainer.jsx";
 import { useUserStore } from "../store/user.js";
 import { useChatStore } from "../store/chat.js";
 
+// Helper lấy tên hiển thị an toàn
 const getUserDisplayName = (user) => {
   if (!user) return "Người dùng";
   return user.name || user.username || "Người dùng";
@@ -26,47 +27,46 @@ const getUserDisplayName = (user) => {
 
 const ChatWidget = () => {
   const { user } = useUserStore();
-  const { conversations, getConversations } = useChatStore();
+  
+  // --- SỬA LỖI Ở ĐÂY: Dùng chats và fetchChats ---
+  const { chats, fetchChats } = useChatStore(); 
 
-  // State quản lý đóng mở widget
   const [isOpen, setIsOpen] = useState(false);
-
-  // State quản lý đang xem list hay xem chat cụ thể
   const [currentChat, setCurrentChat] = useState(null);
 
-  // --- KHAI BÁO MÀU SẮC (HOOKS) Ở ĐẦU COMPONENT ---
+  // --- THEME COLORS ---
   const bgBox = useColorModeValue("white", "gray.800");
   const borderColor = useColorModeValue("gray.200", "gray.700");
   const headerBg = useColorModeValue("blue.600", "blue.500");
-  const textColor = useColorModeValue("white", "white");
-  const hoverBg = useColorModeValue("gray.100", "gray.700"); // Đưa ra ngoài vòng lặp
+  const textColor = "white"; 
+  const hoverBg = useColorModeValue("gray.100", "gray.700");
   const bodyBg = useColorModeValue("gray.50", "gray.900");
+  const msgColor = useColorModeValue("gray.600", "gray.400");
 
   // Lấy danh sách tin nhắn khi user login
   useEffect(() => {
     if (user) {
-      getConversations();
+      fetchChats(); // --- SỬA LỖI: Gọi fetchChats
     }
-  }, [user, getConversations]);
+  }, [user, fetchChats]);
 
-  // Toggle đóng mở widget
   const toggleWidget = () => setIsOpen(!isOpen);
-
-  // Hàm quay lại danh sách
   const handleBackToList = () => setCurrentChat(null);
 
   if (!user) return null;
 
+  const currentUserId = user.id || user._id;
+
   return (
     <>
-      {/* 1. Nút tròn ở góc màn hình */}
+      {/* 1. Nút tròn mở chat */}
       {!isOpen && (
         <IconButton
           icon={<ChatIcon w={6} h={6} />}
           isRound={true}
           size="lg"
           colorScheme="blue"
-          position="fixed" // Đã sửa lỗi chính tả positon
+          position="fixed"
           bottom="30px"
           right="30px"
           zIndex="9999"
@@ -74,14 +74,21 @@ const ChatWidget = () => {
           onClick={toggleWidget}
           aria-label="Open Chat"
           animation="bounce 2s infinite"
-        ></IconButton>
+          sx={{
+            "@keyframes bounce": {
+              "0%, 20%, 50%, 80%, 100%": { transform: "translateY(0)" },
+              "40%": { transform: "translateY(-10px)" },
+              "60%": { transform: "translateY(-5px)" },
+            },
+          }}
+        />
       )}
 
-      {/* 2. Khung chat window (popup) */}
-      <SlideFade in={isOpen} offsetY="20px">
+      {/* 2. Khung chat window */}
+      <SlideFade in={isOpen} offsetY="20px" unmountOnExit={false}>
         <Box
           position="fixed"
-          bottom={isOpen ? "30px" : "-100px"}
+          bottom={isOpen ? "30px" : "-500px"}
           right="30px"
           w="350px"
           h="500px"
@@ -95,7 +102,7 @@ const ChatWidget = () => {
           display={isOpen ? "flex" : "none"}
           flexDirection="column"
         >
-          {/* Header của widget */}
+          {/* HEADER */}
           <Flex
             bg={headerBg}
             p={3}
@@ -105,8 +112,7 @@ const ChatWidget = () => {
             boxShadow="sm"
           >
             <HStack>
-              {/* Nếu đang chat thì hiện nút Back, không thì hiện Text */}
-              {currentChat ? (
+              {currentChat && (
                 <IconButton
                   icon={<ArrowBackIcon />}
                   variant="ghost"
@@ -114,20 +120,19 @@ const ChatWidget = () => {
                   size="sm"
                   _hover={{ bg: "whiteAlpha.300" }}
                   onClick={handleBackToList}
+                  aria-label="Back"
                 />
-              ) : null}
+              )}
 
-              <Text fontWeight="bold" fontSize="md">
+              <Text fontWeight="bold" fontSize="md" noOfLines={1}>
                 {currentChat
                   ? getUserDisplayName(
-                      // Đã sửa participant -> participants
-                      currentChat.participants?.find((p) => p._id !== user.id)
+                      currentChat.participants?.find((p) => (p._id || p.id) !== currentUserId)
                     )
                   : "Tin nhắn"}
               </Text>
             </HStack>
 
-            {/* Nút đóng/thu nhỏ */}
             <IconButton
               icon={<ChevronDownIcon w={6} h={6} />}
               variant="ghost"
@@ -135,51 +140,54 @@ const ChatWidget = () => {
               size="sm"
               onClick={toggleWidget}
               _hover={{ bg: "whiteAlpha.300" }}
+              aria-label="Close"
             />
           </Flex>
 
-          {/* BODY CỦA WIDGET */}
-          <Box
-            flex={1}
-            overflowY="auto"
-            bg={bodyBg}
-          >
-            {/* TRƯỜNG HỢP 1: HIỆN DANH SÁCH TIN NHẮN */}
+          {/* BODY */}
+          <Box flex={1} overflowY="auto" bg={bodyBg}>
+            {/* VIEW 1: DANH SÁCH CHAT */}
             {!currentChat && (
               <VStack align="stretch" spacing={0}>
-                {conversations?.length === 0 && (
+                {/* SỬA LỖI: Dùng biến chats thay vì conversations */}
+                {(!chats || chats.length === 0) && (
                   <Text p={5} textAlign="center" color="gray.500" fontSize="sm">
                     Chưa có cuộc hội thoại nào.
                   </Text>
                 )}
-                
-                {conversations?.map((chat) => {
-                  // Đã sửa participant -> participants
+
+                {chats?.map((chat) => {
                   const otherUser = chat.participants?.find(
-                    (p) => p._id !== user?.id
+                    (p) => (p._id || p.id) !== currentUserId
                   );
+                  
                   return (
                     <HStack
                       key={chat._id}
                       p={3}
                       cursor="pointer"
-                      bg="transparent" // Đã sửa lỗi chính tả transparrent
-                      _hover={{ bg: hoverBg }} // Sử dụng biến hoverBg đã khai báo ở trên
+                      bg="transparent"
+                      _hover={{ bg: hoverBg }}
                       onClick={() => setCurrentChat(chat)}
                       borderBottom="1px solid"
                       borderColor={borderColor}
+                      transition="background 0.2s"
                     >
                       <Avatar
                         size="sm"
-                        src={otherUser?.avatar}
+                        src={otherUser?.avatar || ""}
                         name={getUserDisplayName(otherUser)}
                       />
                       <Box flex={1} overflow="hidden">
-                        <Text fontWeight="bold" fontSize="sm">
-                          {getUserDisplayName(otherUser)}
-                        </Text>
-                        <Text fontSize="xs" color="gray.500" noOfLines={1}>
-                          {chat.lastMessage?.content || "Hình ảnh/File..."}
+                        <HStack justify="space-between">
+                            <Text fontWeight="bold" fontSize="sm" noOfLines={1}>
+                            {getUserDisplayName(otherUser)}
+                            </Text>
+                        </HStack>
+                        
+                        <Text fontSize="xs" color={msgColor} noOfLines={1}>
+                          {chat.lastMessage?.sender === currentUserId ? "Bạn: " : ""}
+                          {chat.lastMessage?.content || "Bắt đầu trò chuyện..."}
                         </Text>
                       </Box>
                     </HStack>
@@ -188,11 +196,14 @@ const ChatWidget = () => {
               </VStack>
             )}
 
-            {/* TRƯỜNG HỢP 2: HIỆN KHUNG CHAT CHI TIẾT */}
+            {/* VIEW 2: KHUNG CHAT CHI TIẾT */}
             {currentChat && (
               <Box h="100%">
-                {/* Truyền prop isWidget={true} để ChatContainer biết */}
-                <ChatContainer currentChat={currentChat} isWidget={true} />
+                <ChatContainer 
+                    currentChat={currentChat} 
+                    isWidget={true} 
+                    onClose={handleBackToList}
+                />
               </Box>
             )}
           </Box>

@@ -1,4 +1,5 @@
 import express from 'express';
+import { verifyToken } from '../middleware/verifyToken.js'; // <--- QUAN TRỌNG: Import middleware
 
 import {
   createConversation,
@@ -10,6 +11,10 @@ import {
 } from '../controllers/chat.controller.js';
 
 const router = express.Router();
+
+// --- BẢO VỆ TẤT CẢ CÁC ROUTE CHAT ---
+// Bắt buộc phải có token mới được chat
+router.use(verifyToken); 
 
 router.post('/', createConversation);
 router.get('/', getConversations);

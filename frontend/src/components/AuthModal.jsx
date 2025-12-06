@@ -13,28 +13,31 @@ import {
   ModalOverlay,
   VStack,
   Text,
+  useToast, // Chuyển import này lên trên cùng
 } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
-import { useToast } from "@chakra-ui/react";
 import { useUserStore } from "../store/user.js";
 
 const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
   const [mode, setMode] = useState(defaultMode);
+
+  // State form data
   const [formData, setFormData] = useState({
     username: "",
     password: "",
     confirmPassword: "",
     name: "",
     phone: "",
-    role: "",
+    role: "guest", // Mặc định role guest nếu backend yêu cầu
   });
+
   const toast = useToast();
-  const { registerUser, loginUser, checkSession, logoutUser, loading, error } =
-    useUserStore();
 
+  // Lấy các hàm từ Store (Lưu ý: Không lấy checkSession nữa)
+  const { registerUser, loginUser, loading } = useUserStore();
+
+  // Reset form khi mở modal
   useEffect(() => {
-    checkSession();
-
     if (isOpen) {
       setMode(defaultMode || "login");
       setFormData({
@@ -61,61 +64,102 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
 
     if (mode === "login") {
       const { success, message } = await loginUser(formData);
+
       if (!success) {
         toast({
-          title: "Lỗi",
+          title: "Đăng nhập thất bại",
           description: message,
           status: "error",
+          duration: 3000,
           isClosable: true,
+          position: "top",
         });
       } else {
         toast({
-          title: "Thành công",
+          title: "Chào mừng trở lại!",
           description: message,
           status: "success",
+          duration: 3000,
           isClosable: true,
+          position: "top",
         });
+
         window.location.reload();
         onClose();
       }
-      return;
     } else {
+      // REGISTER
+      // 1. VALIDATION PHÍA CLIENT (Chỉ cho phần Đăng ký)
+      if (formData.password !== formData.confirmPassword) {
+        return toast({
+          title: "Mật khẩu không khớp",
+          description: "Vui lòng kiểm tra lại mật khẩu xác nhận.",
+          status: "error",
+          duration: 3000,
+          isClosable: true,
+          position: "top",
+        });
+      }
+      if (formData.password.length < 6) {
+        return toast({
+          title: "Mật khẩu quá ngắn",
+          description: "Mật khẩu nên có ít nhất 6 ký tự.",
+          status: "warning",
+          duration: 3000,
+          isClosable: true,
+          position: "top",
+        });
+      }
+
       const { success, message } = await registerUser(formData);
+
       if (!success) {
         toast({
-          title: "Lỗi",
+          title: "Đăng ký thất bại",
           description: message,
           status: "error",
+          duration: 3000,
           isClosable: true,
+          position: "top",
         });
       } else {
         toast({
           title: "Thành công",
-          description: message,
+          description: "Tài khoản đã được tạo và tự động đăng nhập!",
           status: "success",
+          duration: 3000,
           isClosable: true,
+          position: "top",
         });
         window.location.reload();
         onClose();
       }
     }
   };
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} isCentered>
+    <Modal isOpen={isOpen} onClose={onClose} isCentered size="md">
       <ModalOverlay />
       <ModalContent as="form" onSubmit={handleSubmit}>
-        <ModalHeader>{mode === "login" ? "Đăng nhập" : "Đăng ký"}</ModalHeader>
+        <ModalHeader textAlign="center">
+          {mode === "login" ? "Đăng nhập" : "Tạo tài khoản mới"}
+        </ModalHeader>
         <ModalCloseButton />
-        <ModalBody>
+
+        <ModalBody pb={6}>
           <VStack spacing={4}>
+            {/* Username */}
             <FormControl isRequired>
               <FormLabel>Tên đăng nhập</FormLabel>
               <Input
                 name="username"
                 value={formData.username}
                 onChange={handleChange}
+                placeholder="Nhập tên đăng nhập"
               />
             </FormControl>
+
+            {/* Password */}
             <FormControl isRequired>
               <FormLabel>Mật khẩu</FormLabel>
               <Input
@@ -123,8 +167,11 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
                 type="password"
                 value={formData.password}
                 onChange={handleChange}
+                placeholder="Nhập mật khẩu"
               />
             </FormControl>
+
+            {/* Register Fields */}
             {mode === "register" && (
               <>
                 <FormControl isRequired>
@@ -134,16 +181,20 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
                     type="password"
                     value={formData.confirmPassword}
                     onChange={handleChange}
+                    placeholder="Nhập lại mật khẩu"
                   />
                 </FormControl>
+
                 <FormControl isRequired>
                   <FormLabel>Họ và tên</FormLabel>
                   <Input
                     name="name"
                     value={formData.name}
                     onChange={handleChange}
+                    placeholder="Nguyễn Văn A"
                   />
                 </FormControl>
+
                 <FormControl isRequired>
                   <FormLabel>Số điện thoại</FormLabel>
                   <Input
@@ -151,20 +202,21 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
                     type="tel"
                     value={formData.phone}
                     onChange={handleChange}
+                    placeholder="0912..."
                   />
                 </FormControl>
               </>
             )}
-            <HStack justify="center" pt={2} alignItems="center" spacing={2}>
-              <Text fontSize="sm" lineHeight="1">
+
+            {/* Switch Mode Link */}
+            <HStack justify="center" pt={2} w="full">
+              <Text fontSize="sm" color="gray.600">
                 {mode === "login" ? "Chưa có tài khoản?" : "Đã có tài khoản?"}
               </Text>
               <Button
                 variant="link"
-                color="blue.500"
-                padding={0}
-                height="auto"
-                minH={0}
+                colorScheme="blue"
+                size="sm"
                 onClick={() => setMode(mode === "login" ? "register" : "login")}
               >
                 {mode === "login" ? "Đăng ký ngay" : "Đăng nhập"}
@@ -172,12 +224,20 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
             </HStack>
           </VStack>
         </ModalBody>
-        <ModalFooter>
-          <Button type="submit" colorScheme="blue" mr={3}>
-            {mode === "login" ? "Đăng nhập" : "Đăng ký"}
-          </Button>
-          <Button variant={"ghost"} onClick={onClose}>
+
+        <ModalFooter bg="gray.50" borderBottomRadius="md">
+          <Button variant="ghost" mr={3} onClick={onClose}>
             Hủy
+          </Button>
+          <Button
+            type="submit"
+            colorScheme="blue"
+            isLoading={loading} // Hiển thị loading spinner khi đang gọi API
+            loadingText={
+              mode === "login" ? "Đang đăng nhập..." : "Đang đăng ký..."
+            }
+          >
+            {mode === "login" ? "Đăng nhập" : "Đăng ký"}
           </Button>
         </ModalFooter>
       </ModalContent>
