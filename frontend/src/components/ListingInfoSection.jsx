@@ -13,10 +13,12 @@ import {
   useColorModeValue
 } from "@chakra-ui/react";
 import { FiMapPin, FiHeart, FiShare2, FiHome, FiMaximize } from "react-icons/fi";
+import { IoWarningOutline } from "react-icons/io5";
 import { FaHeart } from "react-icons/fa";
 import { useState, useEffect } from "react";
 import { useUserStore } from "../store/user.js";
 import { useListStore } from "../store/list.js";
+import ReportModal from "./ReportModal.jsx";
 
 const ListingInfoSection = ({ listing, onContact}) => {
   const toggleSave = useUserStore((s) => s.toggleSaveListing);
@@ -29,6 +31,7 @@ const ListingInfoSection = ({ listing, onContact}) => {
   
   const [isSaved, setIsSaved] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isReportOpen, setIsReportOpen] = useState(false);
 
   // Kiểm tra xem listing có được lưu không
   useEffect(() => {
@@ -206,6 +209,16 @@ const ListingInfoSection = ({ listing, onContact}) => {
             >
               Chia sẻ
             </Button>
+            <Button
+              leftIcon={<IoWarningOutline />}
+              variant="outline"
+              flex={1}
+              onClick={() => {
+                setIsReportOpen(true);
+              }}
+            >
+              Báo xấu
+            </Button>
           </HStack>
         </VStack>
 
@@ -222,6 +235,13 @@ const ListingInfoSection = ({ listing, onContact}) => {
             trực tiếp để xem nhà trước khi quyết định thuê/mua.
           </Text>
         </Box>
+
+        {/* Report modal */}
+        <ReportModal
+          isOpen={isReportOpen}
+          onClose={() => setIsReportOpen(false)}
+          listingId={listing._id}
+        />
       </VStack>
     </Box>
   );

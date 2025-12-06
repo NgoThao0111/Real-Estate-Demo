@@ -12,6 +12,7 @@ import userRoutes from "./routes/user.route.js";
 import listingRoutes from "./routes/list.route.js";
 import propertyTypeRoutes from "./routes/property_type.route.js";
 import chatRoutes from './routes/chat.route.js';
+import reportRoutes from "./routes/report.route.js"
 
 dotenv.config();
 
@@ -136,6 +137,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/listings", listingRoutes);
 app.use("/api/property_type", propertyTypeRoutes);
 app.use('/api/chats', chatRoutes);
+app.use('/api/reports', reportRoutes);
 
 app.get('/', (req, res) => {
     res.send('Server is up and running');
