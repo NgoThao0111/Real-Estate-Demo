@@ -1,18 +1,27 @@
-import { useColorModeValue, IconButton, HStack, Select, Flex, Text } from "@chakra-ui/react";
-import { ViewIcon, HamburgerIcon } from "@chakra-ui/icons";
+import {
+  useColorModeValue,
+  IconButton,
+  HStack,
+  Select,
+  Flex,
+  Text,
+} from "@chakra-ui/react";
 import { FiGrid, FiList } from "react-icons/fi";
 
-const SortViewOpts = ({ 
-  listings = [], 
-  sortBy, 
-  setSortBy, 
-  viewType, 
+const SortViewOpts = ({
+  listings = [],
+  sortBy,
+  setSortBy,
+  rentalType,
+  setRentalType,
+  viewType,
   setViewType,
-  countText = "Properties Found"
+  countText = "Properties Found",
 }) => {
   // Define theme-aware colors
   const contentBg = useColorModeValue("white", "gray.800");
   const textColor = useColorModeValue("gray.600", "gray.300");
+  const borderColor = useColorModeValue("gray.300", "gray.600");
 
   return (
     <Flex
@@ -20,22 +29,69 @@ const SortViewOpts = ({
       align="center"
       mb={8}
       flexDirection={{ base: "column", md: "row" }}
-      gap={6}
-      p={4}
+      gap={4}
+      p={3}
       bg={contentBg}
       borderRadius="lg"
       shadow="sm"
     >
       {/* Properties count on the left */}
-      <Text color={textColor} fontSize="2xl" fontWeight="bold">
-        {listings.length} {countText}
+      <Text
+        color={textColor}
+        fontSize={{ base: "lg", md: "xl" }}
+        fontWeight="bold"
+        whiteSpace="nowrap"
+      >
+        {listings.length || 0} {countText}
       </Text>
 
-      {/* Sort and View Options on the right */}
-      <HStack spacing={6} flexWrap="wrap">
+      {/* Options on the right */}
+      <HStack
+        align="center"
+        gap={{ base: 2, md: 4 }} 
+        flexWrap={{ base: "wrap", lg: "nowrap" }}
+        justify={{ base: "flex-start", lg: "flex-end" }}
+        w={{ base: "100%", lg: "auto" }}
+      >
+        {/* --- 1. OPTION NHU CẦU (MỚI) --- */}
+        <HStack spacing={2}>
+          <Text
+            color={textColor}
+            fontSize="md"
+            fontWeight="medium"
+            whiteSpace="nowrap"
+          >
+            Nhu cầu
+          </Text>
+          <Select
+            value={rentalType}
+            onChange={(e) => setRentalType(e.target.value)}
+            size="md"
+            w="110px"
+            minW="130px"
+            bg={contentBg}
+            border="1px solid"
+            borderColor={borderColor}
+            borderRadius="md"
+            fontSize="md"
+            _focus={{ borderColor: "blue.500" }}
+            cursor={"pointer"}
+          >
+            <option value="">Tất cả</option>
+            <option value="sell">Rao bán</option>
+            <option value="rent">Cho thuê</option>
+          </Select>
+        </HStack>
+
+        {/* --- 2. OPTION SẮP XẾP (ĐÃ SỬA VALUE CHUẨN) --- */}
         <HStack spacing={3}>
-          <Text color={textColor} fontSize="md" fontWeight="medium">
-            Sắp xếp theo
+          <Text
+            color={textColor}
+            fontSize="md"
+            fontWeight="medium"
+            whiteSpace="nowrap"
+          >
+            Sắp xếp
           </Text>
           <Select
             value={sortBy}
@@ -45,19 +101,22 @@ const SortViewOpts = ({
             minW="180px"
             bg={contentBg}
             border="1px solid"
-            borderColor={useColorModeValue("gray.300", "gray.600")}
+            borderColor={borderColor}
             borderRadius="md"
             fontSize="md"
+            cursor={"pointer"}
           >
+            {/* Value dùng dấu gạch dưới (_) để khớp Backend */}
             <option value="newest">Mới nhất</option>
             <option value="oldest">Cũ nhất</option>
-            <option value="price-low">Giá thấp đến cao</option>
-            <option value="price-high">Giá cao đến thấp</option>
-            <option value="area-small">Diện tích nhỏ đến lớn</option>
-            <option value="area-large">Diện tích lớn đến nhỏ</option>
+            <option value="price_asc">Giá thấp đến cao</option>
+            <option value="price_desc">Giá cao đến thấp</option>
+            <option value="area_asc">Diện tích nhỏ đến lớn</option>
+            <option value="area_desc">Diện tích lớn đến nhỏ</option>
           </Select>
         </HStack>
-        
+
+        {/* --- 3. VIEW MODE --- */}
         <HStack spacing={2}>
           <IconButton
             icon={<FiList size={20} />}
@@ -81,38 +140,52 @@ const SortViewOpts = ({
   );
 };
 
-// Utility function to sort listings
+// Utility function to sort listings (Đã cập nhật case khớp với value ở trên)
 export const sortListings = (listings, sortBy) => {
   return [...listings].sort((a, b) => {
     switch (sortBy) {
       case "newest":
-        return new Date(b.createdAt || b.updatedAt) - new Date(a.createdAt || a.updatedAt);
+        return (
+          new Date(b.createdAt || b.updatedAt) -
+          new Date(a.createdAt || a.updatedAt)
+        );
       case "oldest":
-        return new Date(a.createdAt || a.updatedAt) - new Date(b.createdAt || b.updatedAt);
-      case "price-low":
+        return (
+          new Date(a.createdAt || a.updatedAt) -
+          new Date(b.createdAt || b.updatedAt)
+        );
+
+      // Sửa case khớp với value select
+      case "price_asc":
         return (a.price || 0) - (b.price || 0);
-      case "price-high":
+      case "price_desc":
         return (b.price || 0) - (a.price || 0);
-      case "area-small":
+
+      // Sửa case khớp với value select
+      case "area_asc":
         return (a.area || 0) - (b.area || 0);
-      case "area-large":
+      case "area_desc":
         return (b.area || 0) - (a.area || 0);
+
       default:
         return 0;
     }
   });
 };
 
-// Utility function to filter listings by search query
+// Utility function to filter listings
 export const filterListings = (listings, searchQuery) => {
   if (!searchQuery.trim()) return listings;
-  
+
   const query = searchQuery.toLowerCase().trim();
   return listings.filter((listing) => {
-    const title = listing.title?.toLowerCase() || '';
-    const location = listing.location ? 
-      `${listing.location.detail || ''} ${listing.location.ward || ''} ${listing.location.province || ''}`.toLowerCase() : '';
-    
+    const title = listing.title?.toLowerCase() || "";
+    const location = listing.location
+      ? `${listing.location.detail || ""} ${listing.location.ward || ""} ${
+          listing.location.province || ""
+        }`.toLowerCase()
+      : "";
+
     return title.includes(query) || location.includes(query);
   });
 };
