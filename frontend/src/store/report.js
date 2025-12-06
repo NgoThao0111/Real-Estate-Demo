@@ -1,7 +1,5 @@
 import { create } from "zustand";
-import axios from "axios";
-
-axios.defaults.withCredentials = true;
+import api from "../lib/axios.js";
 
 export const useReportStore = create((set) => ({
   reports: [],
@@ -12,7 +10,7 @@ export const useReportStore = create((set) => ({
     try {
       set({ loading: true, error: null });
 
-      const res = await axios.post("/api/reports/createReport", {
+      const res = await api.post("/reports/createReport", {
         listingId,
         reason,
         detail,

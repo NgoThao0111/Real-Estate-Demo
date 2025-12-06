@@ -1,7 +1,5 @@
 import { create } from 'zustand';
-import axios from "axios";
-
-axios.defaults.withCredentials = true;
+import api from '../lib/axios.js';
 
 export const usePropertyTypeStore = create((set, get) => ({
     propertyTypes: [],
@@ -15,7 +13,7 @@ export const usePropertyTypeStore = create((set, get) => ({
         });
 
         try {
-            const res = await axios.get('/api/property_type/getPropertyType');
+            const res = await api.get('/property_type/getPropertyType');
 
             set({
                 propertyTypes: res.data.propertyTypes,
@@ -52,7 +50,7 @@ export const usePropertyTypeStore = create((set, get) => ({
         });
 
         try {
-            const res = await axios.post('/api/property_type/createPropertyType', typeData);
+            const res = await api.post('/property_type/createPropertyType', typeData);
 
             get().fetchPropertyTypes();
 
@@ -79,7 +77,7 @@ export const usePropertyTypeStore = create((set, get) => ({
     getPropertyTypeById: async (id) => {
     try {
       set({ loading: true, error: null });
-      const res = await axios.get(`/api/property_type/${id}`);
+      const res = await api.get(`/property_type/${id}`);
       set({ loading: false });
       return { success: true, data: res.data };
     } catch (err) {
