@@ -15,14 +15,15 @@ import {
 } from "@chakra-ui/react";
 import { MdPhotoLibrary } from 'react-icons/md';
 import { ImStarEmpty, ImStarFull } from "react-icons/im";
-import { FaBed, FaBath } from "react-icons/fa";
-import { BsGridFill } from "react-icons/bs";
+import { FaBed, FaBath, FaHeart } from "react-icons/fa";
+import { BsGridFill, BsHeart } from "react-icons/bs";
 
 import { useUserStore } from "../store/user.js";
 import { useListStore } from "../store/list.js";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePropertyTypeStore } from "../store/propertyType.js";
+import { FiHeart } from "react-icons/fi";
 
 const ListingCard = ({ listing }) => {
   const navigate = useNavigate();
@@ -155,13 +156,13 @@ const ListingCard = ({ listing }) => {
 
         <IconButton
           aria-label={isSaved ? 'Bỏ lưu' : 'Lưu'}
-          icon={isSaved ? <ImStarFull /> : <ImStarEmpty />}
+          icon={isSaved ? <FaHeart /> : <FiHeart />}
           position="absolute" top={2} right={2}
           size="sm"
           variant="solid"
-          color={isSaved ? 'yellow.400' : 'gray.600'}
+          color={isSaved ? 'blue.400' : 'gray.600'}
           bg="white"
-          _hover={{ bg: "gray.100", color: "yellow.500" }}
+          _hover={{ bg: "gray.100", color: "blue.500", transform: "scale(1.1)" }}
           onClick={async (e) => {
             e.stopPropagation();
             try {

@@ -146,7 +146,7 @@ const ListingInfoSection = ({ listing, onContact}) => {
             <Button
               leftIcon={isSaved ? <FaHeart /> : <FiHeart />}
               variant={isSaved ? "solid" : "outline"}
-              colorScheme={isSaved ? "gray" : "gray"}
+              colorScheme={isSaved ? "blue" : "gray"}
               flex={1}
               isLoading={isLoading}
               _hover={{

@@ -1,7 +1,10 @@
-import { Box, Container, SimpleGrid, Heading, Button, Stack, useColorModeValue } from "@chakra-ui/react";
+import { Box, Container, SimpleGrid, VStack, Heading, Button, Stack, useColorModeValue } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
+import AOS from "aos";
+import "aos/dist/aos.css";
 import { useListStore } from "../store/list.js";
 import ListingCard from "../components/ListingCard";
+import HorizontalListingCard from "../components/HorizontalListingCard";
 import CreateListingModal from "../components/CreateListingModal.jsx";
 import SortViewOpts, { sortListings, filterListings } from "../components/SortViewOpts";
 
@@ -26,7 +29,10 @@ const MyPostsPage = () => {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { 
+    AOS.init({ duration: 800, once: true });
+    load(); 
+  }, []);
 
   const onEdit = (listing) => {
     setSelected(listing);
@@ -63,20 +69,34 @@ const MyPostsPage = () => {
           setSearchQuery={setSearchQuery}
         />
 
-        <SimpleGrid 
-          columns={viewType === "grid" ? { base: 1, md: 3 } : { base: 1 }} 
-          spacing={viewType === "grid" ? 6 : 4}
-        >
-          {sortedListings.map((l) => (
-            <Box key={l._id}>
-              <ListingCard listing={l} />
-              <Stack direction="row" spacing={2} mt={2}>
-                <Button size="sm" colorScheme="blue" onClick={() => onEdit(l)}>Chỉnh sửa</Button>
-                <Button size="sm" colorScheme="red" variant="ghost" onClick={() => onDelete(l._id)}>Xóa</Button>
-              </Stack>
-            </Box>
-          ))}
-        </SimpleGrid>
+        {viewType === "list" ? (
+          <VStack spacing={6} align="stretch">
+            {sortedListings.map((l, index) => (
+              <Box key={l._id} data-aos="fade-up" data-aos-delay={index * 30}>
+                <HorizontalListingCard listing={l} />
+                <Stack direction="row" spacing={2} mt={2}>
+                  <Button size="sm" colorScheme="blue" onClick={() => onEdit(l)}>Chỉnh sửa</Button>
+                  <Button size="sm" colorScheme="red" variant="ghost" onClick={() => onDelete(l._id)}>Xóa</Button>
+                </Stack>
+              </Box>
+            ))}
+          </VStack>
+        ) : (
+          <SimpleGrid 
+            columns={{ base: 1, md: 3 }} 
+            spacing={6}
+          >
+            {sortedListings.map((l, index) => (
+              <Box key={l._id} data-aos="fade-up" data-aos-delay={index * 60}>
+                <ListingCard listing={l} />
+                <Stack direction="row" spacing={2} mt={2}>
+                  <Button size="sm" colorScheme="blue" onClick={() => onEdit(l)}>Chỉnh sửa</Button>
+                  <Button size="sm" colorScheme="red" variant="ghost" onClick={() => onDelete(l._id)}>Xóa</Button>
+                </Stack>
+              </Box>
+            ))}
+          </SimpleGrid>
+        )}
         
       </Container>
 

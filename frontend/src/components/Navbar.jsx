@@ -7,8 +7,11 @@ import {
   IconButton,
   useDisclosure,
   useColorModeValue,
+  useColorMode,
+  IconButton,
   Box
 } from "@chakra-ui/react";
+import { MoonIcon, SunIcon } from "@chakra-ui/icons";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { HamburgerIcon} from "@chakra-ui/icons";
