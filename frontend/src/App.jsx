@@ -11,7 +11,7 @@ import AllListings from "./pages/AllListings.jsx";
 import ListingDetailPage from "./pages/ListingDetailPage.jsx";
 import ChatWidget from "./components/ChatWidget.jsx";
 import AOSComponent from "./components/AOSComponent.jsx";
-import { useUserStore } from "./store/user.js";
+import Footer from "./components/Footer.jsx";
 
 // 1. Import Hook từ AuthContext
 import { useAuthContext } from "./context/AuthContext.jsx";
@@ -76,6 +76,7 @@ function App() {
 
         {/* Chỉ hiện ChatWidget khi có user */}
         {currentUser && <ChatWidget />}
+        <Footer/>
       </Box>
     </AOSComponent>
   );

@@ -168,8 +168,8 @@ const HomePanel = () => {
     <Box
       position="relative"
       minH={`calc(100vh - 64px)`}
-      pt={{ base: "40px", md: "60px" }}
-      pb={{ base: "40px", md: "60px" }}
+      pt={"60px"}
+      pb={"60px"}
       overflow="hidden"
       bgGradient={useColorModeValue(
         "linear(to-br, white 10%, blue.100 50%, blue.100 100%)",
@@ -214,14 +214,14 @@ const HomePanel = () => {
                 fontWeight="bold"
                 maxW="600px"
               >
-                Tìm bất động sản tốt nhất của bạn
+                Tìm bất động sản phù hợp nhất với bạn
               </Heading>
               <Text 
                 fontSize={{ base: "md", md: "lg" }}
                 color={useColorModeValue("rgba(1, 2, 24, 0.8)", "whiteAlpha.800")}
                 maxW="500px"
               >
-                Khám phá hàng nghìn bất động sản chất lượng với giá tốt nhất thị trường
+                Khám phá hàng nghìn bất động sản chất lượng với giá cả tốt nhất trên thị trường
               </Text>
             </VStack>
 
@@ -285,49 +285,6 @@ const HomePanel = () => {
                 </TabPanels>
               </Tabs>
             </Box>
-
-            {/* Rating Section */}
-            <VStack 
-              align={{ base: "center", lg: "start" }} 
-              spacing={3}
-              data-aos="fade-up"
-              data-aos-duration="800"
-              data-aos-delay="2100"
-            >
-              <HStack 
-                spacing={1}
-                data-aos="zoom-in"
-                data-aos-duration="600"
-                data-aos-delay="200"
-              >
-                {[...Array(5)].map((_, i) => (
-                  <Icon 
-                    key={i} 
-                    as={FiStar} 
-                    w={5} 
-                    h={5} 
-                    color="blue.400" 
-                    fill="currentColor"
-                    data-aos="flip-left"
-                    data-aos-duration="400"
-                    data-aos-delay={(i * 10)}
-                  />
-                ))}
-              </HStack>
-              <Text 
-                fontSize="md" 
-                color={useColorModeValue("gray.700", "gray.300")}
-                fontWeight="medium"
-                data-aos="fade-up"
-                data-aos-duration="600"
-                data-aos-delay="800"
-              >
-                <Text as="span" fontWeight="bold" color={useColorModeValue("gray.800", "white")}>
-                  4.9/5
-                </Text>
-                <Text as="span" ml={2}>từ 658 đánh giá</Text>
-              </Text>
-            </VStack>
           </VStack>
         </Flex>
       </Container>

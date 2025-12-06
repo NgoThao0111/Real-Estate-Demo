@@ -4,34 +4,32 @@ import {
   Flex,
   HStack,
   Text,
+  IconButton,
+  useDisclosure,
   useColorModeValue,
   Box
 } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { HamburgerIcon} from "@chakra-ui/icons";
+import DrawerMenu from "./DrawerMenu";
 import AuthModal from "./AuthModal";
 import CreateListingModal from "./CreateListingModal";
 import { useUserStore } from "../store/user.js";
 import UserMenu from "./UserMenu";
 
 const Navbar = () => {
-  const linkColor = useColorModeValue('gray.700', 'gray.100');
+  const linkColor = useColorModeValue("gray.700", "gray.100");
+  const { isOpen, onOpen, onClose } = useDisclosure();
+
   const [authMode, setAuthMode] = useState(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [pendingCreate, setPendingCreate] = useState(false);
-
+  
   const openAuth = (mode) => {
-    setAuthMode(mode)
-    setIsAuthOpen(true)
-  }
-  const closeAuth = () => {
-    setAuthMode(null)
-    setIsAuthOpen(false)
-  }
-
-  const openCreate = () => setIsCreateOpen(true);
-  const closeCreate = () => setIsCreateOpen(false);
+    setAuthMode(mode);
+    setIsAuthOpen(true);
+  };
 
   const { user, logoutUser, checkSession } = useUserStore();
 
@@ -40,94 +38,94 @@ const Navbar = () => {
   }, []);
 
   return (
-    <Box 
-      bg={useColorModeValue("white", "gray.800")} 
-      boxShadow={"sm"}
-    >
-    <Container maxW={"1140px"} px={4}>
-      <Flex
-        h={16}
-        alignItems={"center"}
-        justifyContent={"space-between"}
-        flexDir={{
-          base: "column",
-          sm: "row",
-        }}
-      >
-        <Flex 
-          alignItems="center" 
-          gap={6}
-        >
+    <Box bg={useColorModeValue("white", "gray.800")} boxShadow="sm">
+      <Container maxW="1140px" px={4}>
+        <Flex h={16} align="center" justify="space-between">
+          {/* Left: Logo */}
           <Link to="/">
             <Text
-              fontSize={{ base: "22px", sm: "28px" }}
-              fontWeight={"bold"}
-              textTransform={"uppercase"}
-              bgGradient={"linear(to-r, cyan.400, blue.500)"}
-              bgClip={"text"}
+              fontSize="28px"
+              fontWeight="bold"
+              textTransform="uppercase"
+              bgGradient="linear(to-r, cyan.400, blue.500)"
+              bgClip="text"
             >
               Real Estate
             </Text>
           </Link>
 
-          <HStack 
-            spacing={8} 
-            display={{ base: "none", sm: "flex" }} 
-            fontSize={{ base: "10", sm: "16" }}
-          >
+          {/* Middle: Nav Links (hidden on mobile) */}
+          <HStack spacing={8} display={{ base: "none", lg: "flex" }}>
             <Link to="/">
-              <Text 
-                color={linkColor} 
-                fontWeight={"medium"}
-                _hover={{
-                  color:"blue.500"
-                }}
-              >
+              <Text color={linkColor} _hover={{ color: "blue.500" }}>
                 Tìm kiếm
               </Text>
             </Link>
+            <Link to="/">
+              <Text color={linkColor} _hover={{ color: "blue.500" }}>
+                Cho thuê
+              </Text>
+            </Link>
+            <Link to="/">
+              <Text color={linkColor} _hover={{ color: "blue.500" }}>
+                Giao bán
+              </Text>
+            </Link>
           </HStack>
-        </Flex>
-        <HStack 
-          spacing={5} 
-          alignItems={"center"}
-        >
+
+          {/* Right: Buttons */}
           {!user ? (
-            <>
-              <Button 
-                bgColor={"transparent"} 
-                onClick={() => openAuth('login')}
-              >
+            <HStack display={{ base: "none", lg: "flex" }}>
+              <Button colorScheme="blue" onClick={() => openAuth("login")}>
                 Đăng nhập
               </Button>
-              <Text color="muted">|</Text>
-              <Button 
-                bgColor={"transparent"} 
-                onClick={() => openAuth('register')}
-              >
+              <Button variant={"outline"} onClick={() => openAuth("register")}>
                 Đăng ký
               </Button>
-            </>
+            </HStack>
           ) : (
-            <UserMenu user={user} logoutUser={logoutUser} />
+            <HStack spacing={"4"}>
+              <UserMenu user={user} logoutUser={logoutUser} />
+              <Button
+                colorScheme="blue"
+                display={{base: "none", lg: "flex"}}
+                onClick={() => {
+                  setIsCreateOpen(true);
+                }}
+              >
+                Đăng tin mới
+              </Button>
+              {/* Mobile Menu Button */}
+              <IconButton
+                display={{ base: "flex", lg: "none" }}
+                icon={<HamburgerIcon />}
+                onClick={onOpen}
+                variant={"ghost"}
+                aria-label="Open Menu"
+              />
+            </HStack>
           )}
-          <Button 
-            colorScheme="blue" 
-            onClick={() => {
-              if (!user) {
-                openAuth('login');
-                return;
-              }
-              openCreate();
-            }}
-          >
-            Đăng tin mới
-          </Button>
-        </HStack>
-      </Flex>
-    </Container>
-    <AuthModal isOpen={isAuthOpen} onClose={closeAuth} defaultMode={authMode}/>
-    <CreateListingModal isOpen={isCreateOpen} onClose={closeCreate} />
+        </Flex>
+      </Container>
+
+      <DrawerMenu
+        isOpen={isOpen}
+        onClose={onClose}
+        openAuth={openAuth}
+        user={user}
+        logoutUser={logoutUser}
+        openCreate={() => setIsCreateOpen(true)}
+      />
+
+      <AuthModal
+        isOpen={isAuthOpen}
+        onClose={() => setIsAuthOpen(false)}
+        defaultMode={authMode}
+      />
+      <CreateListingModal
+        isOpen={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
+      />
     </Box>
   );
 };
