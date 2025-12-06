@@ -31,6 +31,7 @@ import { useEffect, useState } from "react";
 import { useListStore } from "../store/list.js";
 import { usePropertyTypeStore } from "../store/propertyType.js";
 import MapboxMap from "../components/MapboxMap.jsx";
+import { VIETNAM_PROVINCES } from "../data/provinces.js";
 
 const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
   const toast = useToast();
@@ -119,10 +120,10 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
   // Handle input số (cho number input của chakra)
   const handleNumberChange = (name, valueString) => {
     setForm((prev) => ({
-        ...prev,
-        [name]: Number(valueString)
-    }))
-  }
+      ...prev,
+      [name]: Number(valueString),
+    }));
+  };
 
   const handleLocationSelect = (lng, lat, address) => {
     setForm((prev) => ({
@@ -299,7 +300,12 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
             {/* Tiêu đề */}
             <FormControl isRequired>
               <FormLabel>Tiêu đề</FormLabel>
-              <Input name="title" value={form.title} onChange={handleChange} placeholder="VD: Bán nhà mặt phố..." />
+              <Input
+                name="title"
+                value={form.title}
+                onChange={handleChange}
+                placeholder="VD: Bán nhà mặt phố..."
+              />
             </FormControl>
 
             {/* Mô tả */}
@@ -316,60 +322,60 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
 
             {/* HÀNG 1: Giá & Diện tích */}
             <HStack>
-                <FormControl isRequired width="50%">
-                    <FormLabel>Giá (VNĐ)</FormLabel>
-                    <Input
-                        name="price"
-                        type="number"
-                        value={form.price}
-                        onChange={handleChange}
-                        placeholder="Nhập số tiền..."
-                    />
-                </FormControl>
+              <FormControl isRequired width="50%">
+                <FormLabel>Giá (VNĐ)</FormLabel>
+                <Input
+                  name="price"
+                  type="number"
+                  value={form.price}
+                  onChange={handleChange}
+                  placeholder="Nhập số tiền..."
+                />
+              </FormControl>
 
-                <FormControl isRequired width="50%">
-                    <FormLabel>Diện tích (m²)</FormLabel>
-                    <Input 
-                        name="area" 
-                        type="number"
-                        value={form.area} 
-                        onChange={handleChange}
-                        placeholder="Nhập số..."
-                    />
-                </FormControl>
+              <FormControl isRequired width="50%">
+                <FormLabel>Diện tích (m²)</FormLabel>
+                <Input
+                  name="area"
+                  type="number"
+                  value={form.area}
+                  onChange={handleChange}
+                  placeholder="Nhập số..."
+                />
+              </FormControl>
             </HStack>
 
             {/* --- CẬP NHẬT: HÀNG 2: Phòng ngủ & Phòng tắm --- */}
             <HStack>
-                <FormControl width="50%">
-                    <FormLabel>Phòng ngủ</FormLabel>
-                    <NumberInput 
-                        min={0} 
-                        value={form.bedroom} 
-                        onChange={(str) => handleNumberChange('bedroom', str)}
-                    >
-                        <NumberInputField />
-                        <NumberInputStepper>
-                            <NumberIncrementStepper />
-                            <NumberDecrementStepper />
-                        </NumberInputStepper>
-                    </NumberInput>
-                </FormControl>
+              <FormControl width="50%">
+                <FormLabel>Phòng ngủ</FormLabel>
+                <NumberInput
+                  min={0}
+                  value={form.bedroom}
+                  onChange={(str) => handleNumberChange("bedroom", str)}
+                >
+                  <NumberInputField />
+                  <NumberInputStepper>
+                    <NumberIncrementStepper />
+                    <NumberDecrementStepper />
+                  </NumberInputStepper>
+                </NumberInput>
+              </FormControl>
 
-                <FormControl width="50%">
-                    <FormLabel>Phòng tắm</FormLabel>
-                    <NumberInput 
-                        min={0} 
-                        value={form.bathroom} 
-                        onChange={(str) => handleNumberChange('bathroom', str)}
-                    >
-                        <NumberInputField />
-                        <NumberInputStepper>
-                            <NumberIncrementStepper />
-                            <NumberDecrementStepper />
-                        </NumberInputStepper>
-                    </NumberInput>
-                </FormControl>
+              <FormControl width="50%">
+                <FormLabel>Phòng tắm</FormLabel>
+                <NumberInput
+                  min={0}
+                  value={form.bathroom}
+                  onChange={(str) => handleNumberChange("bathroom", str)}
+                >
+                  <NumberInputField />
+                  <NumberInputStepper>
+                    <NumberIncrementStepper />
+                    <NumberDecrementStepper />
+                  </NumberInputStepper>
+                </NumberInput>
+              </FormControl>
             </HStack>
             {/* ------------------------------------------------ */}
 
@@ -380,7 +386,9 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
                 {loadingTypes ? (
                   <Spinner size="sm" />
                 ) : errorTypes ? (
-                  <Text color="red.400" fontSize="sm">Lỗi tải loại BĐS</Text>
+                  <Text color="red.400" fontSize="sm">
+                    Lỗi tải loại BĐS
+                  </Text>
                 ) : (
                   <Select
                     name="property_type"
@@ -397,7 +405,7 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
                 )}
               </FormControl>
 
-              <FormControl>
+              <FormControl isRequired>
                 <FormLabel>Hình thức</FormLabel>
                 <Select
                   name="rental_type"
@@ -405,7 +413,7 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
                   onChange={handleChange}
                 >
                   <option value="rent">Cho thuê</option>
-                  <option value="sale">Bán</option>
+                  <option value="sell">Bán</option>
                 </Select>
               </FormControl>
             </HStack>
@@ -468,7 +476,9 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
                   ))}
                 </Box>
               ) : (
-                <Text fontSize="sm" color="gray.400" fontStyle="italic">Chưa có ảnh nào được chọn</Text>
+                <Text fontSize="sm" color="gray.400" fontStyle="italic">
+                  Chưa có ảnh nào được chọn
+                </Text>
               )}
             </FormControl>
 
@@ -480,27 +490,48 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
 
               <HStack mb={3}>
                 <FormControl isRequired>
-                    <FormLabel fontSize="sm">Tỉnh / TP</FormLabel>
-                    <Input
-                        name="location.province"
-                        value={form.location.province}
-                        onChange={handleChange}
-                        placeholder="Hà Nội"
-                    />
+                  <FormLabel fontSize="sm">Tỉnh / TP</FormLabel>
+                  <Input
+                    name="location.province"
+                    value={form.location.province}
+                    onChange={handleChange}
+                    placeholder="Hà Nội"
+                    list="location-suggestions"
+                    sx={{
+                      "&::-webkit-calendar-picker-indicator": {
+                        cursor: "pointer",
+                        opacity: 1,
+                        position: "absolute", 
+                        right: "-5px", 
+                        top: "50%", 
+                        transform: "translateY(-75%)", 
+                        width: "20px", 
+                        height: "20px",
+                      },
+                      position: "relative", // Đảm bảo input là mốc tọa độ
+                    }}
+                  />
+                  <datalist id="location-suggestions">
+                    {VIETNAM_PROVINCES.map((prov) => (
+                      <option key={prov} value={prov} />
+                    ))}
+                  </datalist>
                 </FormControl>
-                 <FormControl>
-                    <FormLabel fontSize="sm">Quận / Huyện</FormLabel>
-                    <Input
-                        name="location.ward"
-                        value={form.location.ward}
-                        onChange={handleChange}
-                        placeholder="Hai Bà Trưng"
-                    />
+                <FormControl>
+                  <FormLabel fontSize="sm">Quận / Huyện</FormLabel>
+                  <Input
+                    name="location.ward"
+                    value={form.location.ward}
+                    onChange={handleChange}
+                    placeholder="Hai Bà Trưng"
+                  />
                 </FormControl>
               </HStack>
-              
+
               <FormControl isRequired mb={3}>
-                <FormLabel fontSize="sm">Địa chỉ chi tiết (Số nhà, đường)</FormLabel>
+                <FormLabel fontSize="sm">
+                  Địa chỉ chi tiết (Số nhà, đường)
+                </FormLabel>
                 <Input
                   name="location.detail"
                   value={form.location.detail}
@@ -510,12 +541,7 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
               </FormControl>
 
               <FormControl isRequired>
-                <FormLabel>
-                  Ghim vị trí trên bản đồ{" "}
-                  <Text as="span" color="red.500" fontSize="sm">
-                    *
-                  </Text>
-                </FormLabel>
+                <FormLabel>Ghim vị trí trên bản đồ{""}</FormLabel>
 
                 {isOpen && (
                   <MapboxMap
@@ -526,9 +552,15 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
                   />
                 )}
 
-                <Text fontSize="xs" mt={2} color={form.location.latitude ? "green.600" : "red.500"}>
+                <Text
+                  fontSize="xs"
+                  mt={2}
+                  color={form.location.latitude ? "green.600" : "red.500"}
+                >
                   {form.location.latitude
-                    ? `✓ Đã chọn: ${parseFloat(form.location.latitude).toFixed(5)}, ${parseFloat(form.location.longitude).toFixed(5)}`
+                    ? `✓ Đã chọn: ${parseFloat(form.location.latitude).toFixed(
+                        5
+                      )}, ${parseFloat(form.location.longitude).toFixed(5)}`
                     : "• Vui lòng click vào bản đồ để chọn vị trí chính xác"}
                 </Text>
               </FormControl>
