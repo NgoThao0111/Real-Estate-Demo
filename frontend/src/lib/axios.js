@@ -1,26 +1,36 @@
 import axios from "axios";
-import { createStandaloneToast } from "@chakra-ui/react"; // 1. Import cái này
+import { createStandaloneToast } from "@chakra-ui/react";
 
-// 2. Tạo instance toast độc lập để dùng ngoài component React
+// Tạo instance toast độc lập để dùng được bên ngoài Component React
 const { toast } = createStandaloneToast();
 
 const api = axios.create({
+  // URL Backend (Lấy từ biến môi trường hoặc mặc định localhost)
   baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api",
-  withCredentials: true, // Quan trọng: Gửi cookie session
+
+  // Quan trọng: Cho phép gửi/nhận Cookie (JWT/Session) giữa client và server
+  withCredentials: true,
 });
 
+// --- INTERCEPTOR PHẢN HỒI ---
 api.interceptors.response.use(
   (response) => {
+    // Nếu API trả về thành công (2xx), trả về dữ liệu bình thường
     return response;
   },
   (error) => {
-    // Nếu lỗi là 401 (Hết phiên đăng nhập / Chưa đăng nhập)
+    // Nếu có lỗi xảy ra từ phía Server
     if (error.response && error.response.status === 401) {
-      
-      // 1. Hiện thông báo (Kiểm tra isActive để tránh spam toast nếu gọi nhiều API cùng lúc)
+      // 2. Dọn dẹp LocalStorage (Xóa user cũ, giữ lại theme Dark/Light)
+      Object.keys(localStorage).forEach((key) => {
+        if (key !== "chakra-ui-color-mode") {
+          localStorage.removeItem(key);
+        }
+      });
+
       if (!toast.isActive("session-expired")) {
         toast({
-          id: "session-expired", // ID định danh để không hiện trùng
+          id: "session-expired",
           title: "Phiên đăng nhập hết hạn",
           description: "Vui lòng đăng nhập lại để tiếp tục.",
           status: "warning",
@@ -29,25 +39,17 @@ api.interceptors.response.use(
           position: "top",
         });
       }
-
-      // 2. Dọn dẹp LocalStorage (Giữ lại theme)
-      Object.keys(localStorage).forEach((key) => {
-        if (key !== "chakra-ui-color-mode") {
-          localStorage.removeItem(key);
-        }
-      });
-
-      // 3. Chuyển hướng sau 1.5s
-      setTimeout(() => {
-        // Dùng window.location.href để reload lại trang web sạch sẽ
-        // Kiểm tra xem có đang ở trang login không để tránh loop vô tận
-        if (window.location.pathname !== "/login") {
-            window.location.href = "/login";
-        }
-      }, 1500);
     }
 
-    // Luôn trả về reject để component biết mà tắt Loading state
+    localStorage.setItem("triggerLoginModal", "true");
+
+    window.location.href = "/";
+    // 3. Chuyển hướng về Login sau 1.5s (để người dùng kịp đọc thông báo)
+    setTimeout(() => {
+      window.dispatchEvent(new Event("auth:unauthorized"));
+    }, 2000);
+
+    // Trả lỗi về (reject) để các hàm gọi API ở component biết mà tắt Loading (Spinner)
     return Promise.reject(error);
   }
 );

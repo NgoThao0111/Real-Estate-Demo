@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import api from "../lib/axios.js";
+import api from "../lib/axios.js"; // Import api instance
 
 const extractError = (err) =>
   err?.response?.data?.message || err?.message || "Lỗi không xác định";
@@ -13,19 +13,24 @@ export const useListStore = create((set, get) => ({
     try {
       if (!isBackground) set({ loading: true, error: null });
 
-      // Lọc bỏ giá trị rỗng
       const cleanParams = Object.fromEntries(
         Object.entries(params).filter(
           ([_, v]) => v !== null && v !== "" && v !== undefined
         )
       );
 
-      // QUAN TRỌNG: Luôn dùng endpoint /search và luôn gửi params đi
-      // Dù params rỗng thì backend vẫn trả về "Tất cả" bình thường.
       const queryString = new URLSearchParams(cleanParams).toString();
+      // Endpoint này khớp với router.get("/search") trong listing.route.js
+      // Và app.use("/api/listings") trong server.js
       const endpoint = `/listings/search?${queryString}`;
 
       const res = await api.get(endpoint);
+      
+      // Backend trả về { success: true, data: [...] } hoặc { listings: [...] }
+      // Bạn cần check lại controller xem trả về key nào. 
+      // Trong searchListings controller bạn trả về 'data'.
+      // Trong getListings controller bạn trả về 'listings'.
+      // Code dưới đây handle cả 2 trường hợp:
       const data = res.data.data || res.data.listings || [];
 
       set({ listings: data, loading: false });
@@ -53,7 +58,7 @@ export const useListStore = create((set, get) => ({
   fetchMyListings: async () => {
     try {
       set({ loading: true, error: null });
-      const res = await api.get(`/listings/my`);
+      const res = await api.get(`/listings/my`); // Khớp router.get("/my")
       const data = res.data.listings || [];
       set({ listings: data, loading: false });
       return { success: true, data };
@@ -64,10 +69,11 @@ export const useListStore = create((set, get) => ({
     }
   },
 
+  // Hàm này thực chất gọi API user, nhưng nằm ở list store cũng tạm chấp nhận được
   fetchSavedListings: async () => {
     try {
       set({ loading: true, error: null });
-      const res = await api.get(`/users/saved`);
+      const res = await api.get(`/users/saved`); // Khớp user.route.js
       const data = res.data.listings || [];
       set({ listings: data, loading: false });
       return { success: true, data };
@@ -80,7 +86,8 @@ export const useListStore = create((set, get) => ({
 
   toggleSaveListing: async (listingId) => {
     try {
-      // Lưu ý: Hành động này có thể làm Optimistic UI (cập nhật ngay ko chờ server) nếu muốn trải nghiệm tốt hơn nữa
+      // Optimistic update ở đây hơi khó vì không quản lý state savedListings trong store này
+      // (State đó nằm bên userStore). Nên chỉ gọi API thôi.
       set({ loading: true, error: null });
       const res = await api.post(`/users/save/${listingId}`);
       set({ loading: false });
@@ -95,7 +102,7 @@ export const useListStore = create((set, get) => ({
   createListing: async (payload) => {
     try {
       set({ loading: true, error: null });
-      const res = await api.post(`/listings/createList`, payload);
+      const res = await api.post(`/listings/createList`, payload); // Khớp router.post("/createList")
       const created = res.data.listing || res.data || null;
       if (created) {
         const current = get().listings || [];
@@ -113,7 +120,8 @@ export const useListStore = create((set, get) => ({
   updateListing: async (id, payload) => {
     try {
       set({ loading: true, error: null });
-      const res = await api.put(`/listings/${id}`, payload);
+      // Lưu ý: router.put("/:id") -> url là /listings/:id
+      const res = await api.put(`/listings/${id}`, payload); 
       const updated = res.data.listing || res.data || null;
       if (updated) {
         const current = get().listings || [];
@@ -135,7 +143,8 @@ export const useListStore = create((set, get) => ({
   deleteListing: async (id) => {
     try {
       set({ loading: true, error: null });
-      await api.delete(`/listings/delete/${id}`);
+      // Lưu ý: router.delete("/delete/:id") -> url là /listings/delete/:id
+      await api.delete(`/listings/delete/${id}`); 
       const current = get().listings || [];
       set({
         listings: current.filter((l) => !(l._id === id || l.id === id)),
@@ -153,22 +162,21 @@ export const useListStore = create((set, get) => ({
     const currentListings = [...get().listings];
 
     const sorted = currentListings.sort((a, b) => {
-      // Ép kiểu về Number và fallback về 0 nếu dữ liệu lỗi
       const priceA = Number(a.price) || 0;
       const priceB = Number(b.price) || 0;
+      const areaA = Number(a.area) || 0; // Thêm sort area
+      const areaB = Number(b.area) || 0;
       const dateA = new Date(a.createdAt).getTime() || 0;
       const dateB = new Date(b.createdAt).getTime() || 0;
 
       switch (sortType) {
-        case "price_asc":
-          return priceA - priceB; // Giá thấp -> cao
-        case "price_desc":
-          return priceB - priceA; // Giá cao -> thấp
-        case "oldest":
-          return dateA - dateB; // Cũ nhất -> mới nhất
+        case "price_asc": return priceA - priceB;
+        case "price_desc": return priceB - priceA;
+        case "area_asc": return areaA - areaB; // Thêm case area
+        case "area_desc": return areaB - areaA;
+        case "oldest": return dateA - dateB;
         case "newest":
-        default:
-          return dateB - dateA; // Mới nhất -> cũ nhất
+        default: return dateB - dateA;
       }
     });
 

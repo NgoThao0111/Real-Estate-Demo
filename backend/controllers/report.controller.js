@@ -3,13 +3,10 @@ import Listing from "../models/listing.model.js";
 
 export const createReport = async (req, res) => {
   try {
-    // Check authentication
-    if (!req.session || !req.session.user) {
-      return res.status(401).json({ message: "Vui lòng đăng nhập" });
-    }
+    // 1. Lấy ID người báo cáo từ Token (Middleware verifyToken đã gán vào req)
+    const reporterId = req.userId;
 
     const { listingId, reason, detail } = req.body;
-    const reporterId = req.session.user._id;
 
     // Validate required fields
     if (!listingId || !reason) {
@@ -22,7 +19,7 @@ export const createReport = async (req, res) => {
       return res.status(404).json({ message: "Bài đăng không tồn tại" });
     }
 
-    // Check if user already reported this listing
+    // Check if user already reported this listing (tránh spam)
     const existingReport = await Report.findOne({
       reporter: reporterId,
       listing: listingId,

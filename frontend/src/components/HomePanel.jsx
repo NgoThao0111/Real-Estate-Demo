@@ -66,6 +66,10 @@ const HomePanel = () => {
   const AllListBgColor = useColorModeValue("blue.50", "blue.900");
   const AllListHoverColor = useColorModeValue("blue.100", "blue.800");
 
+  //Footer
+  const footerBgColor = useColorModeValue("gray.50", "gray.900");
+  const footerHoverColor = useColorModeValue("blue.50", "blue.900");
+
   // --- 2. STATE MANAGEMENT ---
   const [activeTab, setActiveTab] = useState(0); // 0: Sell, 1: Rent
   const [keyword, setKeyword] = useState(""); // Từ khóa người dùng nhập
@@ -209,7 +213,7 @@ const HomePanel = () => {
                 {suggestions.map((item) => (
                   <ListItem key={item._id}>
                     <Link
-                      to={`/listing/${item._id}`}
+                      to={`/listings/${item._id}`}
                       style={{ display: "block" }}
                     >
                       <HStack
@@ -223,12 +227,12 @@ const HomePanel = () => {
                         <Image
                           src={
                             item.images?.[0] ||
-                            "https://via.placeholder.com/100"
+                            "https://placehold.co/100"
                           }
                           boxSize="48px"
                           objectFit="cover"
                           borderRadius="md"
-                          fallbackSrc="https://via.placeholder.com/100"
+                          fallbackSrc="https://placehold.co/100"
                         />
                         <VStack align="start" spacing={0} flex={1}>
                           <Text
@@ -258,13 +262,13 @@ const HomePanel = () => {
             <Box
               p={3}
               textAlign="center"
-              bg={useColorModeValue("gray.50", "gray.900")} // Màu nền khác biệt chút để nổi bật
+              bg={footerBgColor} // Màu nền khác biệt chút để nổi bật
               cursor="pointer"
               borderTop="1px solid"
               borderColor={dropdownBorderColor}
               onClick={() => handleNavigationSearch(false)}
               _hover={{
-                bg: useColorModeValue("blue.50", "blue.900"),
+                bg: footerHoverColor,
                 color: "blue.500",
               }}
               transition="all 0.2s"
