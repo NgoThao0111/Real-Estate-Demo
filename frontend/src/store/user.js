@@ -1,7 +1,5 @@
 import { create } from "zustand";
-import axios from "axios";
-
-axios.defaults.withCredentials = true; // Cho phép gửi cookie session
+import api from "../lib/axios.js";
 
 export const useUserStore = create((set) => ({
   user: null,
@@ -23,7 +21,7 @@ export const useUserStore = create((set) => ({
         throw new Error("Mật khẩu và xác nhận mật khẩu không khớp.");
       }
       set({ loading: true, error: null });
-      const res = await axios.post("/api/users/register", userData);
+      const res = await api.post("/users/register", userData);
       set({
         user: res.data.user,
         loading: false,
@@ -45,7 +43,7 @@ export const useUserStore = create((set) => ({
       }
 
       set({ loading: true, error: null });
-      const res = await axios.post("/api/users/login", loginData, {
+      const res = await api.post("/users/login", loginData, {
         withCredentials: true,
       });
 
@@ -76,7 +74,7 @@ export const useUserStore = create((set) => ({
   checkSession: async () => {
     set({ isCheckingSession: true });
     try {
-      const res = await axios.get("/api/users/session", {
+      const res = await api.get("/users/session", {
         withCredentials: true,
       });
 
@@ -86,7 +84,7 @@ export const useUserStore = create((set) => ({
       // nếu đã đăng nhập, tải danh sách tin đăng đã lưu
       if (res.data.user) {
         try {
-          const savedRes = await axios.get("/api/users/saved");
+          const savedRes = await api.get("/users/saved");
           const saved = savedRes.data.listings || [];
           set({ savedListings: saved.map((l) => l._id) });
         } catch (error) {
@@ -104,7 +102,7 @@ export const useUserStore = create((set) => ({
   logoutUser: async () => {
     try {
       // 1. Gọi API để Backend xóa session cookie
-      await axios.post("/api/users/logout", {}, { withCredentials: true });
+      await api.post("/users/logout", {}, { withCredentials: true });
     } catch (error) {
       console.log("Lỗi logout server:", error);
       // Vẫn tiếp tục logout ở frontend dù API lỗi
@@ -127,7 +125,7 @@ export const useUserStore = create((set) => ({
   // Lấy danh sách ID tin đăng đã lưu cho người dùng hiện tại
   fetchSavedListings: async () => {
     try {
-      const res = await axios.get("/api/users/saved");
+      const res = await api.get("/users/saved");
       const saved = res.data.listings || [];
       set({ savedListings: saved.map((l) => l._id) });
       return { success: true, data: saved };
@@ -140,11 +138,11 @@ export const useUserStore = create((set) => ({
   // Bật/tắt lưu tin đăng thông qua API và cập nhật danh sách
   toggleSaveListing: async (listingId) => {
     try {
-      const res = await axios.post(`/api/users/save/${listingId}`);
+      const res = await api.post(`/users/save/${listingId}`);
       // cập nhật danh sách ID đã lưu
       await (async () => {
         try {
-          const r = await axios.get("/api/users/saved");
+          const r = await api.get("/users/saved");
           const saved = r.data.listings || [];
           set({ savedListings: saved.map((l) => l._id) });
         } catch (e) {}
