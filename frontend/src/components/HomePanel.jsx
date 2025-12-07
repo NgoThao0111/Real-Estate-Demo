@@ -37,14 +37,15 @@ const HomePanel = () => {
 
   // --- 1. CONSTANTS FOR THEME (Đã chuyển lên đầu như bạn muốn) ---
   const bgGradient = useColorModeValue(
-    "linear(to-b, white 10%, gray.50 90%)",
-    "linear(to-b, gray.900 10%, gray.800 90%)"
+    "linear(to-t, blue.100 0%, white 100%)",
+    "linear(to-t, blue.900 0%, gray.800 100%)"
   );
-  const tabActiveBg = useColorModeValue("white", "gray.700");
-  const tabPanelsBg = useColorModeValue("white", "blue.850");
+  const tabActiveBg = useColorModeValue("white", "gray.900");
+  const tabInactiveBg = useColorModeValue("blue.100", "blue.900");
+  const tabPanelsBg = useColorModeValue("white", "gray.900");
   const inputBorderColor = useColorModeValue("blue.100", "blue.700");
   const inputPlaceholderColor = useColorModeValue("gray.400", "gray.600");
-  const tabPanelsBorderColor = useColorModeValue("gray.500", "blue.700");
+  const tabPanelsBorderColor = useColorModeValue("gray.100", "blue.700");
   const headingColor = useColorModeValue(
     "rgba(1, 2, 24, 0.8)",
     "rgba(255, 255, 255, 0.8)"
@@ -289,7 +290,6 @@ const HomePanel = () => {
           colorScheme="blue"
           // Click nút này -> Chạy logic Điều kiện 2
           onClick={() => handleNavigationSearch(false)}
-          _hover={{ transform: "translateY(-2px)", shadow: "lg" }}
           transition="all 0.2s"
         >
           Tìm kiếm
@@ -301,7 +301,6 @@ const HomePanel = () => {
           colorScheme="blue"
           // Click nút này -> Chạy logic Điều kiện 2 (mode nâng cao)
           onClick={() => handleNavigationSearch(true)}
-          _hover={{ transform: "translateY(-2px)", shadow: "lg" }}
           transition="all 0.2s"
         >
           Tìm kiếm nâng cao
@@ -384,7 +383,7 @@ const HomePanel = () => {
               <Tabs
                 index={activeTab}
                 onChange={setActiveTab}
-                variant="soft-rounded"
+                variant={"line"}
                 colorScheme="blue"
               >
                 <TabList
@@ -396,26 +395,27 @@ const HomePanel = () => {
                   <Tab
                     px={6}
                     py={3}
+                    ml={-1}
+                    borderTopRadius="xl"
                     fontSize="lg"
                     fontWeight="semibold"
-                    borderRadius="lg"
                     _hover={{
                       bg: activeTab === 0 ? tabActiveBg : tabHoverBg,
                       color: activeTab === 0 ? "blue.600" : tabHoverTextColor,
                     }}
-                    bg={activeTab === 0 ? tabActiveBg : "transparent"}
+                    bg={activeTab === 0 ? tabActiveBg : tabInactiveBg}
                     color={activeTab === 0 ? "blue.600" : tabInactiveTextColor}
                     transition="all 0.2s"
                   >
-                    Bán
+                    Rao bán
                   </Tab>
                   <Tab
                     px={6}
                     py={3}
                     fontSize="lg"
                     fontWeight="semibold"
-                    borderRadius="lg"
-                    bg={activeTab === 1 ? tabActiveBg : "transparent"}
+                    borderTopRadius="xl"
+                    bg={activeTab === 1 ? tabActiveBg : tabInactiveBg}
                     color={activeTab === 1 ? "blue.600" : tabInactiveTextColor}
                     _hover={{
                       bg: activeTab === 1 ? tabActiveBg : tabHoverBg,
@@ -423,17 +423,16 @@ const HomePanel = () => {
                     }}
                     transition="all 0.2s"
                   >
-                    Thuê
+                    Cho thuê
                   </Tab>
                 </TabList>
 
                 <TabPanels
                   bg={tabPanelsBg}
-                  borderRadius="xl"
-                  mt={4}
+                  borderBottomRadius="xl"
+                  borderTopRightRadius="xl"
+                  mt={-1}
                   shadow="2xl"
-                  border="1px solid"
-                  borderColor={tabPanelsBorderColor}
                 >
                   <TabPanel p={8}>{renderSearchPanel()}</TabPanel>
                   <TabPanel p={8}>{renderSearchPanel()}</TabPanel>

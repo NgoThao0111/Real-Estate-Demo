@@ -8,7 +8,7 @@ import {
   useDisclosure,
   useColorModeValue,
   Box,
-  Avatar // Import thêm Avatar nếu muốn hiển thị ảnh
+  useColorMode
 } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -18,11 +18,13 @@ import AuthModal from "./AuthModal";
 import CreateListingModal from "./CreateListingModal";
 import { useUserStore } from "../store/user.js";
 import UserMenu from "./UserMenu";
+import { MdDarkMode, MdLightMode } from "react-icons/md";
+import { IoSunny, IoMoon, IoChatbubble, IoNotifications } from "react-icons/io5";
 
 const Navbar = () => {
   const linkColor = useColorModeValue("gray.700", "gray.100");
   const { isOpen, onOpen, onClose } = useDisclosure();
-
+  const { colorMode, toggleColorMode } = useColorMode();
   const [authMode, setAuthMode] = useState(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -78,6 +80,36 @@ const Navbar = () => {
 
           {/* Right: Buttons */}
           <HStack spacing={4}>
+            <HStack>
+              <IconButton
+                icon=
+                {colorMode === "light"
+                  ? <IoMoon size={20} />
+                  : <IoSunny size={20} />
+                }
+                onClick={toggleColorMode}
+                variant={"ghost"}
+                aria-label="Toggle theme"
+              />
+              {user ? (
+                <HStack>
+                  <IconButton
+                    as={Link}
+                    to="/chat"
+                    icon={<IoChatbubble size={18} />}
+                    variant={"ghost"}
+                    aria-label="Go to chat"
+                  />
+
+                  <IconButton
+                    icon={<IoNotifications size={20}/>}
+                    variant={"ghost"}
+                    aria-label="Open notifications"
+                  />
+                </HStack>
+              ): null}
+            </HStack>  
+
             {!user ? (
               <HStack display={{ base: "none", lg: "flex" }}>
                 <Button colorScheme="blue" onClick={() => openAuth("login")}>
@@ -89,6 +121,8 @@ const Navbar = () => {
               </HStack>
             ) : (
               <HStack spacing={4}>
+                {/* User Menu Dropdown */}
+                <UserMenu user={user} logoutUser={logoutUser} />
                 {/* Nút Đăng tin mới */}
                 <Button
                   colorScheme="blue"
@@ -97,9 +131,6 @@ const Navbar = () => {
                 >
                   Đăng tin mới
                 </Button>
-                
-                {/* User Menu Dropdown */}
-                <UserMenu user={user} logoutUser={logoutUser} />
               </HStack>
             )}
 

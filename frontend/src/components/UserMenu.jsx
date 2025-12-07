@@ -55,7 +55,8 @@ export default function UserMenu({ user, logoutUser }) {
           <MenuItem as={Link} to="/saved-posts" icon={<ImStarEmpty />}>
             Bài đăng đã lưu
           </MenuItem>
-
+          
+          {/*
           <MenuItem as={Link} to="/chat" icon={<FiMessageCircle />}>
             Nhắn tin
           </MenuItem>
@@ -71,6 +72,8 @@ export default function UserMenu({ user, logoutUser }) {
           >
             {colorMode === "light" ? "Chế độ tối" : "Chế độ sáng"}
           </MenuItem>
+          */}
+
           <MenuDivider />
 
           <MenuItem
