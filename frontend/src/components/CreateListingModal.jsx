@@ -25,6 +25,7 @@ import {
   NumberInputStepper,
   NumberIncrementStepper,
   NumberDecrementStepper,
+  useColorModeValue,
 } from "@chakra-ui/react";
 import { FiX } from "react-icons/fi";
 import { useEffect, useState } from "react";
@@ -296,9 +297,12 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
         <ModalCloseButton />
 
         <ModalBody>
-          <VStack spacing={4} align="stretch">
+          <VStack spacing={4} align="stretch" borderTop="2px solid" borderColor={useColorModeValue("gray.200", "gray.600")} pt={4}>
             {/* Tiêu đề */}
             <FormControl isRequired>
+              <Text fontWeight="bold" mb={3} color={useColorModeValue("blue.500", "blue.100")}>
+                Thông tin cơ bản
+              </Text>
               <FormLabel>Tiêu đề</FormLabel>
               <Input
                 name="title"
@@ -483,14 +487,14 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
             </FormControl>
 
             {/* --- PHẦN ĐỊA CHỈ & BẢN ĐỒ --- */}
-            <Box borderTop="1px solid" borderColor="gray.100" pt={4}>
-              <Text fontWeight="bold" mb={3} color="blue.600">
+            <Box borderTop="2px solid" borderColor={useColorModeValue("gray.200", "gray.600")} pt={4}>
+              <Text fontWeight="bold" mb={3} color={useColorModeValue("blue.500", "blue.100")}>
                 Địa chỉ & Vị trí
               </Text>
 
               <HStack mb={3}>
                 <FormControl isRequired>
-                  <FormLabel fontSize="sm">Tỉnh / TP</FormLabel>
+                  <FormLabel>Tỉnh / Thành phố</FormLabel>
                   <Input
                     name="location.province"
                     value={form.location.province}
@@ -518,7 +522,7 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
                   </datalist>
                 </FormControl>
                 <FormControl>
-                  <FormLabel fontSize="sm">Quận / Huyện</FormLabel>
+                  <FormLabel>Phường / Xã</FormLabel>
                   <Input
                     name="location.ward"
                     value={form.location.ward}
@@ -529,7 +533,7 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
               </HStack>
 
               <FormControl isRequired mb={3}>
-                <FormLabel fontSize="sm">
+                <FormLabel>
                   Địa chỉ chi tiết (Số nhà, đường)
                 </FormLabel>
                 <Input
