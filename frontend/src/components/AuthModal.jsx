@@ -210,7 +210,7 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
 
             {/* Switch Mode Link */}
             <HStack justify="center" pt={2} w="full">
-              <Text fontSize="sm" color="gray.600">
+              <Text fontSize="sm" color="gray.500">
                 {mode === "login" ? "Chưa có tài khoản?" : "Đã có tài khoản?"}
               </Text>
               <Button
@@ -225,7 +225,7 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
           </VStack>
         </ModalBody>
 
-        <ModalFooter bg="gray.50" borderBottomRadius="md">
+        <ModalFooter borderBottomRadius="md">
           <Button variant="ghost" mr={3} onClick={onClose}>
             Hủy
           </Button>

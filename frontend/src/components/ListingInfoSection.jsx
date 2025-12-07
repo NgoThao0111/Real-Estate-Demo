@@ -20,7 +20,7 @@ import { useUserStore } from "../store/user.js";
 import { useListStore } from "../store/list.js";
 import ReportModal from "./ReportModal.jsx";
 
-const ListingInfoSection = ({ listing, onContact}) => {
+const ListingInfoSection = ({ user, listing, onContact}) => {
   const toggleSave = useUserStore((s) => s.toggleSaveListing);
   const savedListings = useUserStore((s) => s.savedListings);
   const fallbackToggle = useListStore((s) => s.toggleSaveListing);
@@ -152,10 +152,6 @@ const ListingInfoSection = ({ listing, onContact}) => {
               colorScheme={isSaved ? "blue" : "gray"}
               flex={1}
               isLoading={isLoading}
-              _hover={{
-                transform: "translateY(-1px)",
-                boxShadow: "md",
-              }}
               _active={{
                 transform: "translateY(0px)",
               }}

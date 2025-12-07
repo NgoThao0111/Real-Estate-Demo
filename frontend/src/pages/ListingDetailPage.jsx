@@ -134,26 +134,6 @@ const ListingDetailPage = () => {
     setChatLoading(false);
   };
 
-  const handleSave = () => {
-    if (!user) {
-      toast({
-        title: "Đăng nhập",
-        description: "Vui lòng đăng nhập để lưu bài đăng",
-        status: "warning",
-        duration: 3000,
-        isClosable: true,
-      });
-      return;
-    }
-    toast({
-      title: "Đã lưu",
-      description: "Bài đăng đã được lưu vào danh sách yêu thích",
-      status: "success",
-      duration: 2000,
-      isClosable: true,
-    });
-  };
-
   return (
     <Container maxW="1200px" py={8}>
       <Grid templateColumns={{ base: "1fr", lg: "1fr 400px" }} gap={8}>
@@ -206,7 +186,6 @@ const ListingDetailPage = () => {
             listing={listing}
             user={user}
             onContact={handleContact}
-            onSave={handleSave}
           />
         </GridItem>
       </Grid>
