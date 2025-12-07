@@ -1,17 +1,18 @@
 import express from 'express';
-import session from "express-session";
-import MongoStore from "connect-mongo";
 import cors from "cors";
 import dotenv from "dotenv";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import cookieParser from "cookie-parser";
-
+import jwt from "jsonwebtoken"; 
+import cookie from "cookie"; // Thư viện để parse cookie header của Socket
+import User from "./models/user.model.js";
 import { connectDB } from "./config/db.js";
 import userRoutes from "./routes/user.route.js";
 import listingRoutes from "./routes/list.route.js";
 import propertyTypeRoutes from "./routes/property_type.route.js";
 import chatRoutes from './routes/chat.route.js';
+import reportRoutes from "./routes/report.route.js"
 
 dotenv.config();
 
@@ -19,140 +20,171 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
 
-// 1. Tạo HTTP Server
-const httpServer = createServer(app);
+// --- 1. CẤU HÌNH SERVER ---
 
-// 2. Cấu hình Session (Lưu vào MongoDB để cả Express và Socket cùng đọc được)
-const sessionMiddleware = session({
-    secret: process.env.SECRET_KEY || 'dev-secret',
-    resave: false,
-    saveUninitialized: false,
-    store: MongoStore.create({ 
-        mongoUrl: process.env.MONGO_URI 
-    }),
-    cookie: {
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : false, // 'lax' hoặc false cho dev
-        httpOnly: true,
-        maxAge: 1000 * 60 * 30 // Phiên đăng nhập 30p
-    }
-});
+// Quan trọng khi deploy (Render, Vercel...): Tin tưởng proxy để cookie 'secure' hoạt động
+if (process.env.NODE_ENV === 'production') {
+    app.set('trust proxy', 1);
+}
 
-// 3. Khởi tạo Socket.io
-const io = new Server(httpServer, {
-    cors: {
-        origin: FRONTEND_ORIGIN,
-        credentials: true // Bắt buộc true để nhận cookie session
-    }
-});
-
-// --- MIDDLEWARE CHO EXPRESS APP ---
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
-app.use(cookieParser()); 
-
-// CORS setup
 app.use(cors({
     origin: FRONTEND_ORIGIN,
     credentials: true
 }));
 
-// Kích hoạt Session cho Express
-app.use(sessionMiddleware);
+const httpServer = createServer(app);
 
-// Middleware gắn 'io' vào req để dùng trong Controller (Dùng cho tính năng Gửi tin nhắn)
+// Khởi tạo Socket.io với cấu hình CORS chuẩn
+const io = new Server(httpServer, {
+    cors: {
+        origin: FRONTEND_ORIGIN,
+        credentials: true, // Bắt buộc true để nhận Cookie JWT
+        methods: ["GET", "POST"]
+    }
+});
+
+
+
+
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.use(cookieParser()); // Để Express đọc được cookie 'token'
+
+// Middleware gắn 'io' vào req để Controller dùng (Gửi thông báo realtime)
 app.use((req, res, next) => {
     req.io = io;
     next();
 });
 
-// --- MIDDLEWARE CHO SOCKET.IO (Bảo mật & Xác thực) ---
-
-// Hàm helper: Chuyển middleware của Express sang Socket.io
-const wrap = middleware => (socket, next) => middleware(socket.request, {}, next);
-
-// A. Cho phép Socket đọc session từ cookie
-io.use(wrap(sessionMiddleware));
-
-// B. Middleware xác thực: Chỉ cho phép User đã đăng nhập mới được kết nối Socket
+// --- 3. MIDDLEWARE XÁC THỰC SOCKET.IO (DÙNG JWT) ---
+// Logic: Socket không đi qua express middleware, nên phải tự parse cookie và verify token
 io.use((socket, next) => {
-    const session = socket.request.session;
-    
-    if (session && session.user) {
-        socket.user = session.user; // Gán user vào socket để dùng bên dưới
-        next();
-    } else {
-        console.log("Socket blocked: Unauthorized user");
-        next(new Error("Unauthorized: Vui lòng đăng nhập"));
+    try {
+        // Lấy chuỗi cookie từ header
+        const cookieHeader = socket.handshake.headers.cookie;
+        
+        if (!cookieHeader) {
+            return next(new Error("Authentication error: No cookie found"));
+        }
+
+        // Parse cookie string thành object
+        const cookies = cookie.parse(cookieHeader);
+        const token = cookies.token; // Tên 'token' phải khớp với tên cookie bạn đặt lúc Login
+
+        if (!token) {
+            return next(new Error("Authentication error: No token provided"));
+        }
+
+        // Verify JWT Token
+        jwt.verify(token, process.env.JWT_SECRET_KEY, (err, decoded) => {
+            if (err) {
+                return next(new Error("Authentication error: Invalid token"));
+            }
+            
+            // Token hợp lệ -> Gán thông tin user vào socket
+            // 'decoded' chính là payload bạn sign lúc login (thường chứa id, isAdmin...)
+            socket.user = decoded; 
+            next();
+        });
+    } catch (error) {
+        console.error("Socket Auth Error:", error);
+        next(new Error("Internal Server Error during Auth"));
     }
 });
 
-// --- LOGIC SOCKET EVENTS (Xử lý Real-time) ---
+// --- 4. LOGIC SOCKET EVENTS (REAL-TIME) ---
 io.on("connection", (socket) => {
-    // Lấy thông tin user từ session đã gán ở trên
-    const user = socket.user;
-    const userId = user.id || user._id; 
+    const user = socket.user; // Lấy từ middleware ở trên
+    const userId = user._id || user.id;   // ID người dùng
 
-    console.log(`User connected: ${user.username || user.name} (ID: ${userId})`);
+    console.log(`User connected: ${userId}`);
 
-    // 1. Quản lý Phòng chat (Join/Leave)
+    // --- CHAT EVENTS ---
+    
+    // Tham gia phòng chat (Conversation)
     socket.on("join_chat", (conversationId) => {
         socket.join(conversationId);
-        console.log(`User ${userId} joined room: ${conversationId}`);
+        // console.log(`User ${userId} joined room ${conversationId}`);
     });
 
+    // Rời phòng chat
     socket.on("leave_chat", (conversationId) => {
         socket.leave(conversationId);
-        console.log(`User ${userId} left room: ${conversationId}`);
     });
 
-    // 2. Tính năng: Đang gõ... (Typing)
-    // Logic: Gửi cho tất cả mọi người trong phòng TRỪ người gửi (socket.to)
+    // Sự kiện: Đang gõ...
     socket.on("typing", (conversationId) => {
-        socket.to(conversationId).emit("typing", { conversationId, userId, username: user.username });
+        // Gửi cho tất cả người trong phòng TRỪ người gửi
+        socket.to(conversationId).emit("typing", { conversationId, userId });
     });
 
     socket.on("stop_typing", (conversationId) => {
         socket.to(conversationId).emit("stop_typing", { conversationId, userId });
     });
 
-    // 3. Tính năng: Đã xem (Read Receipt) - Tích hợp ý tưởng của bạn bạn
+    // Sự kiện: Đã xem tin nhắn
     socket.on("mark_read", ({ conversationId, messageId }) => {
-        // Gửi sự kiện cho người bên kia biết mình đã đọc
-        socket.to(conversationId).emit("message_read", { conversationId, messageId, readerId: userId });
-        
-        // Lưu ý: Việc update DB "đã đọc" nên gọi qua API (PUT /api/chats/:id/read) 
-        // hoặc thực hiện trực tiếp tại đây nếu muốn tối ưu tốc độ.
+        socket.to(conversationId).emit("message_read", { 
+            conversationId, 
+            messageId, 
+            readerId: userId 
+        });
     });
 
-    // Xử lý ngắt kết nối
     socket.on("disconnect", () => {
-        console.log("Socket disconnected:", socket.id);
+        // console.log("Socket disconnected:", socket.id);
     });
 });
 
-// --- ROUTES API ---
+// --- 5. ROUTES API ---
 app.use("/api/users", userRoutes);
 app.use("/api/listings", listingRoutes);
 app.use("/api/property_type", propertyTypeRoutes);
 app.use('/api/chats', chatRoutes);
+app.use('/api/reports', reportRoutes);
 
 app.get('/', (req, res) => {
-    res.send('Server is up and running');
+    res.send('Server is up and running (JWT Mode)');
 });
 
-app.get('/api/check-session', (req, res) => {
-    if (req.session.user) {
-        // In ra thời gian còn lại của cookie
-        console.log("Cookie expires in:", req.session.cookie.maxAge / 1000, "seconds");
-        return res.json({ status: 'Live', user: req.session.user });
+// API Kiểm tra trạng thái đăng nhập (Thay thế cho check-session cũ)
+// Frontend gọi cái này để biết user còn đăng nhập hay không
+// API Kiểm tra trạng thái đăng nhập
+app.get('/api/check-auth', async (req, res) => { // Thêm async
+    const token = req.cookies.token;
+    
+    if (!token) {
+        return res.status(200).json({ isAuthenticated: false, user: null });
     }
-    return res.status(401).json({ status: 'Expired' });
+
+    jwt.verify(token, process.env.JWT_SECRET_KEY, async (err, decoded) => { // Thêm async
+        if (err) {
+            return res.status(200).json({ isAuthenticated: false, user: null });
+        }
+        
+        try {
+            // --- SỬA Ở ĐÂY: Thay vì trả về decoded, hãy tìm user trong DB ---
+            // decoded.id là cái id mình đã lưu trong token
+            const user = await User.findById(decoded._id || decoded.id).select("-password"); 
+            
+            if (!user) {
+                return res.status(200).json({ isAuthenticated: false, user: null });
+            }
+
+            // Trả về full thông tin user (avatar, name...)
+            return res.status(200).json({ 
+                isAuthenticated: true, 
+                user: user 
+            });
+        } catch (error) {
+            console.log(error);
+            return res.status(200).json({ isAuthenticated: false, user: null });
+        }
+    });
 });
 
-// --- KHỞI CHẠY SERVER ---
-// Quan trọng: Phải dùng httpServer.listen
+// --- 6. KHỞI CHẠY SERVER ---
 httpServer.listen(PORT, () => {
     connectDB();
-    console.log(`Server (HTTP + Socket) is running on port ${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });

@@ -1,13 +1,31 @@
-import express from "express"
-import { createList, getListings, deleteListing, getMyListings, updateListing, getListingById } from "../controllers/listing.controller.js";
+import express from "express";
+import { 
+  createList, 
+  getListings, 
+  deleteListing, 
+  getMyListings, 
+  updateListing, 
+  getListingById, 
+  searchListings 
+} from "../controllers/listing.controller.js";
+import { verifyToken } from "../middleware/verifyToken.js"; // <--- QUAN TRỌNG: Import middleware
 
 const router = express.Router();
 
-router.post("/createList", createList);
-router.get("/getList", getListings);
-router.get("/my", getMyListings);
-router.delete("/delete/:id", deleteListing);
+// --- 1. PUBLIC ROUTES (Ai cũng xem được) ---
+// Phải đặt lên trên cùng để tránh bị nhầm với /:id
+router.get("/search", searchListings); // Tìm kiếm
+router.get("/getList", getListings);   // Lấy danh sách (filter)
+
+// --- 2. PROTECTED ROUTES (Cần đăng nhập) ---
+// Áp dụng verifyToken để controller có thể lấy req.userId
+router.post("/createList", verifyToken, createList);
+router.get("/my", verifyToken, getMyListings);
+router.delete("/delete/:id", verifyToken, deleteListing);
+router.put("/:id", verifyToken, updateListing); // Update tin đăng
+
+// --- 3. DYNAMIC PUBLIC ROUTE (Đặt cuối cùng) ---
+// Route này "hút" tất cả các request GET còn lại vào ID
 router.get("/:id", getListingById);
-router.put("/:id", updateListing);
 
 export default router;

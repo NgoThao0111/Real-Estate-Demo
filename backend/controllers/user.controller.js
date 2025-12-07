@@ -1,5 +1,10 @@
 import User from "../models/user.model.js";
 import bcrypt from 'bcryptjs';
+import jwt from "jsonwebtoken"; // Import jwt
+import dotenv from "dotenv";
+import { generateTokenAndSetCookie } from "../utils/generateToken.js";
+
+dotenv.config();
 
 export const userRegister = async (req, res) => {
     try {
@@ -20,26 +25,21 @@ export const userRegister = async (req, res) => {
             password: hashedPassword,
             name: name,
             phone: phone,
-            role: role
+            role: role || "guest"
         });
 
         await user.save();
 
-        // --- SỬA: Dùng _id thay vì id ---
-        req.session.user = {
-            _id: user._id, 
-            username: user.username,
-            name: user.name
-        }
-        
-        // Lưu thời gian login để tính session expiry
-        req.session.loginTime = Date.now();
+       generateTokenAndSetCookie(res, user._id, user.role);
+
+        // Gửi cookie chứa token
+        const { password: userPassword, ...userInfo } = user._doc;
 
         return res.status(201).json({
             message: "Đăng ký thành công",
-            user: req.session.user,
-            loginTime: req.session.loginTime
+            user: userInfo
         });
+
     } catch (error) {
         console.log(error.message);
         return res.status(500).json({
@@ -49,6 +49,7 @@ export const userRegister = async (req, res) => {
 }
 
 export const deleteUser = async (req, res) => {
+    // ... (Giữ nguyên logic xóa user, nhưng lưu ý quyền admin nếu cần)
     try {
         const id = req.params.id;
         const deleteUser = await User.findByIdAndDelete(id);
@@ -95,21 +96,15 @@ export const loginUser = async (req, res) => {
             })
         }
 
-        // --- SỬA: Dùng _id thay vì id ---
-        req.session.user = {
-            _id: user._id,
-            username: user.username,
-            name: user.name
-        }
-        
-        // Lưu thời gian login để tính session expiry
-        req.session.loginTime = Date.now();
+        generateTokenAndSetCookie(res, user._id, user.role);
 
-        res.json({
-            message: "Login successfully",
-            user: req.session.user,
-            loginTime: req.session.loginTime
-        })
+        const { password: userPassword, ...userInfo } = user._doc;
+
+       return res.status(201).json({
+            message: "Đăng nhập thành công",
+            user: userInfo
+        });
+
     } catch (error) {
         console.log(error.message);
         return res.status(500).json({
@@ -120,14 +115,8 @@ export const loginUser = async (req, res) => {
 
 export const getUserInfor = async (req, res) => {
     try {
-        if (!req.session || !req.session.user) {
-            return res.status(401).json({
-                message: "Vui lòng đăng nhập"
-            });
-        }
-
-        // --- SỬA: Gọi ._id thay vì .id ---
-        const user_id = req.session.user._id;
+        // --- JWT: Lấy userId từ middleware verifyToken (đã gán vào req.userId) ---
+        const user_id = req.userId; // Middleware verifyToken đã xử lý việc check auth
 
         const user = await User.findById(user_id).select("username name phone role createdAt");
 
@@ -151,14 +140,8 @@ export const getUserInfor = async (req, res) => {
 
 export const updateUserInfo = async (req, res) => {
     try {
-        if (!req.session || !req.session.user) {
-            return res.status(401).json({
-                message: "Vui long dang nhap"
-            });
-        }
-
-        // --- SỬA: Gọi ._id thay vì .id ---
-        const user_id = req.session.user._id;
+        // --- JWT: Lấy userId từ req.userId ---
+        const user_id = req.userId;
         
         const { name, phone } = req.body;
         if (!name && !phone) {
@@ -196,50 +179,33 @@ export const updateUserInfo = async (req, res) => {
     }
 }
 
+// Hàm này không cần thiết với JWT vì client có thể tự check token hoặc gọi api/check-auth
+// Tuy nhiên nếu muốn giữ lại logic cũ thì sửa như sau:
 export const checkSession = (req, res) => {
-    // Debug log
-    console.log("--> Check Session API:", req.session?.user);
+    // Logic này thực tế đã được chuyển sang middleware hoặc endpoint /api/check-auth trong server.js
+    // Bạn có thể xóa hàm này hoặc giữ lại dưới dạng check token đơn giản
+    const token = req.cookies.token;
+    if (!token) return res.status(401).json({ message: "No active session", user: null });
 
-    try {
-        if (req.session && req.session.user) {
-            const SESSION_DURATION = 30 * 60 * 1000; // 30 phút
-            const loginTime = req.session.loginTime || Date.now();
-            const elapsedTime = Date.now() - loginTime;
-            const remainingTime = Math.max(0, SESSION_DURATION - elapsedTime);
-            
-            // Reset loginTime để extend session
-            req.session.loginTime = Date.now();
-            
-            return res.status(200).json({ 
-                message: "Session active", 
-                user: req.session.user,
-                loginTime: req.session.loginTime,
-                remainingTime: remainingTime,
-                sessionDuration: SESSION_DURATION
-            });
-        } else {
-            return res.status(200).json({ message: "No active session", user: null });
-        }
-    } catch (error) {
-        console.error("Lỗi Check Session:", error);
-        return res.status(500).json({ message: "Server error" });
-    }
+    jwt.verify(token, process.env.JWT_SECRET_KEY, async (err, payload) => {
+        if (err) return res.status(401).json({ message: "Invalid Token", user: null });
+        
+        const user = await User.findById(payload._id).select("-password");
+        return res.status(200).json({ 
+            message: "Session active", 
+            user: user 
+        });
+    });
 };
 
 export const logoutUser = async (req, res) => {
-    req.session.destroy(() => {
-        res.json({
-            message: "Đã đăng xuất"
-        });
-    })
+    res.clearCookie("token").status(200).json({ message: "Đã đăng xuất" });
 }
 
 export const toggleSaveListing = async (req, res) => {
     try {
-        if (!req.session || !req.session.user) return res.status(401).json({ message: "Vui lòng đăng nhập" });
-        
-        // --- SỬA: Gọi ._id thay vì .id ---
-        const userId = req.session.user._id;
+        // --- JWT: Lấy userId từ req.userId ---
+        const userId = req.userId;
         
         const listingId = req.params.listingId;
 
@@ -268,10 +234,9 @@ export const toggleSaveListing = async (req, res) => {
 // Lấy danh sách tin đăng đã lưu của người dùng hiện tại
 export const getSavedListings = async (req, res) => {
     try {
-        if (!req.session || !req.session.user) return res.status(401).json({ message: "Vui lòng đăng nhập" });
         
-        // --- SỬA: Gọi ._id thay vì .id ---
-        const userId = req.session.user._id;
+        console.log(req.userId);// --- JWT: Lấy userId từ req.userId ---
+        const userId = req.userId;
         
         const user = await User.findById(userId).populate({ path: 'savedListings', options: { sort: { createdAt: -1 } } });
         if (!user) return res.status(404).json({ message: "User không tồn tại" });
@@ -285,14 +250,17 @@ export const getSavedListings = async (req, res) => {
 
 export const searchUsers = async (req, res) => {
     try {
+        // --- JWT: Lấy userId từ req.userId ---
+        // Lưu ý: searchUsers cần được bảo vệ bởi middleware verifyToken để có req.userId
+        const currentUserId = req.userId; 
+
         const query = req.query.q;
         if (!query) return res.json([]);
 
         // Tìm user theo tên, trừ bản thân mình ra
         const users = await User.find({
             username: { $regex: query, $options: "i" },
-            // --- SỬA: Gọi ._id thay vì .id ---
-            _id: { $ne: req.session.user._id }
+            _id: { $ne: currentUserId } 
         }).select("username name role"); 
 
         res.json(users);

@@ -2,17 +2,13 @@ import mongoose from "mongoose";
 import Listing from "../models/listing.model.js";
 import cloudinary from "../config/cloudinary.js";
 
+// --- MIDDLEWARE verifyToken ĐÃ ĐẢM BẢO req.userId TỒN TẠI CHO CÁC ROUTE PROTECTED ---
+
 export const createList = async (req, res) => {
-  if (!req.session || !req.session.user || !req.session.user._id) {
-    return res.status(401).json({
-      message: "Unauthorized: User not logged in",
-    });
-  }
-
   try {
-    const ownerId = req.session.user._id;
+    // 1. Lấy ID từ Token (thay cho Session)
+    const ownerId = req.userId;
 
-    // --- CẬP NHẬT: Thêm bedroom, bathroom vào destructuring ---
     const {
       title,
       description,
@@ -23,8 +19,8 @@ export const createList = async (req, res) => {
       rental_type,
       location,
       amenities,
-      bedroom, // Mới
-      bathroom // Mới
+      bedroom,
+      bathroom,
     } = req.body;
 
     const province = location?.province;
@@ -48,7 +44,7 @@ export const createList = async (req, res) => {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
-    // Xử lý ảnh (Giữ nguyên)
+    // Xử lý ảnh
     let images = [];
     if (req.body.images) {
       if (Array.isArray(req.body.images)) images = req.body.images;
@@ -59,9 +55,8 @@ export const createList = async (req, res) => {
           .filter(Boolean);
     }
 
-    if (images.length > 10) {
+    if (images.length > 10)
       return res.status(400).json({ message: "Max 10 images allowed" });
-    }
 
     let cloudinaryImages = [];
     if (images.length > 0) {
@@ -84,23 +79,22 @@ export const createList = async (req, res) => {
     const finalLat = latitude ? parseFloat(latitude) : 21.028511;
     const finalLng = longitude ? parseFloat(longitude) : 105.854444;
 
-    // --- CẬP NHẬT: Lưu các trường số liệu mới ---
     const list = new Listing({
-      title: title,
-      description: description,
-      area: Number(area),             // Ép kiểu sang số
-      price: price,
-      status: status,
-      property_type: property_type,
-      rental_type: rental_type,
+      title,
+      description,
+      area: Number(area),
+      price,
+      status,
+      property_type,
+      rental_type,
       images: savedImages,
-      owner: ownerId,
-      bedroom: bedroom ? Number(bedroom) : 0, // Mới: Ép kiểu sang số
-      bathroom: bathroom ? Number(bathroom) : 0, // Mới: Ép kiểu sang số
+      owner: ownerId, // Dùng ID từ JWT
+      bedroom: bedroom ? Number(bedroom) : 0,
+      bathroom: bathroom ? Number(bathroom) : 0,
       location: {
-        province: province,
-        ward: ward,
-        detail: detail,
+        province,
+        ward,
+        detail,
         coords: {
           type: "Point",
           coordinates: [finalLng, finalLat],
@@ -118,15 +112,13 @@ export const createList = async (req, res) => {
   } catch (error) {
     console.log(error.message);
     if (error.name === "ValidationError") {
-      return res.status(400).json({
-        message: "Validation failed: " + error.message,
-      });
+      return res
+        .status(400)
+        .json({ message: "Validation failed: " + error.message });
     }
-
-    return res.status(500).json({
-      message: "Server error",
-      error: error.message,
-    });
+    return res
+      .status(500)
+      .json({ message: "Server error", error: error.message });
   }
 };
 
@@ -147,7 +139,7 @@ export const getListings = async (req, res) => {
       sort,
       userLat,
       userLng,
-      radius
+      radius,
     } = req.query;
 
     const query = {};
@@ -180,28 +172,12 @@ export const getListings = async (req, res) => {
     const minA = minArea !== undefined ? Number(minArea) : undefined;
     const maxA = maxArea !== undefined ? Number(maxArea) : undefined;
 
-    if (
-      (minPrice !== undefined && isNaN(minP)) ||
-      (maxPrice !== undefined && isNaN(maxP))
-    ) {
-      return res.status(400).json({ message: "minPrice and maxPrice must be numbers" });
-    }
-    if (
-      (minArea !== undefined && isNaN(minA)) ||
-      (maxArea !== undefined && isNaN(maxA))
-    ) {
-      return res.status(400).json({ message: "minArea and maxArea must be numbers" });
-    }
-
     if (minP !== undefined || maxP !== undefined) {
-      // Lưu ý: Nếu price trong DB vẫn là String thì so sánh $gte/$lte có thể không chính xác
-      // Tốt nhất nên convert Price trong DB sang Number nếu có thể.
       query.price = {};
       if (minP !== undefined) query.price.$gte = minP;
       if (maxP !== undefined) query.price.$lte = maxP;
     }
-    
-    // Diện tích giờ là Number nên so sánh sẽ chính xác hơn
+
     if (minA !== undefined || maxA !== undefined) {
       query.area = {};
       if (minA !== undefined) query.area.$gte = minA;
@@ -223,18 +199,11 @@ export const getListings = async (req, res) => {
     }
 
     const listings = await Listing.find(query)
-      .populate('owner', 'name profile')
-      .populate('property_type', 'name')
+      .populate("owner", "name profile")
+      .populate("property_type", "name")
       .sort(sortObj)
       .skip(skip)
       .limit(lim);
-
-    if (!listings || listings.length === 0) {
-      return res.status(200).json({
-        message: "Không tìm thấy tin đăng nào phù hợp",
-        listings: [],
-      });
-    }
 
     return res.json({
       message: "Lấy danh sách tin đăng thành công",
@@ -242,9 +211,7 @@ export const getListings = async (req, res) => {
     });
   } catch (error) {
     console.log(error.message);
-    return res.status(500).json({
-      message: "Server error",
-    });
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -252,8 +219,8 @@ export const getListingById = async (req, res) => {
   try {
     const id = req.params.id;
     const listing = await Listing.findById(id)
-      .populate('owner', 'name profile createdAt')
-      .populate('property_type', 'name');
+      .populate("owner", "name profile createdAt")
+      .populate("property_type", "name");
     if (!listing) return res.status(404).json({ message: "Not Found" });
     return res.json(listing);
   } catch (error) {
@@ -264,13 +231,12 @@ export const getListingById = async (req, res) => {
 
 export const getMyListings = async (req, res) => {
   try {
-    if (!req.session || !req.session.user)
-      return res.status(401).json({ message: "Vui lòng đăng nhập" });
+    // 2. Lấy ID từ Token
+    const userId = req.userId;
 
-    const userId = req.session.user._id;
     const listings = await Listing.find({ owner: userId })
-      .populate('owner', 'name profile')
-      .populate('property_type', 'name')
+      .populate("owner", "name profile")
+      .populate("property_type", "name")
       .sort({ createdAt: -1 });
 
     return res.json({ message: "Lấy bài đăng của tôi thành công", listings });
@@ -282,56 +248,61 @@ export const getMyListings = async (req, res) => {
 
 export const updateListing = async (req, res) => {
   try {
-    if (!req.session || !req.session.user)
-      return res.status(401).json({ message: "Vui lòng đăng nhập" });
-
-    const userId = req.session.user._id;
+    // 3. Lấy ID từ Token
+    const userId = req.userId;
     const id = req.params.id;
 
     const listing = await Listing.findById(id);
     if (!listing) return res.status(404).json({ message: "Listing not found" });
 
     if (listing.owner.toString() !== userId.toString()) {
-      return res.status(403).json({ message: "Bạn không có quyền chỉnh sửa bài đăng này" });
+      return res
+        .status(403)
+        .json({ message: "Bạn không có quyền chỉnh sửa bài đăng này" });
     }
 
-    // -------- Xử lý images --------
+    // Xử lý images
     let newImages = [];
     if (req.body.images) {
       if (Array.isArray(req.body.images)) newImages = req.body.images;
       else if (typeof req.body.images === "string")
-        newImages = req.body.images.split(",").map(s => s.trim()).filter(Boolean);
+        newImages = req.body.images
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
     }
 
     const oldImages = listing.images || [];
-    const base64Images = newImages.filter(img => typeof img === "string" && img.startsWith("data:"));
-    const keptImages = newImages.filter(img => typeof img === "object" && img.url);
-    const removedImages = oldImages.filter(old =>
-      !keptImages.some(k => k.public_id === old.public_id)
+    const base64Images = newImages.filter(
+      (img) => typeof img === "string" && img.startsWith("data:")
+    );
+    const keptImages = newImages.filter(
+      (img) => typeof img === "object" && img.url
+    );
+    const removedImages = oldImages.filter(
+      (old) => !keptImages.some((k) => k.public_id === old.public_id)
     );
 
     await Promise.all(
       removedImages.map(async (img) => {
-        if (img.public_id) {
-          await cloudinary.uploader.destroy(img.public_id);
-        }
+        if (img.public_id) await cloudinary.uploader.destroy(img.public_id);
       })
     );
 
     const uploadedImages = await Promise.all(
-      base64Images.map(img =>
+      base64Images.map((img) =>
         cloudinary.uploader.upload(img, { folder: "products" })
       )
     );
 
-    const uploadedConverted = uploadedImages.map(i => ({
+    const uploadedConverted = uploadedImages.map((i) => ({
       url: i.secure_url,
-      public_id: i.public_id
+      public_id: i.public_id,
     }));
 
     const finalImages = [...keptImages, ...uploadedConverted];
 
-    // -------- Cập nhật các trường --------
+    // Cập nhật fields
     const {
       title,
       description,
@@ -342,29 +313,27 @@ export const updateListing = async (req, res) => {
       rental_type,
       location,
       amenities,
-      bedroom, // Mới
-      bathroom // Mới
+      bedroom,
+      bathroom,
     } = req.body;
 
     listing.title = title ?? listing.title;
     listing.description = description ?? listing.description;
-    
-    // Cập nhật area (đảm bảo là số)
     if (area !== undefined) listing.area = Number(area);
-    
     listing.price = price ?? listing.price;
     listing.status = status ?? listing.status;
     listing.property_type = property_type ?? listing.property_type;
     listing.rental_type = rental_type ?? listing.rental_type;
-    listing.amenities = Array.isArray(amenities) ? amenities : listing.amenities;
+    listing.amenities = Array.isArray(amenities)
+      ? amenities
+      : listing.amenities;
     listing.images = finalImages;
-    
-    // Cập nhật bedroom/bathroom (Mới)
     if (bedroom !== undefined) listing.bedroom = Number(bedroom);
     if (bathroom !== undefined) listing.bathroom = Number(bathroom);
 
     if (location) {
-      listing.location.province = location.province ?? listing.location.province;
+      listing.location.province =
+        location.province ?? listing.location.province;
       listing.location.ward = location.ward ?? listing.location.ward;
       listing.location.detail = location.detail ?? listing.location.detail;
 
@@ -381,23 +350,19 @@ export const updateListing = async (req, res) => {
 
     await listing.save();
 
-    return res.json({
-      message: "Cập nhật thành công",
-      listing
-    });
+    return res.json({ message: "Cập nhật thành công", listing });
   } catch (error) {
     console.log(error);
-    return res.status(500).json({ message: "Server error", error: error.message });
+    return res
+      .status(500)
+      .json({ message: "Server error", error: error.message });
   }
 };
 
 export const deleteListing = async (req, res) => {
   try {
-    if (!req.session || !req.session.user) {
-      return res.status(401).json({ message: "Vui lòng đăng nhập" });
-    }
-
-    const userId = req.session.user._id;
+    // 4. Lấy ID từ Token
+    const userId = req.userId;
     const id = req.params.id;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -408,14 +373,14 @@ export const deleteListing = async (req, res) => {
     if (!listing) return res.status(404).json({ message: "Not Found" });
 
     if (listing.owner.toString() !== userId.toString()) {
-      return res.status(403).json({ message: "Bạn không có quyền xóa bài đăng này" });
+      return res
+        .status(403)
+        .json({ message: "Bạn không có quyền xóa bài đăng này" });
     }
 
     await Promise.all(
       listing.images.map(async (img) => {
-        if (img.public_id) {
-          await cloudinary.uploader.destroy(img.public_id);
-        }
+        if (img.public_id) await cloudinary.uploader.destroy(img.public_id);
       })
     );
 
@@ -424,6 +389,83 @@ export const deleteListing = async (req, res) => {
     return res.json({ message: "Tin đăng được xóa thành công" });
   } catch (error) {
     console.log(error);
-    return res.status(500).json({ message: "Server Error", error: error.message });
+    return res
+      .status(500)
+      .json({ message: "Server Error", error: error.message });
+  }
+};
+
+export const searchListings = async (req, res) => {
+  console.log("Search Params:", req.query);
+  try {
+    const {
+      keyword,
+      province,
+      property_type,
+      rental_type,
+      bedroom,
+      minPrice,
+      maxPrice,
+      minArea,
+      maxArea,
+      sort,
+    } = req.query;
+
+    let query = {};
+
+    // Dùng new RegExp để an toàn hơn
+    if (keyword) {
+      const searchRegex = new RegExp(keyword, "i");
+      query.$or = [
+        { title: searchRegex },
+        { "location.detail": searchRegex },
+        { "location.province": searchRegex },
+        { "location.ward": searchRegex },
+      ];
+    }
+
+    if (province) query["location.province"] = new RegExp(province, "i");
+    if (property_type && property_type.length === 24)
+      query.property_type = property_type;
+    if (rental_type) query.rental_type = rental_type;
+    if (bedroom) query.bedroom = { $gte: Number(bedroom) };
+
+    if (minPrice || maxPrice) {
+      query.price = {};
+      if (minPrice) query.price.$gte = Number(minPrice);
+      if (maxPrice) query.price.$lte = Number(maxPrice);
+    }
+
+    if (minArea || maxArea) {
+      query.area = {};
+      if (minArea) query.area.$gte = Number(minArea);
+      if (maxArea) query.area.$lte = Number(maxArea);
+    }
+
+    let sortOption = { createdAt: -1 };
+    if (sort === "price_asc") sortOption = { price: 1 };
+    if (sort === "price_desc") sortOption = { price: -1 };
+
+    // --- SỬA LỖI SORT AREA ---
+    if (sort === "area_asc") sortOption = { area: 1 }; // Trước đây bạn gán nhầm là price: 1
+    if (sort === "area_desc") sortOption = { area: -1 }; // Trước đây bạn gán nhầm là price: -1
+
+    if (sort === "oldest") sortOption = { createdAt: 1 };
+    if (sort === "newest") sortOption = { createdAt: -1 };
+
+    const listings = await Listing.find(query)
+      .sort(sortOption)
+      .limit(20)
+      .populate("property_type", "name")
+      .populate("owner", "username avatar name email");
+
+    res.status(200).json({
+      success: true,
+      count: listings.length,
+      data: listings,
+    });
+  } catch (error) {
+    console.error("Search Error:", error);
+    res.status(500).json({ success: false, message: "Search Error" });
   }
 };

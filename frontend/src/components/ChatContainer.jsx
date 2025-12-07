@@ -30,7 +30,7 @@ const getUserDisplayName = (user) => {
 const ChatContainer = ({ currentChat, isWidget }) => {
   const { socket } = useSocketContext();
   const { currentUser } = useAuthContext();
-  const { updateLastMessage } = useChatStore();
+  const { fetchChats } = useChatStore();
   
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
@@ -105,7 +105,7 @@ const ChatContainer = ({ currentChat, isWidget }) => {
     try {
       const res = await api.post(`/chats/${currentChat._id}/messages`, { content: newMessage });
       setNewMessage("");
-      updateLastMessage(res.data);
+      fetchChats();
     } catch (err) {
       console.error("Lỗi gửi tin:", err);
     }

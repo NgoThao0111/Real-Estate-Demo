@@ -8,12 +8,14 @@ import {
   HStack,
   Text,
   useColorMode,
-  MenuDivider
+  MenuDivider,
+  Button
 } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
 import { useState } from "react";
 
 import { FiFileText, FiMessageCircle, FiSettings, FiLogOut } from "react-icons/fi";
+import { FaRegUserCircle } from "react-icons/fa";
 import { ImStarEmpty } from "react-icons/im";
 import { MdOutlineLightMode, MdOutlineDarkMode } from "react-icons/md";
 
@@ -35,11 +37,17 @@ export default function UserMenu({ user, logoutUser }) {
         <MenuButton>
           <HStack cursor="pointer">
             <Avatar name={getUserDisplayName(user)} size="sm" />
-            <Text fontWeight="medium">{getUserDisplayName(user)}</Text>
+            <Text fontWeight="medium" display={{base: "none", lg: "flex"}}>{getUserDisplayName(user)}</Text>
           </HStack>
         </MenuButton>
 
         <MenuList>
+          <MenuItem as={Link} to="/" icon={<FaRegUserCircle />}>
+            Trang cá nhân
+          </MenuItem>
+
+          <MenuDivider/>
+
           <MenuItem as={Link} to="/my-posts" icon={<FiFileText />}>
             Bài đăng của tôi
           </MenuItem>
@@ -52,7 +60,7 @@ export default function UserMenu({ user, logoutUser }) {
             Nhắn tin
           </MenuItem>
 
-          {/* <MenuItem 
+          <MenuItem 
             icon=
             {colorMode === "light" ? (
               <MdOutlineDarkMode/>
@@ -62,7 +70,7 @@ export default function UserMenu({ user, logoutUser }) {
             onClick={toggleColorMode}
           >
             {colorMode === "light" ? "Chế độ tối" : "Chế độ sáng"}
-          </MenuItem> */}
+          </MenuItem>
           <MenuDivider />
 
           <MenuItem

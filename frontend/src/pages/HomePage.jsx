@@ -182,7 +182,7 @@ const HomePage = () => {
           </Box>
 
           <Box
-            h="500px"
+            h="600px"
             w="100%"
             borderRadius="xl"
             overflow="hidden"
