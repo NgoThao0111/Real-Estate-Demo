@@ -9,13 +9,13 @@ import { useSocketContext } from "../context/SocketContext.jsx";
 const getUserDisplayName = (user) => {
   if (!user) return "Người dùng";
   if (user.name) return user.name;
-  return user.username || "Người dùng"; // Fallback thêm username nếu name không có
+  return user.name || user.username || "Người dùng"; 
 };
 
 const ChatPage = () => {
   const { user } = useUserStore();
   const { socket } = useSocketContext();
-  const { conversations, getConversations, updateLastMessage } = useChatStore();
+  const { chats, fetchChats, addMessage } = useChatStore();
   const [searchParams] = useSearchParams();
   const [currentChat, setCurrentChat] = useState(null);
 
@@ -30,7 +30,7 @@ const ChatPage = () => {
 
     const handleNewMessage = (msg) => {
       // Khi có tin nhắn bất kỳ tới, cập nhật danh sách chat bên trái
-      updateLastMessage(msg);
+      addMessage(msg);
     };
 
     socket.on("new_message", handleNewMessage);
@@ -38,26 +38,26 @@ const ChatPage = () => {
     return () => {
       socket.off("new_message", handleNewMessage);
     };
-  }, [socket, updateLastMessage]);
+  }, [socket, addMessage]);
 
   // Lấy danh sách cuộc hội thoại
   useEffect(() => {
     if (user) {
-      getConversations();
+      fetchChats();
     }
-  }, [user, getConversations]);
+  }, [user, fetchChats]);
 
   // Xử lý conversation ID từ URL parameter
   useEffect(() => {
     const conversationId = searchParams.get('conversation');
-    // Thêm check an toàn (conversations || [])
-    if (conversationId && conversations?.length > 0) {
-      const targetConversation = conversations.find(conv => conv._id === conversationId);
+    // Thêm check an toàn (chats || [])
+    if (conversationId && chats?.length > 0) {
+      const targetConversation = chats.find(conv => conv._id === conversationId);
       if (targetConversation) {
         setCurrentChat(targetConversation);
       }
     }
-  }, [searchParams, conversations]);
+  }, [searchParams, chats]);
 
   return (
     <Box p={5} h="90vh" >
@@ -70,12 +70,12 @@ const ChatPage = () => {
           </Box>
           
           <VStack align="stretch" spacing={0} overflowY="auto" h="calc(100% - 60px)">
-            {/* Check an toàn: conversations có thể là null lúc đầu */}
-            {(!conversations || conversations.length === 0) && <Text p={4} color="gray.500">Chưa có tin nhắn nào.</Text>}
+            {/* Check an toàn: chats có thể là null lúc đầu */}
+            {(!chats || chats.length === 0) && <Text p={4} color="gray.500">Chưa có tin nhắn nào.</Text>}
             
-            {conversations?.map((chat) => {
+            {chats?.map((chat) => {
               // SỬA LỖI: Thêm dấu ? cho participants để tránh crash nếu dữ liệu lỗi
-              const otherUser = chat.participants?.find(p => p._id !== user?.id);
+              const otherUser = chat.participants?.find(p => p._id !== user?._id);
               const isActive = currentChat?._id === chat._id;
 
               return (
