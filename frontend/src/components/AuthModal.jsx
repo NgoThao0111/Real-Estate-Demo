@@ -13,10 +13,13 @@ import {
   ModalOverlay,
   VStack,
   Text,
-  useToast, // Chuyển import này lên trên cùng
+  Divider,
+  useToast,
 } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { useUserStore } from "../store/user.js";
+import { GoogleOAuthProvider } from "@react-oauth/google";
+import { GoogleLogin } from "@react-oauth/google";
 
 const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
   const [mode, setMode] = useState(defaultMode);
@@ -27,14 +30,17 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
     password: "",
     confirmPassword: "",
     name: "",
+    email: "",
     phone: "",
     role: "guest", // Mặc định role guest nếu backend yêu cầu
+    type: "login",
   });
 
   const toast = useToast();
 
   // Lấy các hàm từ Store (Lưu ý: Không lấy checkSession nữa)
-  const { registerUser, loginUser, loading } = useUserStore();
+  const { registerUser, loginUser, loading, requestLoginGoogle } =
+    useUserStore();
 
   // Reset form khi mở modal
   useEffect(() => {
@@ -45,8 +51,10 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
         password: "",
         confirmPassword: "",
         name: "",
+        email: "",
         phone: "",
         role: "guest",
+        type: "login",
       });
     }
   }, [isOpen, defaultMode]);
@@ -110,6 +118,16 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
           position: "top",
         });
       }
+      if (!formData.email.includes("@")) {
+        return toast({
+          title: "Email không hợp lệ",
+          description: "Vui lòng nhập đúng định dạng email.",
+          status: "warning",
+          duration: 3000,
+          isClosable: true,
+          position: "top",
+        });
+      }
 
       const { success, message } = await registerUser(formData);
 
@@ -137,6 +155,38 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
     }
   };
 
+  const handleSuccess = async (response) => {
+    const { credential } = response; //Nhan ID token tu google
+    console.log(credential);
+    try {
+      const { success, message } = await requestLoginGoogle(credential);
+      if (!success) {
+        toast({
+          title: "Đăng nhập thất bại",
+          description: message,
+          status: "error",
+          duration: 3000,
+          isClosable: true,
+          position: "top",
+        });
+      } else {
+        toast({
+          title: "Chào mừng trở lại!",
+          description: message,
+          status: "success",
+          duration: 3000,
+          isClosable: true,
+          position: "top",
+        });
+
+        window.location.reload();
+        onClose();
+      }
+    } catch (error) {
+      console.error("Login Failed", error);
+    }
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} isCentered size="md">
       <ModalOverlay />
@@ -158,7 +208,6 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
                 placeholder="Nhập tên đăng nhập"
               />
             </FormControl>
-
             {/* Password */}
             <FormControl isRequired>
               <FormLabel>Mật khẩu</FormLabel>
@@ -196,6 +245,17 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
                 </FormControl>
 
                 <FormControl isRequired>
+                  <FormLabel>Email</FormLabel>
+                  <Input
+                    name="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="example@gmail.com"
+                  />
+                </FormControl>
+
+                <FormControl isRequired>
                   <FormLabel>Số điện thoại</FormLabel>
                   <Input
                     name="phone"
@@ -207,6 +267,27 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
                 </FormControl>
               </>
             )}
+
+            {/* 3. Divider ngăn cách */}
+            <HStack w="full" py={2}>
+              <Divider />
+              <Text fontSize="sm" whiteSpace="nowrap" color="gray.500">
+                Hoặc tiếp tục với
+              </Text>
+              <Divider />
+            </HStack>
+
+            {/* 4. Google Login Button */}
+            <GoogleOAuthProvider
+              clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}
+            >
+              <GoogleLogin
+                onSuccess={handleSuccess}
+                onError={() => {
+                  console.log("Login Failed");
+                }}
+              />
+            </GoogleOAuthProvider>
 
             {/* Switch Mode Link */}
             <HStack justify="center" pt={2} w="full">
