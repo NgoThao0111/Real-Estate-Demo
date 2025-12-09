@@ -8,7 +8,9 @@ import {
   Text,
   Box,
   Heading,
-  VStack, // Thêm VStack để xếp chồng ảnh và map
+  VStack,
+  Button,
+  HStack,
 } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -19,6 +21,7 @@ import ListingImageSection from "../components/ListingImageSection.jsx";
 import ListingInfoSection from "../components/ListingInfoSection.jsx";
 // 1. Import Component MapboxMap
 import MapboxMap from "../components/MapboxMap.jsx";
+import { FaDirections, FaMapMarkerAlt } from "react-icons/fa";
 
 const ListingDetailPage = () => {
   const { id } = useParams();
@@ -31,6 +34,8 @@ const ListingDetailPage = () => {
   const [listing, setListing] = useState(null);
   const [loading, setLoading] = useState(true);
   const [chatLoading, setChatLoading] = useState(false);
+
+  const [mapMode, setMapMode] = useState("view");
 
   useEffect(() => {
     const loadListing = async () => {
@@ -141,7 +146,6 @@ const ListingDetailPage = () => {
         <GridItem>
           {/* Dùng VStack để xếp ảnh và map theo chiều dọc, cách nhau 8 đơn vị */}
           <VStack spacing={8} align="stretch">
-            
             {/* Phần Ảnh */}
             <ListingImageSection
               listing={listing}
@@ -150,33 +154,56 @@ const ListingDetailPage = () => {
             />
 
             {/* --- 3. PHẦN BẢN ĐỒ (Thêm mới) --- */}
-            <Box 
-                p={5} 
-                border="1px solid" 
-                borderColor="gray.200" 
-                borderRadius="lg" 
-                boxShadow="sm"
-                bg="white"
+            <Box
+              p={5}
+              border="1px solid"
+              borderColor="gray.200"
+              borderRadius="lg"
+              boxShadow="sm"
+              bg="white"
             >
-                <Heading size="md" mb={4}>Vị trí bất động sản</Heading>
-                
-                <Text color="gray.600" mb={4}>
-                    {listing.location.detail}, {listing.location.ward}, {listing.location.province}
-                </Text>
+              <HStack justifyContent="space-between" mb={4} wrap="wrap" gap={2}>
+                <Heading size="md">Vị trí bất động sản</Heading>
 
-                {coords && coords.length === 2 ? (
-                    <MapboxMap 
-                        mode="view" 
-                        initialCoords={coords} 
-                        height="400px" 
-                    />
-                ) : (
-                    <Box h="200px" bg="gray.50" display="flex" alignItems="center" justifyContent="center" borderRadius="md">
-                        <Text color="gray.500">Chưa có thông tin vị trí trên bản đồ</Text>
-                    </Box>
+                {coords && coords.length === 2 && (
+                  <Button
+                    size="sm"
+                    colorScheme={mapMode === "view" ? "blue" : "gray"}
+                    variant={mapMode === "view" ? "solid" : "outline"}
+                    leftIcon={
+                      mapMode === "view" ? <FaDirections /> : <FaMapMarkerAlt />
+                    }
+                    onClick={() =>
+                      setMapMode(mapMode === "view" ? "directions" : "view")
+                    }
+                  >
+                    {mapMode === "view" ? "Chỉ đường tới đây" : "Xem vị trí"}
+                  </Button>
                 )}
-            </Box>
+              </HStack>
 
+              <Text color="gray.600" mb={4}>
+                {listing.location.detail}, {listing.location.ward},{" "}
+                {listing.location.province}
+              </Text>
+
+              {coords && coords.length === 2 ? (
+                <MapboxMap mode={mapMode} initialCoords={coords} height={mapMode === "directions" ? "600px" : "400px"} />
+              ) : (
+                <Box
+                  h="200px"
+                  bg="gray.50"
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                  borderRadius="md"
+                >
+                  <Text color="gray.500">
+                    Chưa có thông tin vị trí trên bản đồ
+                  </Text>
+                </Box>
+              )}
+            </Box>
           </VStack>
         </GridItem>
 

@@ -2,8 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import MapboxGeocoder from "@mapbox/mapbox-gl-geocoder";
 import "mapbox-gl/dist/mapbox-gl.css";
+import MapboxDirections from "@mapbox/mapbox-gl-directions/dist/mapbox-gl-directions";
+import "@mapbox/mapbox-gl-directions/dist/mapbox-gl-directions.css";
 import "@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css";
-import { createRoot } from "react-dom/client"; 
+import { createRoot } from "react-dom/client";
 import { useNavigate } from "react-router-dom";
 
 import { Box } from "@chakra-ui/react";
@@ -24,7 +26,9 @@ const MapboxMap = ({
   const mapRef = useRef(null);
   const markerRef = useRef(null);
   const geocoderRef = useRef(null);
-  const markersArrayRef = useRef([]); // Lưu danh sách marker để ẩn/hiện
+  const markersArrayRef = useRef([]);
+  const directionsRef = useRef(null);
+  const geolocateRef = useRef(null);
 
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const navigate = useNavigate();
@@ -57,6 +61,88 @@ const MapboxMap = ({
     }
     .mapboxgl-marker:hover {
       z-index: 99 !important; /* Đè lên các marker khác */
+    }
+
+    .mapboxgl-ctrl-directions {
+      min-width: 250px !important;
+      max-width: 300px !important;
+    }
+
+    .mapbox-directions-instructions {
+      max-height: 250px !important;
+      overflow-y: auto !important;
+    }
+
+    .mapbox-directions-destination {
+      display: none !important;
+    }
+
+    /* 1. Tăng kích thước và làm nổi bật nút */
+    .mapboxgl-ctrl-geolocate {
+      width: 40px !important;
+      height: 40px !important;
+      border-radius: 8px !important; /* Bo góc mềm mại hơn */
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15) !important; /* Đổ bóng rõ hơn */
+      // border: 2px solid #3182ce !important; /* Viền màu xanh nổi bật */
+      transition: all 0.2s ease-in-out;
+    }
+
+    /* 2. Icon bên trong to hơn và đổi màu xanh */
+    .mapboxgl-ctrl-geolocate .mapboxgl-ctrl-icon {
+      background-size: 24px 24px !important; /* Icon to hơn (mặc định là 20px) */
+      filter: invert(38%) sepia(68%) saturate(3365%) hue-rotate(190deg)
+        brightness(98%) contrast(94%); /* Đổi màu icon sang xanh dương */
+    }
+
+    /* 3. Hiệu ứng khi rê chuột vào (Hover) */
+    .mapboxgl-ctrl-geolocate:hover {
+      background-color: #ebf8ff !important; /* Nền xanh nhạt khi hover */
+      transform: scale(1.05); /* Phóng to nhẹ */
+    }
+
+    /* 4. Khi đang định vị (Active) */
+    .mapboxgl-ctrl-geolocate.mapboxgl-ctrl-geolocate-active {
+      background-color: #3182ce !important; /* Nền xanh đậm khi đang active */
+    }
+    .mapboxgl-ctrl-geolocate.mapboxgl-ctrl-geolocate-active
+      .mapboxgl-ctrl-icon {
+      filter: invert(100%) !important; /* Icon chuyển sang màu trắng */
+      animation: pulse 2s infinite; /* Hiệu ứng "thở" nhẹ */
+    }
+
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(49, 130, 206, 0.7);
+      }
+      70% {
+        box-shadow: 0 0 0 10px rgba(49, 130, 206, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(49, 130, 206, 0);
+      }
+    }
+
+    /* 5. Thêm Tooltip "Vị trí của bạn" (Tùy chọn) */
+    /* Tạo một pseudo-element để làm tooltip */
+    .mapboxgl-ctrl-geolocate::after {
+      content: "Vị trí của bạn";
+      position: absolute;
+      left: 110%; /* Hiện bên phải nút */
+      top: 50%;
+      transform: translateY(-50%);
+      background: #333;
+      color: white;
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    /* Hiện tooltip khi hover */
+    .mapboxgl-ctrl-group:hover .mapboxgl-ctrl-geolocate::after {
+      opacity: 1;
     }
   `;
 
@@ -120,18 +206,6 @@ const MapboxMap = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // --- HANDLE MODES CHANGE ---
-  useEffect(() => {
-    if (!isMapLoaded || !mapRef.current) return;
-    cleanUp();
-
-    if (mode === "picker") setupPickerMode();
-    else if (mode === "view") setupViewMode();
-    else if (mode === "explorer") setupExplorerMode();
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isMapLoaded, mode, JSON.stringify(initialCoords), JSON.stringify(data)]);
-
   const cleanUp = () => {
     if (!mapRef.current) return;
     if (markerRef.current) {
@@ -147,7 +221,35 @@ const MapboxMap = ({
       markersArrayRef.current.forEach((marker) => marker.remove());
       markersArrayRef.current = [];
     }
+    if (
+      directionsRef.current &&
+      mapRef.current.hasControl(directionsRef.current)
+    ) {
+      mapRef.current.removeControl(directionsRef.current);
+      directionsRef.current = null;
+    }
+
+    if (
+      geolocateRef.current &&
+      mapRef.current.hasControl(geolocateRef.current)
+    ) {
+      mapRef.current.removeControl(geolocateRef.current);
+      geolocateRef.current = null;
+    }
   };
+
+  // --- HANDLE MODES CHANGE ---
+  useEffect(() => {
+    if (!isMapLoaded || !mapRef.current) return;
+    cleanUp();
+
+    if (mode === "picker") setupPickerMode();
+    else if (mode === "view") setupViewMode();
+    else if (mode === "explorer") setupExplorerMode();
+    else if (mode === "directions") setupDirectionsMode();
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMapLoaded, mode, JSON.stringify(initialCoords), JSON.stringify(data)]);
 
   // --- 1. PICKER MODE (Chọn vị trí) ---
   const setupPickerMode = () => {
@@ -278,6 +380,54 @@ const MapboxMap = ({
       });
 
       markersArrayRef.current.push(marker);
+    });
+  };
+
+  const setupDirectionsMode = () => {
+    directionsRef.current = new MapboxDirections({
+      accessToken: mapboxgl.accessToken,
+      unit: "metric", // Hiển thị km/m thay vì dặm
+      profile: "mapbox/driving", // Mặc định là lái xe (có thể là walking, cycling)
+      controls: {
+        inputs: true,
+        instructions: true,
+        profileSwitcher: true,
+      },
+      language: "vi",
+      placeholderOrigin: "Vị trí của bạn",
+      placeholderDestination: "Điểm đến",
+    });
+
+    mapRef.current.addControl(directionsRef.current, "top-left");
+
+    // Tự động set điểm ĐẾN (Destination) là initialCoords
+    if (initialCoords && initialCoords.length === 2) {
+      directionsRef.current.setDestination(initialCoords);
+    }
+
+    markerRef.current = new mapboxgl.Marker({
+      color: "#E53935",
+      draggable: false,
+    })
+      .setLngLat(initialCoords)
+      .addTo(mapRef.current);
+
+    geolocateRef.current = new mapboxgl.GeolocateControl({
+      positionOptions: {
+        enableHighAccuracy: true,
+      },
+      trackUserLocation: true, // Theo dõi nếu người dùng di chuyển
+      showUserHeading: true, // Hiển thị hướng nhìn
+    });
+
+    mapRef.current.addControl(geolocateRef.current, "top-left");
+
+    geolocateRef.current.on("geolocate", (e) => {
+      const lng = e.coords.longitude;
+      const lat = e.coords.latitude;
+
+      // Tự động điền vào ô A của Directions
+      directionsRef.current.setOrigin([lng, lat]);
     });
   };
 

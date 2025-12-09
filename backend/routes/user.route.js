@@ -9,6 +9,7 @@ import {
   toggleSaveListing,
   getSavedListings,
   searchUsers,
+  loginGoogle,
   // checkSession, // Hàm này có thể bỏ vì ta đã có /api/check-auth ở server.js
 } from "../controllers/user.controller.js";
 import { verifyToken } from "../middleware/verifyToken.js"; // <--- QUAN TRỌNG: Import middleware
@@ -18,6 +19,7 @@ const router = express.Router();
 // --- 1. ROUTES CÔNG KHAI (Không cần đăng nhập) ---
 router.post("/register", userRegister);
 router.post("/login", loginUser);
+router.post("/login-google", loginGoogle);
 router.post("/logout", logoutUser); 
 
 // --- 2. ROUTES BẢO MẬT (Cần đăng nhập) ---

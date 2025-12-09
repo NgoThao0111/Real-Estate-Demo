@@ -21,11 +21,14 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    type: {
+        type: String,
+        enum: ['login', 'login-google'], default: 'login'
+    },
 
     //profile
     profile: {
-        firstName: String,
-        lastName: String,
+        fullName: String,
         gender: {
             type: String,
             enum: ['male', 'female', 'other']

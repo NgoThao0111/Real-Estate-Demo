@@ -46,7 +46,6 @@ export const useUserStore = create((set) => ({
 
       set({ loading: true, error: null });
       
-      // Không cần { withCredentials: true } ở đây nữa vì api config đã có
       const res = await api.post("/users/login", loginData);
 
       // Login thành công -> Lưu user vào state
@@ -55,11 +54,30 @@ export const useUserStore = create((set) => ({
         loading: false,
         error: null,
       });
-
-      // Sau khi login, tiện thể fetch luôn danh sách tin đã lưu
-      // (Dùng get().fetchSavedListings để tái sử dụng code)
-      // Nhưng vì hàm login là async, ta cứ để nó chạy ngầm hoặc gọi sau
       
+      return { success: true, message: "Đăng nhập thành công" };
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || error.message;
+      set({
+        loading: false,
+        error: errorMessage,
+        user: null,
+      });
+      return { success: false, message: errorMessage };
+    }
+  },
+
+  requestLoginGoogle: async (tokenGoogle) => {
+    set({ loading: true, error: null });
+    try {
+      const res = await api.post('/users/login-google', { tokenGoogle: tokenGoogle });
+      
+      set({
+        user: res.data.user,
+        loading: false,
+        error: null,
+      });
+
       return { success: true, message: "Đăng nhập thành công" };
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message;
