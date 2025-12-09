@@ -121,9 +121,9 @@ const ChatPage = () => {
               boxShadow="sm"
               overflow="hidden" 
               borderWidth="2px"
-              borderColor={borderColor} // Thêm borderColor cho đồng bộ
+              borderColor={borderColor} 
             >
-              <Heading size="lg" mb={2}>Chào {user?.username || user?.name} 👋</Heading>
+              <Heading size="lg" mb={2}>Chào {user?.name || user?.username} </Heading>
               <Text>Chọn một cuộc hội thoại để bắt đầu chat</Text>
             </Flex>
           )}
