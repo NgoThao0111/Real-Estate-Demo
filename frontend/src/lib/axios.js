@@ -6,7 +6,10 @@ const { toast } = createStandaloneToast();
 
 const api = axios.create({
   // URL Backend (Lấy từ biến môi trường hoặc mặc định localhost)
-  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api",
+  baseURL: import.meta.env.MODE === "development"
+    ? (import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api")
+    : "/api",
+  //baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api",
 
   // Quan trọng: Cho phép gửi/nhận Cookie (JWT/Session) giữa client và server
   withCredentials: true,
@@ -28,6 +31,7 @@ api.interceptors.response.use(
         }
       });
 
+      // Hiển thị toast chỉ một lần
       if (!toast.isActive("session-expired")) {
         toast({
           id: "session-expired",
@@ -39,15 +43,13 @@ api.interceptors.response.use(
           position: "top",
         });
       }
-    }
 
-    localStorage.setItem("triggerLoginModal", "true");
-
-    window.location.href = "/";
-    // 3. Chuyển hướng về Login sau 1.5s (để người dùng kịp đọc thông báo)
-    setTimeout(() => {
+      // Đặt cờ cho AuthContext để xử lý chuyển hướng (tránh nhiều lần chuyển hướng)
+      localStorage.setItem("triggerLoginModal", "true");
+      
+      // Phát sự kiện cho các listener (tùy chọn, nếu bạn sử dụng nó)
       window.dispatchEvent(new Event("auth:unauthorized"));
-    }, 2000);
+    }
 
     // Trả lỗi về (reject) để các hàm gọi API ở component biết mà tắt Loading (Spinner)
     return Promise.reject(error);

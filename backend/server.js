@@ -13,12 +13,15 @@ import listingRoutes from "./routes/list.route.js";
 import propertyTypeRoutes from "./routes/property_type.route.js";
 import chatRoutes from './routes/chat.route.js';
 import reportRoutes from "./routes/report.route.js"
+import path from 'path';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
+
+const __dirname = path.resolve
 
 // --- 1. CẤU HÌNH SERVER ---
 
@@ -182,6 +185,14 @@ app.get('/api/check-auth', async (req, res) => { // Thêm async
         }
     });
 });
+
+if (process.env.NODE_ENV === "production") {
+	app.use(express.static(path.join(__dirname, "/frontend/dist")));
+
+	app.get("*", (req, res) => {
+		res.sendFile(path.resolve(__dirname, "frontend", "dist", "index.html"));
+	});
+}
 
 // --- 6. KHỞI CHẠY SERVER ---
 httpServer.listen(PORT, () => {
