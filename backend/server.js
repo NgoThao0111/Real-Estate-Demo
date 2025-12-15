@@ -2,38 +2,81 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import http from "http";
+import https from "https"; // Import https
+import fs from "fs";       // Import fs
+import { URL } from "url"; // Import URL
 import { Server } from "socket.io";
 import cookieParser from "cookie-parser";
 import jwt from "jsonwebtoken";
-import cookie from "cookie"; // Thư viện để parse cookie header của Socket
+import cookie from "cookie"; 
 import User from "./models/user.model.js";
 import { connectDB } from "./config/db.js";
+
+// Import Routes
 import userRoutes from "./routes/user.route.js";
 import listingRoutes from "./routes/list.route.js";
 import propertyTypeRoutes from "./routes/property_type.route.js";
 import chatRoutes from "./routes/chat.route.js";
 import reportRoutes from "./routes/report.route.js";
-import https from "https";
-import fs from "fs";
-import { URL } from "url";
+import adminRoutes from "./routes/admin.route.js";
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || "https://localhost:5173";
 
-// --- 1. CẤU HÌNH SERVER ---
+// --- 1. CẤU HÌNH CORS (QUAN TRỌNG CHO DOCKER) ---
+// Danh sách các nguồn được phép truy cập
+const allowedOrigins = [
+  process.env.FRONTEND_ORIGIN, // Giá trị từ .env (VD: https://localhost:5173)
+  "http://localhost:5173",     // Vite Local
+  "http://localhost:3000",     // Next.js Local
+  "http://localhost",          // Nginx / Docker (Port 80)
+  "http://127.0.0.1",          // Loopback IP
+  "https://localhost:5173"     // HTTPS Local
+];
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Cho phép các request không có origin (như Postman, Server-to-Server, Mobile App)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1 || origin === process.env.FRONTEND_ORIGIN) {
+      callback(null, true);
+    } else {
+      console.log("Blocked by CORS:", origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true, // Bắt buộc để nhận Cookie
+};
+
+app.use(cors(corsOptions));
+
+// --- 2. CẤU HÌNH PROXY (BẮT BUỘC CHO COOKIE TRONG DOCKER/NGINX) ---
+// Giúp Express tin tưởng header X-Forwarded-Proto từ Nginx
+app.set("trust proxy", 1); 
+
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
+app.use(cookieParser());
+
+// --- 3. KHỞI TẠO SERVER (HTTP vs HTTPS) ---
 let server;
 
-if (process.env.NODE_ENV === 'production') {
-  console.log('Running in Production mode (HTTP)');
-  app.set("trust proxy", 1);
+// Kiểm tra biến môi trường để biết có đang chạy trong Docker không
+const isDocker = process.env.DOCKER_ENV === 'true'; 
+const isProduction = process.env.NODE_ENV === 'production';
+
+if (isProduction || isDocker) {
+  // TRƯỜNG HỢP 1: Chạy trong Docker hoặc Production
+  // Chúng ta dùng HTTP thường. Nginx bên ngoài sẽ lo phần HTTPS.
+  console.log(`Running in ${isDocker ? 'Docker' : 'Production'} mode (HTTP Only)`);
   server = http.createServer(app);
 } else {
-  // --- MÔI TRƯỜNG LOCAL ---
-  
-  console.log('Running in Development mode (HTTPS)');
+  // TRƯỜNG HỢP 2: Chạy Local Dev (Không dùng Docker)
+  // Cố gắng chạy HTTPS với chứng chỉ tự ký để giống môi trường thật
+  console.log('Running in Local Development mode (HTTPS)');
   try {
     const options = {
       key: fs.readFileSync(new URL('./localhost-key.pem', import.meta.url)),
@@ -41,64 +84,39 @@ if (process.env.NODE_ENV === 'production') {
     };
     server = https.createServer(options, app);
   } catch (error) {
-    console.error("Lỗi: Không tìm thấy file chứng chỉ SSL. Hãy chạy mkcert trước!");
-    process.exit(1);
+    console.error("⚠️ CẢNH BÁO: Không tìm thấy chứng chỉ SSL (localhost.pem).");
+    console.error("👉 Đang chuyển về chế độ HTTP thường.");
+    server = http.createServer(app);
   }
 }
 
-app.use(
-  cors({
-    origin: FRONTEND_ORIGIN,
-    credentials: true,
-  })
-);
-
-// Khởi tạo Socket.io với cấu hình CORS chuẩn
+// --- 4. SOCKET.IO SETUP ---
 const io = new Server(server, {
   cors: {
-    origin: FRONTEND_ORIGIN || "https://localhost:5173",
-    credentials: true, // Bắt buộc true để nhận Cookie JWT
+    origin: allowedOrigins, // Dùng chung cấu hình với Express
+    credentials: true,
     methods: ["GET", "POST"],
   },
 });
 
-app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ limit: "50mb", extended: true }));
-app.use(cookieParser()); // Để Express đọc được cookie 'token'
-
-// Middleware gắn 'io' vào req để Controller dùng (Gửi thông báo realtime)
+// Middleware để inject io vào request (cho Controller dùng)
 app.use((req, res, next) => {
   req.io = io;
   next();
 });
 
-// --- 3. MIDDLEWARE XÁC THỰC SOCKET.IO (DÙNG JWT) ---
-// Logic: Socket không đi qua express middleware, nên phải tự parse cookie và verify token
+// --- 5. SOCKET AUTHENTICATION MIDDLEWARE ---
 io.use((socket, next) => {
   try {
-    // Lấy chuỗi cookie từ header
     const cookieHeader = socket.handshake.headers.cookie;
+    if (!cookieHeader) return next(new Error("Authentication error: No cookie found"));
 
-    if (!cookieHeader) {
-      return next(new Error("Authentication error: No cookie found"));
-    }
-
-    // Parse cookie string thành object
     const cookies = cookie.parse(cookieHeader);
-    const token = cookies.token; // Tên 'token' phải khớp với tên cookie bạn đặt lúc Login
+    const token = cookies.token;
+    if (!token) return next(new Error("Authentication error: No token provided"));
 
-    if (!token) {
-      return next(new Error("Authentication error: No token provided"));
-    }
-
-    // Verify JWT Token
     jwt.verify(token, process.env.JWT_SECRET_KEY, (err, decoded) => {
-      if (err) {
-        return next(new Error("Authentication error: Invalid token"));
-      }
-
-      // Token hợp lệ -> Gán thông tin user vào socket
-      // 'decoded' chính là payload bạn sign lúc login (thường chứa id, isAdmin...)
+      if (err) return next(new Error("Authentication error: Invalid token"));
       socket.user = decoded;
       next();
     });
@@ -108,37 +126,24 @@ io.use((socket, next) => {
   }
 });
 
-// --- 4. LOGIC SOCKET EVENTS (REAL-TIME) ---
+// --- 6. SOCKET EVENTS ---
 io.on("connection", (socket) => {
-  const user = socket.user; // Lấy từ middleware ở trên
-  const userId = user._id || user.id; // ID người dùng
+  const user = socket.user;
+  const userId = user._id || user.id;
 
-  console.log(`User connected: ${userId}`);
+  // console.log(`User connected: ${userId}`);
 
-  // --- CHAT EVENTS ---
+  socket.on("join_chat", (conversationId) => { socket.join(conversationId); });
+  socket.on("leave_chat", (conversationId) => { socket.leave(conversationId); });
 
-  // Tham gia phòng chat (Conversation)
-  socket.on("join_chat", (conversationId) => {
-    socket.join(conversationId);
-    // console.log(`User ${userId} joined room ${conversationId}`);
+  socket.on("typing", (conversationId) => { 
+    socket.to(conversationId).emit("typing", { conversationId, userId }); 
+  });
+  
+  socket.on("stop_typing", (conversationId) => { 
+    socket.to(conversationId).emit("stop_typing", { conversationId, userId }); 
   });
 
-  // Rời phòng chat
-  socket.on("leave_chat", (conversationId) => {
-    socket.leave(conversationId);
-  });
-
-  // Sự kiện: Đang gõ...
-  socket.on("typing", (conversationId) => {
-    // Gửi cho tất cả người trong phòng TRỪ người gửi
-    socket.to(conversationId).emit("typing", { conversationId, userId });
-  });
-
-  socket.on("stop_typing", (conversationId) => {
-    socket.to(conversationId).emit("stop_typing", { conversationId, userId });
-  });
-
-  // Sự kiện: Đã xem tin nhắn
   socket.on("mark_read", ({ conversationId, messageId }) => {
     socket.to(conversationId).emit("message_read", {
       conversationId,
@@ -147,25 +152,48 @@ io.on("connection", (socket) => {
     });
   });
 
+  // Admin Broadcast
+  socket.on("admin_broadcast", async (payload) => {
+    try {
+      if (!socket.user || socket.user.role !== "admin") return;
+      // Dynamic import model
+      const SystemNotification = (await import("./models/systemNotification.model.js")).default;
+      const { title, message, type = "info", audience = "all" } = payload || {};
+      if (!title || !message) return;
+
+      const notif = await SystemNotification.create({ title, message, type, audience });
+      io.emit("system_notification", { 
+        id: notif._id, 
+        title, 
+        message, 
+        type, 
+        audience, 
+        createdAt: notif.createdAt 
+      });
+    } catch (err) {
+      console.error("admin_broadcast error", err);
+    }
+  });
+
   socket.on("disconnect", () => {
     // console.log("Socket disconnected:", socket.id);
   });
 });
 
-// --- 5. ROUTES API ---
+// --- 7. ROUTES ---
 app.use("/api/users", userRoutes);
 app.use("/api/listings", listingRoutes);
 app.use("/api/property_type", propertyTypeRoutes);
 app.use("/api/chats", chatRoutes);
 app.use("/api/reports", reportRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.get("/", (req, res) => {
-  res.send("Server is up and running (JWT Mode)");
+  res.send("Server is running correctly with Docker/CORS Fixes.");
 });
 
-// API Kiểm tra trạng thái đăng nhập
+// API Check Auth
 app.get("/api/check-auth", async (req, res) => {
-  // Thêm async
   const token = req.cookies.token;
 
   if (!token) {
@@ -178,19 +206,11 @@ app.get("/api/check-auth", async (req, res) => {
     }
 
     try {
-      const user = await User.findById(decoded._id || decoded.id).select(
-        "-password"
-      );
-
+      const user = await User.findById(decoded._id || decoded.id).select("-password");
       if (!user) {
         return res.status(200).json({ isAuthenticated: false, user: null });
       }
-
-      // Trả về full thông tin user (avatar, name...)
-      return res.status(200).json({
-        isAuthenticated: true,
-        user: user,
-      });
+      return res.status(200).json({ isAuthenticated: true, user: user });
     } catch (error) {
       console.log(error);
       return res.status(200).json({ isAuthenticated: false, user: null });
@@ -198,7 +218,7 @@ app.get("/api/check-auth", async (req, res) => {
   });
 });
 
-// --- 6. KHỞI CHẠY SERVER ---
+// --- 8. START SERVER ---
 server.listen(PORT, () => {
   connectDB();
   console.log(`Server running on port ${PORT}`);

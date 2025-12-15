@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { io } from "socket.io-client";
 import { useAuthContext } from "./AuthContext"; // Import hook từ file bạn vừa xong
+import { createStandaloneToast } from "@chakra-ui/react";
 
 const SocketContext = createContext();
 
@@ -28,6 +29,19 @@ export const SocketContextProvider = ({ children }) => {
       });
 
       setSocket(newSocket);
+
+      // Global: Listen for system notifications and show toast
+      const { toast } = createStandaloneToast();
+      newSocket.on("system_notification", (payload) => {
+        toast({
+          title: payload.title || "System Notification",
+          description: payload.message,
+          status: payload.type === "alert" ? "error" : payload.type === "warning" ? "warning" : "info",
+          duration: 8000,
+          isClosable: true,
+          position: "top-right",
+        });
+      });
 
       // (Tùy chọn) Lắng nghe các sự kiện global ở đây nếu muốn (ví dụ: danh sách online)
       // newSocket.on("getOnlineUsers", (users) => { ... });
