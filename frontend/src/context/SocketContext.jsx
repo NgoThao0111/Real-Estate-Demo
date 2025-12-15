@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { io } from "socket.io-client";
 import { useAuthContext } from "./AuthContext"; // Import hook từ file bạn vừa xong
+import { useUserStore } from "../store/user";
 import { createStandaloneToast } from "@chakra-ui/react";
 
 const SocketContext = createContext();
@@ -40,6 +41,39 @@ export const SocketContextProvider = ({ children }) => {
           duration: 8000,
           isClosable: true,
           position: "top-right",
+        });
+      });
+
+      // Forced logout from server (e.g., admin banned the account)
+      const logoutUser = useUserStore.getState().logoutUser;
+      newSocket.on("force_logout", async (payload) => {
+        toast({
+          title: "Đã bị khóa",
+          description: payload?.message || "Tài khoản của bạn đã bị khóa",
+          status: "error",
+          duration: 8000,
+          isClosable: true,
+          position: "top-right",
+        });
+
+        try {
+          // Call existing logout flow which clears cookie and resets state
+          await logoutUser();
+        } catch (e) {
+          // best-effort: redirect to home
+          window.location.href = "/";
+        }
+      });
+
+      // Notify user when their listing status changes
+      newSocket.on('listing_status_changed', (payload) => {
+        toast({
+          title: `Listing ${payload.status}`,
+          description: `Listing ${payload.listingId} status: ${payload.status}`,
+          status: payload.status === 'approved' ? 'success' : payload.status === 'rejected' ? 'error' : 'info',
+          duration: 8000,
+          isClosable: true,
+          position: 'top-right',
         });
       });
 

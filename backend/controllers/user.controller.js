@@ -92,6 +92,11 @@ export const loginUser = async (req, res) => {
       });
     }
 
+    // If account is banned, prevent login
+    if (user.isBanned) {
+      return res.status(403).json({ message: "Tài khoản đã bị khóa" });
+    }
+
     const match = await bcrypt.compare(password, user.password);
     if (!match) {
       return res.status(401).json({
@@ -155,6 +160,11 @@ export const loginGoogle = async (req, res) => {
         phone: "Chưa cập nhật",
         role: "guest",
       });
+    }
+
+    // Prevent banned users logging in via Google
+    if (user.isBanned) {
+      return res.status(403).json({ message: "Tài khoản đã bị khóa" });
     }
 
     generateTokenAndSetCookie(res, user._id, user.role);

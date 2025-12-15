@@ -29,7 +29,7 @@ export const useUserStore = create((set) => ({
         loading: false,
         error: null,
       });
-      return { success: true, message: "Đăng ký thành công!" };
+      return { success: true, message: "Đăng ký thành công!", user: res.data.user };
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message;
       set({ loading: false, error: errorMessage, user: null });
@@ -55,7 +55,7 @@ export const useUserStore = create((set) => ({
         error: null,
       });
       
-      return { success: true, message: "Đăng nhập thành công" };
+      return { success: true, message: "Đăng nhập thành công", user: res.data.user };
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message;
       set({
@@ -78,7 +78,7 @@ export const useUserStore = create((set) => ({
         error: null,
       });
 
-      return { success: true, message: "Đăng nhập thành công" };
+      return { success: true, message: "Đăng nhập thành công", user: res.data.user };
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message;
       set({

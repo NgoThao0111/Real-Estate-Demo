@@ -1,22 +1,31 @@
 import { useState, useEffect } from "react";
-import { Box, Heading, Textarea, Button, VStack, useToast, Tabs, TabList, TabPanels, Tab, TabPanel, Table, Thead, Tbody, Tr, Th, Td } from "@chakra-ui/react";
+import { Box, Heading, Textarea, Input, Button, VStack, useToast, Tabs, TabList, TabPanels, Tab, TabPanel, Table, Thead, Tbody, Tr, Th, Td, useColorModeValue } from "@chakra-ui/react";
 import adminService from "../../services/adminService";
 
 export default function MessageCenter(){
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
+  const [target, setTarget] = useState("");
   const [notifications, setNotifications] = useState([]);
   const toast = useToast();
 
+  const cardBg = useColorModeValue('white','gray.800');
+  const textColor = useColorModeValue('gray.800','white');
+
   const send = async () => {
     try {
-      await adminService.broadcast(title || 'System Notice', message);
-      toast({ status: 'success', title: 'Broadcast sent' });
+      let audience = 'all';
+      if (target && target.trim()) {
+        audience = target.includes('@') ? `email:${target.trim()}` : `user:${target.trim()}`;
+      }
+      await adminService.broadcast(title || 'Thông báo hệ thống', message, 'info', audience);
+      toast({ status: 'success', title: 'Gửi thông báo thành công' });
       setTitle("");
       setMessage("");
+      setTarget("");
       fetchHistory();
     } catch (e) {
-      toast({ status: 'error', title: 'Failed to send' });
+      toast({ status: 'error', title: 'Gửi thất bại' });
     }
   }
 
@@ -31,27 +40,28 @@ export default function MessageCenter(){
 
   return (
     <Box>
-      <Heading size="md" mb={4}>Message Center</Heading>
-      <Box bg="white" p={4} borderRadius="md">
+      <Heading size="md" mb={4}>Trung tâm thông báo</Heading>
+      <Box bg={cardBg} p={4} borderRadius="md">
         <Tabs>
           <TabList>
-            <Tab>Compose</Tab>
-            <Tab>History</Tab>
+            <Tab>Soạn</Tab>
+            <Tab>Lịch sử</Tab>
           </TabList>
 
           <TabPanels>
             <TabPanel>
               <VStack align="stretch">
-                <Textarea value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" />
-                <Textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="System notification message" />
-                <Button colorScheme="blue" onClick={send}>Broadcast to all online users</Button>
+                <Textarea value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Tiêu đề" />
+                <Textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Nội dung thông báo hệ thống" />
+                <Input value={target} onChange={(e) => setTarget(e.target.value)} placeholder="Gửi tới (Email hoặc UserID) - để trống = tất cả" />
+                <Button colorScheme="blue" onClick={send}>Gửi</Button>
               </VStack>
             </TabPanel>
 
             <TabPanel>
               <Table variant="simple">
                 <Thead>
-                  <Tr><Th>Title</Th><Th>Message</Th><Th>Date</Th></Tr>
+                  <Tr><Th>Tiêu đề</Th><Th>Nội dung</Th><Th>Ngày</Th></Tr>
                 </Thead>
                 <Tbody>
                   {notifications.map(n => (

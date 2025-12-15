@@ -20,7 +20,10 @@ api.interceptors.response.use(
   },
   (error) => {
     // Nếu có lỗi xảy ra từ phía Server
-    if (error.response && error.response.status === 401) {
+    const status = error.response?.status;
+
+    // Chỉ tự động xử lý phiên khi server trả 401 (chưa đăng nhập) hoặc 403 (không có quyền)
+    if (status === 401 || status === 403) {
       // 2. Dọn dẹp LocalStorage (Xóa user cũ, giữ lại theme Dark/Light)
       Object.keys(localStorage).forEach((key) => {
         if (key !== "chakra-ui-color-mode") {
@@ -31,25 +34,26 @@ api.interceptors.response.use(
       if (!toast.isActive("session-expired")) {
         toast({
           id: "session-expired",
-          title: "Phiên đăng nhập hết hạn",
-          description: "Vui lòng đăng nhập lại để tiếp tục.",
+          title: status === 401 ? "Phiên đăng nhập hết hạn" : "Không có quyền",
+          description: status === 401 ? "Vui lòng đăng nhập lại để tiếp tục." : "Bạn không có quyền thực hiện hành động này.",
           status: "warning",
           duration: 3000,
           isClosable: true,
           position: "top",
         });
       }
+
+      localStorage.setItem("triggerLoginModal", "true");
+      window.location.href = "/";
+      // 3. Chuyển hướng về Login sau 1.5s (để người dùng kịp đọc thông báo)
+      setTimeout(() => {
+        window.dispatchEvent(new Event("auth:unauthorized"));
+      }, 2000);
+
+      return Promise.reject(error);
     }
 
-    localStorage.setItem("triggerLoginModal", "true");
-
-    window.location.href = "/";
-    // 3. Chuyển hướng về Login sau 1.5s (để người dùng kịp đọc thông báo)
-    setTimeout(() => {
-      window.dispatchEvent(new Event("auth:unauthorized"));
-    }, 2000);
-
-    // Trả lỗi về (reject) để các hàm gọi API ở component biết mà tắt Loading (Spinner)
+    // Các lỗi khác (4xx/5xx) không nên ép logout tự động, trả về để component xử lý
     return Promise.reject(error);
   }
 );

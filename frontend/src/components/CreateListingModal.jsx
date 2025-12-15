@@ -58,7 +58,7 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
     description: "",
     area: "",
     price: "",
-    status: "available",
+    status: "pending",
     property_type: "",
     rental_type: "rent",
     bedroom: 0, // Mới
@@ -227,7 +227,7 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
       if (res.success) {
         toast({
           title: isEdit ? "Cập nhật thành công" : "Tạo bài đăng thành công",
-          description: "Thao tác thành công.",
+          description: isEdit ? "Thao tác thành công." : "Bài đăng của bạn đã được gửi và đang chờ duyệt.",
           status: "success",
         });
 
@@ -238,7 +238,7 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
           description: "",
           area: "",
           price: "",
-          status: "available",
+          status: "pending",
           property_type: "",
           rental_type: "rent",
           bedroom: 0,
@@ -521,7 +521,7 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
                     ))}
                   </datalist>
                 </FormControl>
-                <FormControl>
+                <FormControl isRequired>
                   <FormLabel>Phường / Xã</FormLabel>
                   <Input
                     name="location.ward"

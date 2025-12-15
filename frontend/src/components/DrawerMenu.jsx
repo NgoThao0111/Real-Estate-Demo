@@ -72,6 +72,11 @@ const DrawerMenu = ({
                 <Button colorScheme="blue" w="full" onClick={openCreate}>
                   Đăng tin mới
                 </Button>
+                {user && user.role === "admin" && (
+                  <Button as={Link} to="/admin" w="full" colorScheme="red" onClick={onClose}>
+                    Admin
+                  </Button>
+                )}
                 <Button w="full" onClick={logoutUser} variant={"outline"}>
                   Đăng xuất
                 </Button>

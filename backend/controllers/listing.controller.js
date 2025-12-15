@@ -84,7 +84,7 @@ export const createList = async (req, res) => {
       description,
       area: Number(area),
       price,
-      status,
+      status: 'pending', // force pending on create
       property_type,
       rental_type,
       images: savedImages,
@@ -165,7 +165,9 @@ export const getListings = async (req, res) => {
     if (province) query["location.province"] = province;
     if (property_type) query.property_type = property_type;
     if (rental_type) query.rental_type = rental_type;
+    // By default, only surface 'approved' listings to public unless explicitly filtered
     if (status) query.status = status;
+    else query.status = 'approved';
 
     const minP = minPrice !== undefined ? Number(minPrice) : undefined;
     const maxP = maxPrice !== undefined ? Number(maxPrice) : undefined;
@@ -222,6 +224,32 @@ export const getListingById = async (req, res) => {
       .populate("owner", "name profile createdAt")
       .populate("property_type", "name");
     if (!listing) return res.status(404).json({ message: "Not Found" });
+    // If listing is not approved, only the owner or admin may view it
+    if (listing.status !== 'approved') {
+      try {
+        const token = req.cookies?.token;
+        if (!token) return res.status(404).json({ message: "Not Found" });
+        const jwt = (await import('jsonwebtoken')).default;
+        const payload = jwt.verify(token, process.env.JWT_SECRET_KEY);
+        const viewerId = payload._id || payload.id;
+        if (!viewerId) return res.status(404).json({ message: "Not Found" });
+
+        // If owner, allow
+        if (listing.owner && (listing.owner._id?.toString() === viewerId.toString() || listing.owner.toString() === viewerId.toString())) {
+          return res.json(listing);
+        }
+
+        // If admin, allow
+        const User = (await import('../models/user.model.js')).default;
+        const viewer = await User.findById(viewerId).select('role');
+        if (viewer && viewer.role === 'admin') return res.json(listing);
+      } catch (e) {
+        // token invalid or other error -> treat as not found
+        return res.status(404).json({ message: "Not Found" });
+      }
+      return; // already responded
+    }
+
     return res.json(listing);
   } catch (error) {
     console.log(error.message);
@@ -409,9 +437,14 @@ export const searchListings = async (req, res) => {
       minArea,
       maxArea,
       sort,
+      status,
     } = req.query;
 
     let query = {};
+
+    // Default to only show approved listings in public search unless explicit status is requested
+    if (status) query.status = status;
+    else query.status = 'approved';
 
     // Dùng new RegExp để an toàn hơn
     if (keyword) {
