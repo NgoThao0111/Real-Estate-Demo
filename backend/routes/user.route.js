@@ -6,6 +6,10 @@ import {
   logoutUser,
   updateUserInfo,
   userRegister,
+  resendVerification,
+  verifyEmail,
+  sendResetCode,
+  resetPasswordWithCode,
   toggleSaveListing,
   getSavedListings,
   searchUsers,
@@ -21,6 +25,10 @@ router.post("/register", userRegister);
 router.post("/login", loginUser);
 router.post("/login-google", loginGoogle);
 router.post("/logout", logoutUser); 
+router.post('/resend-verification', resendVerification);
+router.post('/verify-email', verifyEmail);
+router.post('/forgot-password-code', sendResetCode);
+router.post('/reset-password-code', resetPasswordWithCode);
 
 // --- 2. ROUTES BẢO MẬT (Cần đăng nhập) ---
 // Áp dụng middleware verifyToken cho tất cả các route bên dưới
