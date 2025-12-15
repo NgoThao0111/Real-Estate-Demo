@@ -18,6 +18,8 @@ import {
 } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { useUserStore } from "../store/user.js";
+import { useAuthContext } from "../context/AuthContext.jsx";
+import { useNavigate } from "react-router-dom";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { GoogleLogin } from "@react-oauth/google";
 
@@ -41,6 +43,8 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
   // Lấy các hàm từ Store (Lưu ý: Không lấy checkSession nữa)
   const { registerUser, loginUser, loading, requestLoginGoogle } =
     useUserStore();
+  const { updateUser } = useAuthContext();
+  const navigate = useNavigate();
 
   // Reset form khi mở modal
   useEffect(() => {
@@ -71,7 +75,7 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
     e.preventDefault();
 
     if (mode === "login") {
-      const { success, message } = await loginUser(formData);
+      const { success, message, user } = await loginUser(formData);
 
       if (!success) {
         toast({
@@ -92,7 +96,14 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
           position: "top",
         });
 
-        window.location.reload();
+        // Update AuthContext so role-based UI updates immediately
+        if (user) updateUser(user);
+
+        // If admin, redirect to admin dashboard for convenience
+        if (user?.role === "admin") {
+          navigate("/admin");
+        }
+
         onClose();
       }
     } else {
@@ -129,7 +140,7 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
         });
       }
 
-      const { success, message } = await registerUser(formData);
+      const { success, message, user } = await registerUser(formData);
 
       if (!success) {
         toast({
@@ -149,7 +160,7 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
           isClosable: true,
           position: "top",
         });
-        window.location.reload();
+        if (user) updateUser(user);
         onClose();
       }
     }
@@ -159,7 +170,7 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
     const { credential } = response; //Nhan ID token tu google
     console.log(credential);
     try {
-      const { success, message } = await requestLoginGoogle(credential);
+      const { success, message, user } = await requestLoginGoogle(credential);
       if (!success) {
         toast({
           title: "Đăng nhập thất bại",
@@ -179,7 +190,8 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
           position: "top",
         });
 
-        window.location.reload();
+        if (user) updateUser(user);
+        if (user?.role === "admin") navigate("/admin");
         onClose();
       }
     } catch (error) {

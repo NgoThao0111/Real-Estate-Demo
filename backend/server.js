@@ -115,10 +115,19 @@ io.use((socket, next) => {
     const token = cookies.token;
     if (!token) return next(new Error("Authentication error: No token provided"));
 
-    jwt.verify(token, process.env.JWT_SECRET_KEY, (err, decoded) => {
+    jwt.verify(token, process.env.JWT_SECRET_KEY, async (err, decoded) => {
       if (err) return next(new Error("Authentication error: Invalid token"));
-      socket.user = decoded;
-      next();
+      // Check if user exists and is not banned
+      try {
+        const user = await User.findById(decoded._id || decoded.id).select("isBanned");
+        if (!user) return next(new Error("Authentication error: User not found"));
+        if (user.isBanned) return next(new Error("Authentication error: User banned"));
+        socket.user = decoded;
+        next();
+      } catch (e) {
+        console.error("Socket auth DB error", e);
+        return next(new Error("Internal Server Error during Auth"));
+      }
     });
   } catch (error) {
     console.error("Socket Auth Error:", error);
@@ -130,7 +139,12 @@ io.use((socket, next) => {
 io.on("connection", (socket) => {
   const user = socket.user;
   const userId = user._id || user.id;
-
+  // Join a room for this specific user to allow targeted messages (e.g., force logout)
+  try {
+    socket.join(`user_${userId}`);
+  } catch (e) {
+    console.error("Failed to join user room", e);
+  }
   // console.log(`User connected: ${userId}`);
 
   socket.on("join_chat", (conversationId) => { socket.join(conversationId); });
@@ -207,7 +221,11 @@ app.get("/api/check-auth", async (req, res) => {
 
     try {
       const user = await User.findById(decoded._id || decoded.id).select("-password");
-      if (!user) {
+      if (!user || user.isBanned) {
+        // If banned, clear token cookie and treat as unauthenticated
+        try {
+          res.clearCookie('token');
+        } catch (e) {}
         return res.status(200).json({ isAuthenticated: false, user: null });
       }
       return res.status(200).json({ isAuthenticated: true, user: user });

@@ -5,10 +5,16 @@ import {
   updateListingStatus,
   getUserSignupsLast7Days,
   getPropertyStatusDistribution,
+  getListingsLast7Days,
   getAllUsers,
   toggleBanUser,
   broadcastSystemNotification,
   getNotifications,
+  deleteListingAdmin,
+  getReports,
+  resolveReport,
+  actionOnReport,
+  getAdminActions,
 } from "../controllers/admin.controller.js";
 import { verifyToken } from "../middleware/verifyToken.js";
 import { verifyAdmin } from "../middleware/verifyAdmin.js";
@@ -24,10 +30,18 @@ router.get("/stats", getStats);
 router.get("/listings", getAllListings);
 router.get("/stats/users-7days", getUserSignupsLast7Days);
 router.get("/stats/properties-status", getPropertyStatusDistribution);
+router.get("/stats/listings-7days", getListingsLast7Days);
 router.put("/listings/:id/status", validateStatusUpdate, updateListingStatus);
+router.delete("/listings/:id", deleteListingAdmin);
 
 router.get("/users", getAllUsers);
 router.put("/users/:id/ban", validateToggleBan, toggleBanUser);
+
+router.get('/reports', getReports);
+router.put('/reports/:id/resolve', resolveReport);
+router.post('/reports/:id/action', actionOnReport);
+
+router.get('/actions', getAdminActions);
 
 router.post("/broadcast", validateBroadcast, broadcastSystemNotification);
 router.get("/notifications", getNotifications);
