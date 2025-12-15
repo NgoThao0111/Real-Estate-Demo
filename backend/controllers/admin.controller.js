@@ -1,6 +1,7 @@
 import Listing from "../models/listing.model.js";
 import User from "../models/user.model.js";
 import SystemNotification from "../models/systemNotification.model.js";
+import AdminAction from "../models/adminAction.model.js";
 
 export const getStats = async (req, res) => {
   try {
@@ -58,13 +59,23 @@ export const getStats = async (req, res) => {
 
 export const getAllListings = async (req, res) => {
   try {
-    const listings = await Listing.find()
-      .populate("owner", "name username profile")
-      .populate("property_type", "name")
-      .sort({ createdAt: -1 })
-      .limit(500);
+    const page = Math.max(1, parseInt(req.query.page || "1"));
+    const limit = Math.min(200, parseInt(req.query.limit || "50"));
+    const skip = (page - 1) * limit;
 
-    return res.json({ listings });
+    const query = {}; // Could add filters later from req.query
+    const [listings, total] = await Promise.all([
+      Listing.find(query)
+        .populate("owner", "name username profile")
+        .populate("property_type", "name")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      Listing.countDocuments(query),
+    ]);
+
+    const pages = Math.ceil(total / limit);
+    return res.json({ listings, total, page, pages });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Server error" });
@@ -82,6 +93,13 @@ export const updateListingStatus = async (req, res) => {
     listing.status = status;
     await listing.save();
 
+    // Audit
+    try {
+      await AdminAction.create({ admin: req.userId, action: 'update_listing_status', target: listing._id, meta: { status } });
+    } catch (e) {
+      console.error('Failed to record admin action', e);
+    }
+
     return res.json({ message: "Listing status updated", listing });
   } catch (error) {
     console.error(error);
@@ -91,8 +109,18 @@ export const updateListingStatus = async (req, res) => {
 
 export const getAllUsers = async (req, res) => {
   try {
-    const users = await User.find().select("username name role createdAt isBanned").sort({ createdAt: -1 });
-    return res.json({ users });
+    const page = Math.max(1, parseInt(req.query.page || "1"));
+    const limit = Math.min(200, parseInt(req.query.limit || "50"));
+    const skip = (page - 1) * limit;
+
+    const query = {};
+    const [users, total] = await Promise.all([
+      User.find(query).select("username name role createdAt isBanned").sort({ createdAt: -1 }).skip(skip).limit(limit),
+      User.countDocuments(query),
+    ]);
+
+    const pages = Math.ceil(total / limit);
+    return res.json({ users, total, page, pages });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Server error" });
@@ -160,6 +188,13 @@ export const toggleBanUser = async (req, res) => {
     user.isBanned = !!ban;
     await user.save();
 
+    // Audit
+    try {
+      await AdminAction.create({ admin: req.userId, action: 'toggle_ban_user', target: user._id, meta: { ban: user.isBanned } });
+    } catch (e) {
+      console.error('Failed to record admin action', e);
+    }
+
     return res.json({ message: "User updated", user });
   } catch (error) {
     console.error(error);
@@ -178,6 +213,13 @@ export const broadcastSystemNotification = async (req, res) => {
 
     // 2. Emit event to connected sockets (only 'all' for now)
     req.io?.emit("system_notification", { id: notif._id, title, message, type, audience, createdAt: notif.createdAt });
+
+    // Audit
+    try {
+      await AdminAction.create({ admin: req.userId, action: 'broadcast', target: notif._id, meta: { title, message, type, audience } });
+    } catch (e) {
+      console.error('Failed to record admin action', e);
+    }
 
     return res.json({ message: "Broadcast saved and sent", notification: notif });
   } catch (error) {
