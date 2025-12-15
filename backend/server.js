@@ -184,7 +184,7 @@ app.get('/api/check-auth', async (req, res) => { // Thêm async
 });
 
 // --- 6. KHỞI CHẠY SERVER ---
-httpServer.listen(PORT, () => {
+httpServer.listen(PORT, "0.0.0.0", () => {
     connectDB();
     console.log(`Server running on port ${PORT}`);
 });
