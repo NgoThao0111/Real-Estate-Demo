@@ -1,27 +1,29 @@
 import axios from "axios";
 import { createStandaloneToast } from "@chakra-ui/react";
 
-// Tạo instance toast độc lập để dùng được bên ngoài Component React
 const { toast } = createStandaloneToast();
 
 const api = axios.create({
-  // URL Backend (Lấy từ biến môi trường hoặc mặc định localhost)
-  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api",
-
-  // Quan trọng: Cho phép gửi/nhận Cookie (JWT/Session) giữa client và server
+  baseURL: "/api",
   withCredentials: true,
 });
 
-// --- INTERCEPTOR PHẢN HỒI ---
+// Flag để tránh bắn 401 nhiều lần
+let isHandlingUnauthorized = false;
+
 api.interceptors.response.use(
-  (response) => {
-    // Nếu API trả về thành công (2xx), trả về dữ liệu bình thường
-    return response;
-  },
+  (config) => {
+  console.log("➡️ API CALL:", config.url);
+  return config;
+},
+  (response) => response,
   (error) => {
-    // Nếu có lỗi xảy ra từ phía Server
-    if (error.response && error.response.status === 401) {
-      // 2. Dọn dẹp LocalStorage (Xóa user cũ, giữ lại theme Dark/Light)
+    const status = error.response?.status;
+
+    if (status === 401 && !isHandlingUnauthorized) {
+      isHandlingUnauthorized = true;
+
+      // Giữ lại theme, xóa phần còn lại
       Object.keys(localStorage).forEach((key) => {
         if (key !== "chakra-ui-color-mode") {
           localStorage.removeItem(key);
@@ -39,17 +41,16 @@ api.interceptors.response.use(
           position: "top",
         });
       }
+
+      // Báo cho App xử lý logout + redirect
+      window.dispatchEvent(new Event("auth:unauthorized"));
+
+      // Sau 3s cho phép xử lý lại nếu cần
+      setTimeout(() => {
+        isHandlingUnauthorized = false;
+      }, 3000);
     }
 
-    localStorage.setItem("triggerLoginModal", "true");
-
-    window.location.href = "/";
-    // 3. Chuyển hướng về Login sau 1.5s (để người dùng kịp đọc thông báo)
-    setTimeout(() => {
-      window.dispatchEvent(new Event("auth:unauthorized"));
-    }, 2000);
-
-    // Trả lỗi về (reject) để các hàm gọi API ở component biết mà tắt Loading (Spinner)
     return Promise.reject(error);
   }
 );
