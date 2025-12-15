@@ -13,7 +13,14 @@ import { Global, css } from "@emotion/react";
 import ListingPopup from "./ListingPopup.jsx";
 
 // Lấy token từ biến môi trường
-mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
+const token = import.meta.env.VITE_MAPBOX_TOKEN;
+
+if (!token) {
+  console.error("❌ Missing Mapbox token");
+  return;
+}
+
+mapboxgl.accessToken = token;
 
 const MapboxMap = ({
   mode = "view", // "view" | "picker" | "explorer"
