@@ -18,7 +18,7 @@ export const SocketContextProvider = ({ children }) => {
     if (currentUser) {
       // 1. Khởi tạo kết nối
       // Lưu ý: Socket không đi qua Vite proxy nên tốt nhất trỏ thẳng localhost:5000
-      const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:5000";
+      const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "https://localhost:5000";
       const newSocket = io(SOCKET_URL, {
         withCredentials: true, // QUAN TRỌNG: Để gửi kèm Cookie Session xác thực
         query: {

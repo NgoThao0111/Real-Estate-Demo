@@ -6,7 +6,7 @@ const { toast } = createStandaloneToast();
 
 const api = axios.create({
   // URL Backend (Lấy từ biến môi trường hoặc mặc định localhost)
-  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api",
+  baseURL: import.meta.env.VITE_API_BASE_URL || "https://localhost:5000/api",
 
   // Quan trọng: Cho phép gửi/nhận Cookie (JWT/Session) giữa client và server
   withCredentials: true,
