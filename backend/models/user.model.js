@@ -56,6 +56,13 @@ const userSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Listing'
     }]
+    ,
+    // Admin: flag to ban/block a user
+    isBanned: {
+        type: Boolean,
+        default: false,
+        index: true
+    }
 }, {
     timestamps: true
 })
