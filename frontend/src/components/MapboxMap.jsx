@@ -13,8 +13,6 @@ import { Global, css } from "@emotion/react";
 
 import ListingPopup from "./ListingPopup.jsx";
 
-const token = import.meta.env.VITE_MAPBOX_TOKEN;
-
 const MapboxMap = ({
   mode = "view",
   data = [],
@@ -37,6 +35,7 @@ const MapboxMap = ({
      1️⃣ SET MAPBOX TOKEN
      ======================= */
   useEffect(() => {
+    const token = import.meta.env.VITE_MAPBOX_TOKEN;
     console.log("ENV:", import.meta.env);
     if (!token) {
       console.error("❌ VITE_MAPBOX_TOKEN is missing");

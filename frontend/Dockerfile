@@ -1,6 +1,9 @@
 # Multi-stage build for production
 FROM node:18-alpine AS build
 
+ARG VITE_MAPBOX_TOKEN
+ENV VITE_MAPBOX_TOKEN=$VITE_MAPBOX_TOKEN
+
 # Set working directory
 WORKDIR /app
 
