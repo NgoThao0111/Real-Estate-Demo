@@ -1,16 +1,28 @@
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken"; // Import jwt
+import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
-import { generateTokenAndSetCookie } from "../utils/generateToken.js";
+// Sửa import này: Dùng hàm mới để tạo Access/Refresh Token
+import { sendTokenResponse } from "../utils/generateToken.js"; 
 import sendEmail from "../utils/sendEmail.js";
 import crypto from "crypto";
-import { jwtDecode } from "jwt-decode";
 import { OAuth2Client } from "google-auth-library";
 
 dotenv.config();
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const PEPPER_SECRET = process.env.PEPPER_SECRET;
+
+// --- Helper: Pepper Logic ---
+const addPepper = (password) => {
+  if (!PEPPER_SECRET) {
+    throw new Error("Missing PEPPER_SECRET in .env file");
+  }
+  return crypto
+    .createHmac("sha256", PEPPER_SECRET)
+    .update(password)
+    .digest("hex");
+};
 
 export const userRegister = async (req, res) => {
   try {
@@ -24,7 +36,8 @@ export const userRegister = async (req, res) => {
     }
 
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    const passwordWithPepper = addPepper(password);
+    const hashedPassword = await bcrypt.hash(passwordWithPepper, salt);
 
     user = new User({
       username: username,
@@ -128,11 +141,15 @@ export const verifyEmail = async (req, res) => {
     user.emailVerificationExpire = undefined;
     await user.save();
 
-    // Auto login after verification
-    generateTokenAndSetCookie(res, user._id, user.role);
+    // --- SỬA ĐỔI: Sử dụng sendTokenResponse cho Access/Refresh Token ---
+    const { accessToken } = await sendTokenResponse(user, res);
 
     const { password: _p, ...userInfo } = user._doc;
-    return res.json({ message: "Xác thực thành công", user: userInfo });
+    return res.json({ 
+        message: "Xác thực thành công", 
+        user: userInfo,
+        accessToken // Trả về AccessToken
+    });
   } catch (e) {
     console.error(e);
     return res.status(500).json({ message: "Server error" });
@@ -187,15 +204,19 @@ export const resetPasswordWithCode = async (req, res) => {
     }
 
     const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(password, salt);
+    const passwordWithPepper = addPepper(password);
+    user.password = await bcrypt.hash(passwordWithPepper, salt);
     user.resetPasswordCode = undefined;
     user.resetPasswordCodeExpire = undefined;
     await user.save();
 
-    // Auto login after password reset
-    generateTokenAndSetCookie(res, user._id, user.role);
+    // --- SỬA ĐỔI: Auto login sau khi reset pass với token mới ---
+    const { accessToken } = await sendTokenResponse(user, res);
 
-    return res.json({ message: "Mật khẩu đã được cập nhật" });
+    return res.json({ 
+        message: "Mật khẩu đã được cập nhật",
+        accessToken 
+    });
   } catch (e) {
     console.error(e);
     return res.status(500).json({ message: "Server error" });
@@ -203,7 +224,6 @@ export const resetPasswordWithCode = async (req, res) => {
 };
 
 export const deleteUser = async (req, res) => {
-  // ... (Giữ nguyên logic xóa user, nhưng lưu ý quyền admin nếu cần)
   try {
     const id = req.params.id;
     const deleteUser = await User.findByIdAndDelete(id);
@@ -248,20 +268,23 @@ export const loginUser = async (req, res) => {
       return res.status(403).json({ message: "Tài khoản đã bị khóa" });
     }
 
-    const match = await bcrypt.compare(password, user.password);
+    const passwordWithPepper = addPepper(password);
+    const match = await bcrypt.compare(passwordWithPepper, user.password);
     if (!match) {
       return res.status(401).json({
         message: "Password wrong",
       });
     }
 
-    generateTokenAndSetCookie(res, user._id, user.role);
+    // --- SỬA ĐỔI: Logic login mới ---
+    const { accessToken } = await sendTokenResponse(user, res);
 
-    const { password: userPassword, ...userInfo } = user._doc;
+    const { password: userPassword, refreshToken, ...userInfo } = user._doc;
 
-    return res.status(201).json({
+    return res.status(200).json({
       message: "Đăng nhập thành công",
       user: userInfo,
+      accessToken, // Trả về accessToken để Client lưu
     });
   } catch (error) {
     console.log(error.message);
@@ -285,13 +308,9 @@ export const loginGoogle = async (req, res) => {
       audience: process.env.GOOGLE_CLIENT_ID,
     });
 
-    //Verify thành công -> lấy data user từ payload
     const dataUser = ticket.getPayload();
 
     console.log("User verified:", dataUser);
-
-    // 3. Xử lý logic lưu user vào DB hoặc tạo JWT của hệ thống bạn ở đây...
-    // ...
 
     let user = await User.findOne({ email: dataUser.email });
 
@@ -300,7 +319,8 @@ export const loginGoogle = async (req, res) => {
         Math.random().toString(36).slice(-8) +
         Math.random().toString(36).slice(-8);
 
-      const hashedPassword = await bcrypt.hash(randomPassword, 10);
+      const passwordWithPepper = addPepper(randomPassword);
+      const hashedPassword = await bcrypt.hash(passwordWithPepper, 10);
       const generatedUsername = dataUser.email.split("@")[0];
 
       user = await User.create({
@@ -319,22 +339,67 @@ export const loginGoogle = async (req, res) => {
       return res.status(403).json({ message: "Tài khoản đã bị khóa" });
     }
 
-    generateTokenAndSetCookie(res, user._id, user.role);
+    // --- SỬA ĐỔI: Logic login mới ---
+    const { accessToken } = await sendTokenResponse(user, res);
 
-    const { password: userPassword, ...userInfo } = user._doc;
+    const { password: userPassword, refreshToken, ...userInfo } = user._doc;
 
     res
       .status(200)
-      .json({ success: true, user: userInfo, message: "Login Google Success" });
+      .json({ 
+          success: true, 
+          user: userInfo, 
+          accessToken,
+          message: "Login Google Success" 
+      });
   } catch (error) {
     console.error("Error verifying Google token: ", error);
     res.status(401).json({ message: "Token không hợp lệ hoặc giả mạo" });
   }
 };
 
+// --- API MỚI: Cấp lại Access Token ---
+export const refreshAccessToken = async (req, res) => {
+    try {
+      const incomingRefreshToken = req.cookies.refreshToken;
+  
+      if (!incomingRefreshToken) {
+        return res.status(401).json({ message: "Bạn chưa đăng nhập" });
+      }
+  
+      const decoded = jwt.verify(
+        incomingRefreshToken,
+        process.env.JWT_REFRESH_SECRET
+      );
+  
+      const user = await User.findById(decoded._id);
+  
+      if (!user || user.refreshToken !== incomingRefreshToken) {
+        return res.status(403).json({ message: "Refresh Token không hợp lệ" });
+      }
+  
+      const { accessToken } = await sendTokenResponse(user, res);
+  
+      return res.status(200).json({
+        message: "Access token refreshed",
+        accessToken,
+        user: { // Trả về thông tin user để cập nhật state client nếu cần
+            _id: user._id,
+            name: user.name,
+            role: user.role,
+            username: user.username,
+            phone: user.phone
+        }
+      });
+  
+    } catch (error) {
+      console.log(error);
+      return res.status(403).json({ message: "Invalid refresh token" });
+    }
+};
+
 export const getUserInfor = async (req, res) => {
   try {
-    // --- JWT: Lấy userId từ middleware verifyToken (đã gán vào req.userId) ---
     const user_id = req.userId; // Middleware verifyToken đã xử lý việc check auth
 
     const user = await User.findById(user_id).select(
@@ -361,7 +426,6 @@ export const getUserInfor = async (req, res) => {
 
 export const updateUserInfo = async (req, res) => {
   try {
-    // --- JWT: Lấy userId từ req.userId ---
     const user_id = req.userId;
 
     const { name, phone } = req.body;
@@ -399,30 +463,24 @@ export const updateUserInfo = async (req, res) => {
   }
 };
 
-export const checkSession = (req, res) => {
-  const token = req.cookies.token;
-  if (!token)
-    return res.status(401).json({ message: "No active session", user: null });
-
-  jwt.verify(token, process.env.JWT_SECRET_KEY, async (err, payload) => {
-    if (err)
-      return res.status(401).json({ message: "Invalid Token", user: null });
-
-    const user = await User.findById(payload._id).select("-password");
-    return res.status(200).json({
-      message: "Session active",
-      user: user,
-    });
-  });
-};
-
 export const logoutUser = async (req, res) => {
-  res.clearCookie("token").status(200).json({ message: "Đã đăng xuất" });
+    // 1. Xóa refresh token trong DB
+    if (req.userId) { // req.userId có được nhờ middleware verifyToken
+        await User.findByIdAndUpdate(req.userId, { $unset: { refreshToken: 1 } });
+    }
+
+    // 2. Xóa Cookie
+    res.clearCookie("refreshToken", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production", // Chỉ true nếu chạy HTTPS
+        sameSite: "strict" 
+    });
+
+    return res.status(200).json({ message: "Đã đăng xuất" });
 };
 
 export const toggleSaveListing = async (req, res) => {
   try {
-    // --- JWT: Lấy userId từ req.userId ---
     const userId = req.userId;
 
     const listingId = req.params.listingId;
@@ -456,7 +514,6 @@ export const toggleSaveListing = async (req, res) => {
 // Lấy danh sách tin đăng đã lưu của người dùng hiện tại
 export const getSavedListings = async (req, res) => {
   try {
-    console.log(req.userId); // --- JWT: Lấy userId từ req.userId ---
     const userId = req.userId;
 
     const user = await User.findById(userId).populate({
@@ -477,14 +534,11 @@ export const getSavedListings = async (req, res) => {
 
 export const searchUsers = async (req, res) => {
   try {
-    // --- JWT: Lấy userId từ req.userId ---
-    // Lưu ý: searchUsers cần được bảo vệ bởi middleware verifyToken để có req.userId
     const currentUserId = req.userId;
 
     const query = req.query.q;
     if (!query) return res.json([]);
 
-    // Tìm user theo tên, trừ bản thân mình ra
     const users = await User.find({
       username: { $regex: query, $options: "i" },
       _id: { $ne: currentUserId },

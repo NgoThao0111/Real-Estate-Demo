@@ -4,7 +4,12 @@ import User from "../models/user.model.js";
 export const verifyAdmin = async (req, res, next) => {
   try {
     const userId = req.userId;
+    const userRoleFromToken = req.userRole;
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+    if (userRoleFromToken && userRoleFromToken !== "admin") {
+         return res.status(403).json({ message: "Admin access required" });
+    }
 
     const user = await User.findById(userId).select("role isBanned");
     if (!user) return res.status(404).json({ message: "User not found" });

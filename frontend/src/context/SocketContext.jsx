@@ -1,55 +1,65 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { io } from "socket.io-client";
-import { useAuthContext } from "./AuthContext"; // Import hook từ file bạn vừa xong
-import { useUserStore } from "../store/user";
-import { createStandaloneToast } from "@chakra-ui/react";
+import { useAuthContext } from "./AuthContext"; 
+import { useUserStore } from "../store/user"; // Giả sử store này lưu accessToken
+import { useToast } from "@chakra-ui/react"; // Dùng hook này nhẹ hơn
 
 const SocketContext = createContext();
 
-// Hook để các component khác (ChatPage, ChatContainer) dùng socket
 export const useSocketContext = () => {
   return useContext(SocketContext);
 };
 
 export const SocketContextProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
-  const { currentUser } = useAuthContext(); // Lấy user hiện tại từ AuthContext
+  const { currentUser } = useAuthContext();
+  
+  // 1. Cần lấy Access Token từ Store (Zustand/Context/LocalStorage)
+  // Bạn cần đảm bảo lúc login xong, bạn đã lưu accessToken vào đây
+  const accessToken = useUserStore((state) => state.accessToken); 
+
+  const toast = useToast();
 
   useEffect(() => {
-    // CHỈ KẾT NỐI KHI CÓ USER ĐĂNG NHẬP
-    if (currentUser) {
-      // 1. Khởi tạo kết nối
-      // Lưu ý: Socket không đi qua Vite proxy nên tốt nhất trỏ thẳng localhost:5000
-      const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "https://localhost:5000";
+    // CHỈ KẾT NỐI KHI CÓ USER VÀ ACCESS TOKEN
+    if (currentUser && accessToken) {
+      
+      const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "https://localhost:5000"; // Lưu ý https nếu local chạy https
+
+      // 2. Cấu hình gửi Access Token qua Auth
       const newSocket = io(SOCKET_URL, {
-        withCredentials: true, // QUAN TRỌNG: Để gửi kèm Cookie Session xác thực
+        withCredentials: true, // Vẫn giữ để gửi cookie (nếu cần cho cors)
+        auth: {
+            token: `Bearer ${accessToken}` // <--- QUAN TRỌNG: Backend chờ cái này
+        },
         query: {
-            userId: currentUser._id // Gửi thêm ID để tiện debug hoặc xử lý ở server (tùy chọn)
+            userId: currentUser._id 
         },
         transports: ["websocket", "polling"]
       });
 
       setSocket(newSocket);
 
-      // Global: Listen for system notifications and show toast
-      const { toast } = createStandaloneToast();
+      // --- LISTENERS ---
+
+      // System Notifications
       newSocket.on("system_notification", (payload) => {
         toast({
-          title: payload.title || "System Notification",
+          title: payload.title || "Thông báo hệ thống",
           description: payload.message,
           status: payload.type === "alert" ? "error" : payload.type === "warning" ? "warning" : "info",
-          duration: 8000,
+          duration: 5000,
           isClosable: true,
           position: "top-right",
         });
       });
 
-      // Forced logout from server (e.g., admin banned the account)
+      // Force Logout (Banned)
       const logoutUser = useUserStore.getState().logoutUser;
       newSocket.on("force_logout", async (payload) => {
         toast({
-          title: "Đã bị khóa",
-          description: payload?.message || "Tài khoản của bạn đã bị khóa",
+          title: "Tài khoản bị khóa",
+          description: payload?.message || "Vui lòng liên hệ quản trị viên.",
           status: "error",
           duration: 8000,
           isClosable: true,
@@ -57,39 +67,42 @@ export const SocketContextProvider = ({ children }) => {
         });
 
         try {
-          // Call existing logout flow which clears cookie and resets state
           await logoutUser();
+          newSocket.disconnect(); // Ngắt kết nối ngay lập tức
         } catch (e) {
-          // best-effort: redirect to home
           window.location.href = "/";
         }
       });
 
-      // Notify user when their listing status changes
+      // Listing Status
       newSocket.on('listing_status_changed', (payload) => {
         toast({
-          title: `Listing ${payload.status}`,
-          description: `Listing ${payload.listingId} status: ${payload.status}`,
+          title: `Trạng thái tin đăng: ${payload.status}`,
+          description: `Tin đăng #${payload.listingId} của bạn đã được cập nhật.`,
           status: payload.status === 'approved' ? 'success' : payload.status === 'rejected' ? 'error' : 'info',
-          duration: 8000,
+          duration: 5000,
           isClosable: true,
           position: 'top-right',
         });
       });
+      
+      // Xử lý lỗi connect (ví dụ Token hết hạn ngay lúc connect)
+      newSocket.on("connect_error", (err) => {
+          console.log("Socket connect error:", err.message);
+          // Nếu lỗi là Authentication error, có thể token đã hết hạn
+          // Frontend nên để cơ chế tự động refresh token lo liệu việc này ở API call
+      });
 
-      // (Tùy chọn) Lắng nghe các sự kiện global ở đây nếu muốn (ví dụ: danh sách online)
-      // newSocket.on("getOnlineUsers", (users) => { ... });
-
-      // 2. Cleanup: Ngắt kết nối khi component unmount hoặc user đăng xuất
+      // Cleanup
       return () => { newSocket.close(); }
     } else {
-      // Nếu không có user (đã logout), đóng socket nếu đang mở
+      // Nếu logout hoặc mất token
       if (socket) {
         socket.close();
         setSocket(null);
       }
     }
-  }, [currentUser]); // Chạy lại effect này mỗi khi currentUser thay đổi
+  }, [currentUser, accessToken]); // <--- Thêm accessToken vào đây để reconnect khi token mới
 
   return (
     <SocketContext.Provider value={{ socket }}>

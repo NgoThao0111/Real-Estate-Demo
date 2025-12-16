@@ -6,7 +6,7 @@ import {
   useDisclosure,
 } from "@chakra-ui/react";
 import { Routes, Route, Navigate } from "react-router-dom";
-import { useEffect } from "react"; // 1. Import useEffect
+import { useEffect } from "react";
 
 import Navbar from "./components/Navbar.jsx";
 import AdminLayout from "./pages/Admin/AdminLayout.jsx";
@@ -27,45 +27,44 @@ import ListingDetailPage from "./pages/ListingDetailPage.jsx";
 import ChatWidget from "./components/ChatWidget.jsx";
 import AOSComponent from "./components/AOSComponent.jsx";
 import Footer from "./components/Footer.jsx";
-import AuthModal from "./components/AuthModal.jsx"; // 2. Import AuthModal
+import AuthModal from "./components/AuthModal.jsx";
 
-// Import Hook từ AuthContext
-import { useAuthContext } from "./context/AuthContext.jsx";
+// --- THAY ĐỔI 1: Bỏ useAuthContext, dùng hoàn toàn useUserStore ---
+// import { useAuthContext } from "./context/AuthContext.jsx"; 
+import { useUserStore } from "./store/user.js"; 
 
 function App() {
-  // Lấy currentUser và isLoading từ Context
-  const { currentUser, isLoading } = useAuthContext();
+  // --- THAY ĐỔI 2: Lấy state từ Zustand Store (Nơi checkAuth cập nhật dữ liệu) ---
+  const { user: currentUser, isCheckingAuth, checkAuth } = useUserStore();
 
-  // 3. Hook quản lý trạng thái đóng/mở của Modal Login
   const { isOpen, onOpen, onClose } = useDisclosure();
 
-  // 4. LẮNG NGHE SỰ KIỆN TỪ AXIOS
+  // --- THAY ĐỔI 3: Dependency Array rỗng [] ---
+  // Chỉ chạy đúng 1 lần khi App vừa tải (Mount), không chạy lại khi checkAuth thay đổi
+  useEffect(() => {
+    checkAuth();
+  }, []); 
+
+  // --- Logic lắng nghe sự kiện Logout từ Axios ---
   useEffect(() => {
     const shouldOpenModal = localStorage.getItem("triggerLoginModal");
-
     if (shouldOpenModal) {
-      onOpen(); // Mở modal ngay
-      localStorage.removeItem("triggerLoginModal"); // Xóa cờ ngay để F5 không bị mở lại
+      onOpen();
+      localStorage.removeItem("triggerLoginModal");
     }
 
-    // Hàm xử lý khi nhận được tín hiệu "hết hạn phiên"
     const handleAuthError = () => {
-      // Có thể thêm logic: Thông báo hoặc reset state user tạm thời nếu cần
-      // Nhưng quan trọng nhất là mở Modal lên:
       onOpen();
     };
 
-    // Đăng ký lắng nghe sự kiện 'auth:unauthorized' (tên phải khớp bên axios.js)
     window.addEventListener("auth:unauthorized", handleAuthError);
-
-    // Dọn dẹp sự kiện khi component unmount (tránh rò rỉ bộ nhớ)
     return () => {
       window.removeEventListener("auth:unauthorized", handleAuthError);
     };
   }, [onOpen]);
 
   // Hiển thị màn hình chờ
-  if (isLoading) {
+  if (isCheckingAuth) {
     return (
       <Box minH="100vh" bg={useColorModeValue("gray.100", "gray.900")}>
         <Center h="100vh">
@@ -93,7 +92,6 @@ function App() {
           borderBottom={"2px"}
           borderColor={"blue.300"}
         >
-          {/* Truyền onOpen cho Navbar để nút "Đăng nhập" trên menu cũng mở được Modal này */}
           <Navbar onOpenAuthModal={onOpen} />
         </Box>
 
@@ -144,7 +142,6 @@ function App() {
         {currentUser && <ChatWidget />}
         <Footer />
 
-        {/* 5. Đặt AuthModal ở đây - Luôn nằm trong DOM nhưng ẩn/hiện theo biến isOpen */}
         <AuthModal isOpen={isOpen} onClose={onClose} defaultMode="login" />
       </Box>
     </AOSComponent>

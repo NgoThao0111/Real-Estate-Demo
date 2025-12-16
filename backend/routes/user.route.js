@@ -14,34 +14,50 @@ import {
   getSavedListings,
   searchUsers,
   loginGoogle,
-  // checkSession, // Hàm này có thể bỏ vì ta đã có /api/check-auth ở server.js
+  refreshAccessToken,
 } from "../controllers/user.controller.js";
-import { verifyToken } from "../middleware/verifyToken.js"; // <--- QUAN TRỌNG: Import middleware
+import { verifyToken } from "../middleware/verifyToken.js";
 
 const router = express.Router();
 
-// --- 1. ROUTES CÔNG KHAI (Không cần đăng nhập) ---
+// ==========================================
+// 1. ROUTES CÔNG KHAI (Public Routes)
+// ==========================================
+
+// Auth & Register
 router.post("/register", userRegister);
 router.post("/login", loginUser);
 router.post("/login-google", loginGoogle);
-router.post("/logout", logoutUser); 
+
+// Refresh Token (QUAN TRỌNG: Phải để public để client gọi khi Access Token hết hạn)
+router.post("/refresh-token", refreshAccessToken);
+
+// Email Verification & Password Reset
 router.post('/resend-verification', resendVerification);
 router.post('/verify-email', verifyEmail);
 router.post('/forgot-password-code', sendResetCode);
 router.post('/reset-password-code', resetPasswordWithCode);
 
-// --- 2. ROUTES BẢO MẬT (Cần đăng nhập) ---
-// Áp dụng middleware verifyToken cho tất cả các route bên dưới
-// Middleware này sẽ giải mã Token -> Lấy ID -> Gán vào req.userId
+
+// ==========================================
+// 2. ROUTES BẢO MẬT (Protected Routes)
+// ==========================================
+// Tất cả các route bên dưới dòng này đều yêu cầu Access Token hợp lệ
 router.use(verifyToken); 
 
+// Logout (Chuyển xuống đây để middleware lấy được userId và xóa token trong DB)
+router.post("/logout", logoutUser); 
+
+// User Profile
 router.get("/profile", getUserInfor);
 router.put("/me/update-profile", updateUserInfo);
-router.delete("/deleteUser/:id", deleteUser); // Lưu ý: Thường chỉ Admin mới xóa được user
+
+// Listings & Search
 router.post("/save/:listingId", toggleSaveListing);
 router.get("/saved", getSavedListings);
-router.get("/search", searchUsers); // Cần userId để loại trừ bản thân khỏi kết quả tìm kiếm
+router.get("/search", searchUsers);
 
-// router.get("/session", checkSession); // Route cũ, nên dùng /api/check-auth ở server.js thay thế
+// Admin Action (Lưu ý: Nên có thêm middleware checkAdmin nếu cần bảo mật kỹ hơn)
+router.delete("/deleteUser/:id", deleteUser);
 
 export default router;

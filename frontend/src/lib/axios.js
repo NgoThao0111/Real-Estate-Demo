@@ -1,61 +1,84 @@
 import axios from "axios";
 import { createStandaloneToast } from "@chakra-ui/react";
 
-// Tạo instance toast độc lập để dùng được bên ngoài Component React
 const { toast } = createStandaloneToast();
 
 const api = axios.create({
-  // URL Backend (Lấy từ biến môi trường hoặc mặc định localhost)
   baseURL: import.meta.env.VITE_API_BASE_URL || "https://localhost:5000/api",
-
-  // Quan trọng: Cho phép gửi/nhận Cookie (JWT/Session) giữa client và server
-  withCredentials: true,
+  withCredentials: true, 
 });
 
-// --- INTERCEPTOR PHẢN HỒI ---
-api.interceptors.response.use(
-  (response) => {
-    // Nếu API trả về thành công (2xx), trả về dữ liệu bình thường
-    return response;
+// 1. REQUEST: Gắn token vào header
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("accessToken");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
   },
-  (error) => {
-    // Nếu có lỗi xảy ra từ phía Server
-    const status = error.response?.status;
+  (error) => Promise.reject(error)
+);
 
-    // Chỉ tự động xử lý phiên khi server trả 401 (chưa đăng nhập) hoặc 403 (không có quyền)
-    if (status === 401 || status === 403) {
-      // 2. Dọn dẹp LocalStorage (Xóa user cũ, giữ lại theme Dark/Light)
-      Object.keys(localStorage).forEach((key) => {
-        if (key !== "chakra-ui-color-mode") {
-          localStorage.removeItem(key);
+// 2. RESPONSE: Xử lý lỗi
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    
+    if (error.response) {
+      const { status, data } = error.response;
+
+      // --- TRƯỜNG HỢP 1: Token Hết Hạn (403 + message "Token Expired") ---
+      // Thử refresh token cứu vãn
+      if (status === 403 && data.message === "Token Expired" && !originalRequest._retry) {
+        originalRequest._retry = true;
+        try {
+          const res = await api.post("/users/refresh-token");
+          const newAccessToken = res.data.accessToken;
+          localStorage.setItem("accessToken", newAccessToken);
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+          return api(originalRequest);
+        } catch (refreshError) {
+          return handleAuthError(refreshError);
         }
-      });
-
-      if (!toast.isActive("session-expired")) {
-        toast({
-          id: "session-expired",
-          title: status === 401 ? "Phiên đăng nhập hết hạn" : "Không có quyền",
-          description: status === 401 ? "Vui lòng đăng nhập lại để tiếp tục." : "Bạn không có quyền thực hiện hành động này.",
-          status: "warning",
-          duration: 3000,
-          isClosable: true,
-          position: "top",
-        });
       }
 
-      localStorage.setItem("triggerLoginModal", "true");
-      window.location.href = "/";
-      // 3. Chuyển hướng về Login sau 1.5s (để người dùng kịp đọc thông báo)
-      setTimeout(() => {
-        window.dispatchEvent(new Event("auth:unauthorized"));
-      }, 2000);
-
-      return Promise.reject(error);
+      // --- TRƯỜNG HỢP 2: Lỗi 401 (Token rác/không hợp lệ) hoặc 403 (Cấm) ---
+      // SỬA LỖI LOOP: Không reload trang (window.location.href) ở đây nữa!
+      if (status === 401 || (status === 403 && data.message !== "Token Expired")) {
+         return handleAuthError(error);
+      }
     }
 
-    // Các lỗi khác (4xx/5xx) không nên ép logout tự động, trả về để component xử lý
     return Promise.reject(error);
   }
 );
+
+// Hàm xử lý lỗi Auth nhẹ nhàng hơn (Không reload trang)
+const handleAuthError = (error) => {
+    // 1. Xóa token rác ngay lập tức để các request sau không bị lỗi nữa
+    localStorage.removeItem("accessToken");
+    
+    // 2. Chỉ hiện thông báo 1 lần
+    if (!toast.isActive("auth-error")) {
+      const status = error.response?.status;
+      toast({
+        id: "auth-error",
+        title: status === 403 ? "Không đủ quyền truy cập" : "Phiên đăng nhập hết hạn",
+        description: "Vui lòng đăng nhập lại.",
+        status: "warning",
+        duration: 4000,
+        isClosable: true,
+        position: "top",
+      });
+    }
+
+    // 3. Dispatch sự kiện để App.jsx mở Modal đăng nhập
+    // QUAN TRỌNG: Không dùng window.location.href = "/" để tránh vòng lặp
+    window.dispatchEvent(new Event("auth:unauthorized"));
+    
+    return Promise.reject(error);
+};
 
 export default api;

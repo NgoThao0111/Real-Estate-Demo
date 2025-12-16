@@ -9,12 +9,13 @@ import {
   searchListings 
 } from "../controllers/listing.controller.js";
 import { verifyToken } from "../middleware/verifyToken.js"; // <--- QUAN TRỌNG: Import middleware
+import { searchLimiter } from "../middleware/rateLimiter.js";
 
 const router = express.Router();
 
 // --- 1. PUBLIC ROUTES (Ai cũng xem được) ---
 // Phải đặt lên trên cùng để tránh bị nhầm với /:id
-router.get("/search", searchListings); // Tìm kiếm
+router.get("/search", searchLimiter, searchListings); // Tìm kiếm (throttled)
 router.get("/getList", getListings);   // Lấy danh sách (filter)
 
 // --- 2. PROTECTED ROUTES (Cần đăng nhập) ---

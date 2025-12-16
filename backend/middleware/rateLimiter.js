@@ -7,3 +7,12 @@ export const adminLimiter = rateLimit({
   legacyHeaders: false,
   message: { message: "Too many requests, please try again later." },
 });
+
+// Rate limiter for public search endpoint to avoid abusive polling
+export const searchLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 15, // allow up to 15 searches per minute per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many search requests, please try again later." },
+});

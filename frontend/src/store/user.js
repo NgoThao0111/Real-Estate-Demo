@@ -1,11 +1,13 @@
 import { create } from "zustand";
-import api from "../lib/axios.js"; // Import api instance (đã có interceptor & credentials)
+import api from "../lib/axios.js"; 
 
 export const useUserStore = create((set) => ({
   user: null,
+  // --- THÊM: Khởi tạo token từ LocalStorage để khi F5 không bị mất kết nối Socket ---
+  accessToken: localStorage.getItem("accessToken") || null, 
   savedListings: [],
   loading: false,
-  isCheckingAuth: false, // Đổi tên cho đúng ý nghĩa JWT
+  isCheckingAuth: false,
   error: null,
 
   // --- 1. REGISTER ---
@@ -20,18 +22,23 @@ export const useUserStore = create((set) => ({
       
       set({ loading: true, error: null });
       
-      // Gọi API đăng ký
       const res = await api.post("/users/register", userData);
 
-      // Nếu server yêu cầu xác thực email
+      // Trường hợp cần xác thực email
       if (res.data.verificationRequired) {
         set({ loading: false, error: null });
         return { success: true, verificationRequired: true, message: res.data.message, user: res.data.user };
       }
 
-      // Nếu server trả về user (đã verify và đăng nhập tự động)
-      if (res.data.user) {
-        set({ user: res.data.user, loading: false, error: null });
+      // Trường hợp đăng ký xong tự login luôn (nếu backend cấu hình vậy)
+      if (res.data.accessToken) {
+        localStorage.setItem("accessToken", res.data.accessToken); // Lưu LocalStorage
+        set({ 
+            user: res.data.user, 
+            accessToken: res.data.accessToken, // Lưu State
+            loading: false, 
+            error: null 
+        });
         return { success: true, message: "Đăng ký thành công!", user: res.data.user };
       }
 
@@ -56,8 +63,15 @@ export const useUserStore = create((set) => ({
   verifyEmail: async (email, code) => {
     try {
       const res = await api.post('/users/verify-email', { email, code });
-      // After verification server sets cookie and returns user
-      if (res.data.user) set({ user: res.data.user });
+      
+      // --- SỬA: Lưu token khi xác thực thành công ---
+      if (res.data.accessToken) {
+         localStorage.setItem("accessToken", res.data.accessToken);
+         set({ user: res.data.user, accessToken: res.data.accessToken });
+      } else if (res.data.user) {
+         set({ user: res.data.user });
+      }
+      
       return { success: true, message: res.data.message, user: res.data.user };
     } catch (err) {
       const message = err?.response?.data?.message || err.message;
@@ -78,7 +92,14 @@ export const useUserStore = create((set) => ({
   resetPasswordWithCode: async (email, code, password) => {
     try {
       const res = await api.post('/users/reset-password-code', { email, code, password });
-      // Optionally server may set cookie after reset
+      
+      // --- SỬA: Lưu token sau khi reset pass (Auto login) ---
+      if (res.data.accessToken) {
+         localStorage.setItem("accessToken", res.data.accessToken);
+         set({ accessToken: res.data.accessToken });
+         // Nếu backend trả về user info nữa thì set luôn user
+      }
+
       return { success: true, message: res.data.message };
     } catch (err) {
       const message = err?.response?.data?.message || err.message;
@@ -97,20 +118,25 @@ export const useUserStore = create((set) => ({
       
       const res = await api.post("/users/login", loginData);
 
-      // Login thành công -> Lưu user vào state
+      // --- QUAN TRỌNG: Lưu Access Token ---
+      const { user, accessToken } = res.data;
+      localStorage.setItem("accessToken", accessToken);
+
       set({
-        user: res.data.user,
+        user: user,
+        accessToken: accessToken, // Cập nhật state
         loading: false,
         error: null,
       });
       
-      return { success: true, message: "Đăng nhập thành công", user: res.data.user };
+      return { success: true, message: "Đăng nhập thành công", user: user };
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message;
       set({
         loading: false,
         error: errorMessage,
         user: null,
+        accessToken: null
       });
       return { success: false, message: errorMessage };
     }
@@ -121,47 +147,75 @@ export const useUserStore = create((set) => ({
     try {
       const res = await api.post('/users/login-google', { tokenGoogle: tokenGoogle });
       
+      // --- QUAN TRỌNG: Lưu Access Token ---
+      const { user, accessToken } = res.data;
+      localStorage.setItem("accessToken", accessToken);
+
       set({
-        user: res.data.user,
+        user: user,
+        accessToken: accessToken,
         loading: false,
         error: null,
       });
 
-      return { success: true, message: "Đăng nhập thành công", user: res.data.user };
+      return { success: true, message: "Đăng nhập thành công", user: user };
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message;
       set({
         loading: false,
         error: errorMessage,
         user: null,
+        accessToken: null
       });
       return { success: false, message: errorMessage };
     }
   },
 
-  // --- 3. CHECK AUTH (Thay thế checkSession) ---
+  // --- 3. CHECK AUTH ---
   checkAuth: async () => {
     set({ isCheckingAuth: true });
     try {
-      // Gọi endpoint JWT chuẩn ở server.js
+      // 1. Gọi endpoint check cookie
       const res = await api.get("/check-auth");
-
       const userData = res.data.user || null;
-      set({ user: userData });
 
-      // Nếu đã đăng nhập, tải danh sách tin đã lưu
+      // 2. Logic đồng bộ Token:
+      // Endpoint /check-auth hiện tại chỉ trả về User, không trả AccessToken (theo code server.js cũ).
+      // Nhưng nếu User tồn tại (Cookie Refresh Token hợp lệ), mà LocalStorage mất AccessToken (do xóa cache),
+      // thì ta cần gọi Refresh Token để lấy lại Access Token mới.
+      
       if (userData) {
-        try {
-          const savedRes = await api.get("/users/saved");
-          const saved = savedRes.data.listings || [];
-          set({ savedListings: saved.map((l) => l._id) });
-        } catch (error) {
-          console.log("Lỗi tải tin đã lưu", error);
-        }
+          set({ user: userData });
+          
+          // Nếu trong state/storage chưa có accessToken (hoặc bị mất), gọi refresh
+          if (!localStorage.getItem("accessToken")) {
+             try {
+                 const refreshRes = await api.post("/users/refresh-token");
+                 if(refreshRes.data.accessToken) {
+                     localStorage.setItem("accessToken", refreshRes.data.accessToken);
+                     set({ accessToken: refreshRes.data.accessToken });
+                 }
+             } catch (e) {
+                 console.log("Auto refresh failed", e);
+             }
+          }
+
+          // Tải danh sách đã lưu
+          try {
+            const savedRes = await api.get("/users/saved");
+            const saved = savedRes.data.listings || [];
+            set({ savedListings: saved.map((l) => l._id) });
+          } catch (error) {
+            console.log("Lỗi tải tin đã lưu", error);
+          }
+      } else {
+          // Nếu check-auth trả về user null -> Token hết hạn -> Logout
+          set({ user: null, accessToken: null, savedListings: [] });
+          localStorage.removeItem("accessToken");
       }
     } catch (error) {
-      // Nếu lỗi 401 hoặc lỗi mạng -> Coi như chưa đăng nhập
-      set({ user: null, savedListings: [] });
+      set({ user: null, accessToken: null, savedListings: [] });
+      localStorage.removeItem("accessToken");
     } finally {
       set({ isCheckingAuth: false });
     }
@@ -170,27 +224,35 @@ export const useUserStore = create((set) => ({
   // --- 4. LOGOUT ---
   logoutUser: async () => {
     try {
-      // Gọi API để xóa cookie token
       await api.post("/users/logout");
     } catch (error) {
       console.log("Lỗi logout server:", error);
     } finally {
-      // Xóa state
-      set({ user: null, savedListings: [] });
+      // Xóa State
+      set({ user: null, accessToken: null, savedListings: [] });
 
-      // Dọn Local Storage
+      // Xóa Token trong Storage
+      localStorage.removeItem("accessToken");
+
+      // Dọn các key khác (giữ lại theme)
       Object.keys(localStorage).forEach((key) => {
         if (key !== "chakra-ui-color-mode") {
           localStorage.removeItem(key);
         }
       });
 
-      // Chuyển hướng về trang chủ
       window.location.href = "/";
     }
   },
 
-  // --- 5. SAVED LISTINGS ---
+  // --- 5. Helper Action để cập nhật token (Dùng cho Axios Interceptor) ---
+  // Hàm này sẽ được Axios gọi khi nó tự động refresh token thành công
+  setAccessToken: (token) => {
+      localStorage.setItem("accessToken", token);
+      set({ accessToken: token });
+  },
+
+  // ... (Phần fetchSavedListings và toggleSaveListing GIỮ NGUYÊN) ...
   fetchSavedListings: async () => {
     try {
       const res = await api.get("/users/saved");
@@ -205,10 +267,7 @@ export const useUserStore = create((set) => ({
 
   toggleSaveListing: async (listingId) => {
     try {
-      // 1. Gọi API toggle
       const res = await api.post(`/users/save/${listingId}`);
-      
-      // 2. Cập nhật State Optimistic (Để UI phản hồi nhanh)
       set((state) => {
         const isSaved = state.savedListings.includes(listingId);
         if (isSaved) {
@@ -217,11 +276,9 @@ export const useUserStore = create((set) => ({
             return { savedListings: [...state.savedListings, listingId] };
         }
       });
-
       return { success: true, message: res.data.message };
     } catch (err) {
       const message = err?.response?.data?.message || err.message;
-      // Nếu lỗi, nên fetch lại để đồng bộ state cũ (Revert)
       return { success: false, message };
     }
   },

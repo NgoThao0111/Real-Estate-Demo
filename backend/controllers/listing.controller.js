@@ -424,7 +424,8 @@ export const deleteListing = async (req, res) => {
 };
 
 export const searchListings = async (req, res) => {
-  console.log("Search Params:", req.query);
+  // Add client info to logs to identify caller when requests are frequent
+  console.log("Search Params:", req.query, "| URL:", req.originalUrl, "| IP:", req.ip, "| UA:", req.get("User-Agent") || req.headers["user-agent"] || "unknown");
   try {
     const {
       keyword,
