@@ -1,9 +1,6 @@
 # Multi-stage build for production
 FROM node:18-alpine AS build
 
-ARG VITE_MAPBOX_TOKEN
-ENV VITE_MAPBOX_TOKEN=$VITE_MAPBOX_TOKEN
-
 # Set working directory
 WORKDIR /app
 
@@ -15,6 +12,9 @@ RUN npm ci
 
 # Copy source code
 COPY . .
+
+# Create .env from Render ENV
+RUN printenv | grep '^VITE_' > .env
 
 # Build the app
 RUN npm run build
