@@ -1,23 +1,22 @@
 import axios from "axios";
 import { createStandaloneToast } from "@chakra-ui/react";
 
-// Tạo instance toast độc lập để dùng được bên ngoài Component React
 const { toast } = createStandaloneToast();
 
 const api = axios.create({
-  // URL Backend (Lấy từ biến môi trường hoặc mặc định localhost)
-  baseURL: import.meta.env.VITE_API_BASE_URL || "https://localhost:5000/api",
-
-  // Quan trọng: Cho phép gửi/nhận Cookie (JWT/Session) giữa client và server
+  baseURL: import.meta.env.MODE === 'production' ? "https://real-estate-demo-m86e.onrender.com/api" : import.meta.env.VITE_API_BASE_URL,
   withCredentials: true,
 });
 
-// --- INTERCEPTOR PHẢN HỒI ---
+// Flag để tránh bắn 401 nhiều lần
+let isHandlingUnauthorized = false;
+
 api.interceptors.response.use(
-  (response) => {
-    // Nếu API trả về thành công (2xx), trả về dữ liệu bình thường
-    return response;
-  },
+  (config) => {
+  console.log("➡️ API CALL:", config.url);
+  return config;
+},
+  (response) => response,
   (error) => {
     // Nếu có lỗi xảy ra từ phía Server
     const status = error.response?.status;
@@ -44,13 +43,10 @@ api.interceptors.response.use(
       }
 
       localStorage.setItem("triggerLoginModal", "true");
-      window.location.href = "/";
       // 3. Chuyển hướng về Login sau 1.5s (để người dùng kịp đọc thông báo)
       setTimeout(() => {
         window.dispatchEvent(new Event("auth:unauthorized"));
       }, 2000);
-
-      return Promise.reject(error);
     }
 
     // Các lỗi khác (4xx/5xx) không nên ép logout tự động, trả về để component xử lý

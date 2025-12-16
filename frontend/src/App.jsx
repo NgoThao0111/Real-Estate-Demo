@@ -6,7 +6,7 @@ import {
   useDisclosure,
 } from "@chakra-ui/react";
 import { Routes, Route, Navigate } from "react-router-dom";
-import { useEffect } from "react"; // 1. Import useEffect
+import { useEffect } from "react";
 
 import Navbar from "./components/Navbar.jsx";
 import AdminLayout from "./pages/Admin/AdminLayout.jsx";
@@ -27,44 +27,30 @@ import ListingDetailPage from "./pages/ListingDetailPage.jsx";
 import ChatWidget from "./components/ChatWidget.jsx";
 import AOSComponent from "./components/AOSComponent.jsx";
 import Footer from "./components/Footer.jsx";
-import AuthModal from "./components/AuthModal.jsx"; // 2. Import AuthModal
+import AuthModal from "./components/AuthModal.jsx";
 
-// Import Hook từ AuthContext
 import { useAuthContext } from "./context/AuthContext.jsx";
 
 function App() {
-  // Lấy currentUser và isLoading từ Context
-  const { currentUser, isLoading } = useAuthContext();
+  const { currentUser, isLoading, logout } = useAuthContext();
 
-  // 3. Hook quản lý trạng thái đóng/mở của Modal Login
   const { isOpen, onOpen, onClose } = useDisclosure();
 
-  // 4. LẮNG NGHE SỰ KIỆN TỪ AXIOS
+  // ✅ LẮNG NGHE 401 TỪ AXIOS (KHÔNG RELOAD)
   useEffect(() => {
-    const shouldOpenModal = localStorage.getItem("triggerLoginModal");
-
-    if (shouldOpenModal) {
-      onOpen(); // Mở modal ngay
-      localStorage.removeItem("triggerLoginModal"); // Xóa cờ ngay để F5 không bị mở lại
-    }
-
-    // Hàm xử lý khi nhận được tín hiệu "hết hạn phiên"
-    const handleAuthError = () => {
-      // Có thể thêm logic: Thông báo hoặc reset state user tạm thời nếu cần
-      // Nhưng quan trọng nhất là mở Modal lên:
-      onOpen();
+    const handleUnauthorized = () => {
+      logout?.(); // clear user nếu có
+      onOpen();   // mở modal login
     };
 
-    // Đăng ký lắng nghe sự kiện 'auth:unauthorized' (tên phải khớp bên axios.js)
-    window.addEventListener("auth:unauthorized", handleAuthError);
+    window.addEventListener("auth:unauthorized", handleUnauthorized);
 
-    // Dọn dẹp sự kiện khi component unmount (tránh rò rỉ bộ nhớ)
     return () => {
-      window.removeEventListener("auth:unauthorized", handleAuthError);
+      window.removeEventListener("auth:unauthorized", handleUnauthorized);
     };
-  }, [onOpen]);
+  }, [logout, onOpen]);
 
-  // Hiển thị màn hình chờ
+  // ✅ CHỜ AUTH CHECK XONG
   if (isLoading) {
     return (
       <Box minH="100vh" bg={useColorModeValue("gray.100", "gray.900")}>
@@ -84,42 +70,49 @@ function App() {
   return (
     <AOSComponent>
       <Box>
+        {/* Navbar luôn tồn tại – KHÔNG bị unmount */}
         <Box
           position="fixed"
           top={0}
           left={0}
           right={0}
           zIndex={1000}
-          borderBottom={"2px"}
-          borderColor={"blue.300"}
+          borderBottom="2px"
+          borderColor="blue.300"
         >
-          {/* Truyền onOpen cho Navbar để nút "Đăng nhập" trên menu cũng mở được Modal này */}
           <Navbar onOpenAuthModal={onOpen} />
         </Box>
 
         <Box
-          minH={"100vh"}
+          minH="100vh"
           bg={useColorModeValue("gray.100", "gray.900")}
-          pt={"64px"}
+          pt="64px"
         >
           <Routes>
+            {/* Public */}
             <Route path="/" element={<HomePage />} />
             <Route path="/home-panel" element={<HomePanel />} />
             <Route path="/listings" element={<AllListings />} />
             <Route path="/listings/:id" element={<ListingDetailPage />} />
 
-            {/* Protected Routes */}
+            {/* Protected */}
             <Route
               path="/my-posts"
-              element={currentUser ? <MyPostsPage /> : <Navigate to="/" />}
+              element={
+                currentUser ? <MyPostsPage /> : <Navigate to="/" replace />
+              }
             />
             <Route
               path="/saved-posts"
-              element={currentUser ? <SavedPostsPage /> : <Navigate to="/" />}
+              element={
+                currentUser ? <SavedPostsPage /> : <Navigate to="/" replace />
+              }
             />
             <Route
               path="/chat"
-              element={currentUser ? <ChatPage /> : <Navigate to="/" />}
+              element={
+                currentUser ? <ChatPage /> : <Navigate to="/" replace />
+              }
             />
 
             {/* Admin Routes */}
@@ -144,7 +137,7 @@ function App() {
         {currentUser && <ChatWidget />}
         <Footer />
 
-        {/* 5. Đặt AuthModal ở đây - Luôn nằm trong DOM nhưng ẩn/hiện theo biến isOpen */}
+        {/* Modal login – KHÔNG reload, KHÔNG redirect */}
         <AuthModal isOpen={isOpen} onClose={onClose} defaultMode="login" />
       </Box>
     </AOSComponent>

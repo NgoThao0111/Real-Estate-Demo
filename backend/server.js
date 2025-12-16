@@ -237,7 +237,7 @@ app.get("/api/check-auth", async (req, res) => {
 });
 
 // --- 8. START SERVER ---
-server.listen(PORT, () => {
+server.listen(PORT, "0.0.0.0", () => {
   connectDB();
   console.log(`Server running on port ${PORT}`);
 });

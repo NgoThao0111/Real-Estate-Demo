@@ -40,7 +40,8 @@ const Navbar = () => {
   useEffect(() => {
     // Gọi hàm checkAuth mới để kiểm tra Cookie JWT
     checkAuth();
-  }, [checkAuth]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <Box bg={useColorModeValue("white", "gray.800")} boxShadow="sm" position="sticky" top={0} zIndex={100}>
