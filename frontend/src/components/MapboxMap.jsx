@@ -43,7 +43,6 @@ const MapboxMap = ({
     }
     mapboxgl.accessToken = token;
   }, []);
-
   /* =======================
      2️⃣ GLOBAL STYLES
      ======================= */
