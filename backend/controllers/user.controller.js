@@ -417,7 +417,15 @@ export const checkSession = (req, res) => {
 };
 
 export const logoutUser = async (req, res) => {
-  res.clearCookie("token").status(200).json({ message: "Đã đăng xuất" });
+  res
+    .clearCookie("token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      path: "/",
+    })
+    .status(200)
+    .json({ message: "Đã đăng xuất" });
 };
 
 export const toggleSaveListing = async (req, res) => {
