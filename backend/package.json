@@ -2,10 +2,12 @@
   "name": "real-estate-demo",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon backend/server.js"
+    "dev": "nodemon backend/server.js",
+    "seed:admin": "node backend/scripts/seedAdmin.js",
+    "seed:demo": "node backend/scripts/seedDemoData.js"
   },
   "type": "module",
   "repository": {
@@ -26,12 +28,17 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
+    "express-rate-limit": "^6.7.0",
     "google-auth-library": "^10.5.0",
+    "joi": "^17.9.2",
     "jsonwebtoken": "^9.0.3",
     "jwt-decode": "^4.0.0",
     "mongodb": "^6.20.0",
     "mongoose": "^8.19.2",
-    "socket.io": "^4.8.1"
+    "nodemailer": "^7.0.11",
+    "socket.io": "^4.8.1",
+    "bcrypt": "^6.0.0",
+    "express-session": "^1.18.2"
   },
   "devDependencies": {
     "cross-env": "^10.1.0",

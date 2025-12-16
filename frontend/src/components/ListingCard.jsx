@@ -115,6 +115,16 @@ const ListingCard = ({ listing }) => {
     return () => { mounted = false; };
   }, [listing.property_type, getPropertyTypeById]);
 
+  const currentUser = useUserStore((s) => s.user);
+  const ownerId = listing.owner?._id || listing.owner;
+
+  const mapStatusLabel = (s) => {
+    if (s === 'approved') return { text: 'Đã duyệt', color: 'green' };
+    if (s === 'pending') return { text: 'Chờ duyệt', color: 'yellow' };
+    if (s === 'rejected') return { text: 'Bị từ chối', color: 'red' };
+    return { text: s, color: 'gray' };
+  };
+
   return (
     <Box 
       borderWidth="1px" 
@@ -144,6 +154,13 @@ const ListingCard = ({ listing }) => {
         {lastUpdatedText && (
           <Box position="absolute" bottom={2} left={2} bg="rgba(0,0,0,0.6)" color="white" px={2} py={1} borderRadius="md" fontSize="xs">
             {lastUpdatedText}
+          </Box>
+        )}
+
+        {/* Status badge visible only to owner */}
+        {currentUser && ownerId && currentUser._id === ownerId.toString() && (
+          <Box position="absolute" top={2} left={2} bg="rgba(255,255,255,0.9)" px={2} py={1} borderRadius="md" fontSize="xs">
+            <Box as="span" color={mapStatusLabel(listing.status).color} fontWeight="bold">{mapStatusLabel(listing.status).text}</Box>
           </Box>
         )}
 

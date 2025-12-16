@@ -9,6 +9,14 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { useEffect } from "react";
 
 import Navbar from "./components/Navbar.jsx";
+import AdminLayout from "./pages/Admin/AdminLayout.jsx";
+import DashboardOverview from "./pages/Admin/DashboardOverview.jsx";
+import PropertyManager from "./pages/Admin/PropertyManager.jsx";
+import UserManager from "./pages/Admin/UserManager.jsx";
+import MessageCenter from "./pages/Admin/MessageCenter.jsx";
+import ReportsManager from "./pages/Admin/ReportsManager.jsx";
+import AdminActions from "./pages/Admin/AdminActions.jsx";
+import ProtectedAdminRoute from "./components/ProtectedAdminRoute.jsx";
 import HomePage from "./pages/HomePage.jsx";
 import HomePanel from "./components/HomePanel.jsx";
 import MyPostsPage from "./pages/MyPostsPage.jsx";
@@ -106,6 +114,23 @@ function App() {
                 currentUser ? <ChatPage /> : <Navigate to="/" replace />
               }
             />
+
+            {/* Admin Routes */}
+            <Route
+              path="/admin"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminLayout />
+                </ProtectedAdminRoute>
+              }
+            >
+              <Route index element={<DashboardOverview />} />
+              <Route path="properties" element={<PropertyManager />} />
+              <Route path="users" element={<UserManager />} />
+              <Route path="messages" element={<MessageCenter />} />
+              <Route path="actions" element={<AdminActions />} />
+              <Route path="reports" element={<ReportsManager />} />
+            </Route>
           </Routes>
         </Box>
 

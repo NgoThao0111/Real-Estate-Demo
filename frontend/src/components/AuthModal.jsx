@@ -18,11 +18,14 @@ import {
 } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { useUserStore } from "../store/user.js";
+import { useAuthContext } from "../context/AuthContext.jsx";
+import { useNavigate } from "react-router-dom";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { GoogleLogin } from "@react-oauth/google";
 
 const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
   const [mode, setMode] = useState(defaultMode);
+  const [step, setStep] = useState("form"); // 'form' | 'verify' | 'forgot' | 'reset'
 
   // State form data
   const [formData, setFormData] = useState({
@@ -41,6 +44,8 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
   // Lấy các hàm từ Store (Lưu ý: Không lấy checkSession nữa)
   const { registerUser, loginUser, loading, requestLoginGoogle } =
     useUserStore();
+  const { updateUser } = useAuthContext();
+  const navigate = useNavigate();
 
   // Reset form khi mở modal
   useEffect(() => {
@@ -56,6 +61,7 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
         role: "guest",
         type: "login",
       });
+      setStep("form");
     }
   }, [isOpen, defaultMode]);
 
@@ -71,7 +77,7 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
     e.preventDefault();
 
     if (mode === "login") {
-      const { success, message } = await loginUser(formData);
+      const { success, message, user } = await loginUser(formData);
 
       if (!success) {
         toast({
@@ -92,7 +98,14 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
           position: "top",
         });
 
-        window.location.reload();
+        // Update AuthContext so role-based UI updates immediately
+        if (user) updateUser(user);
+
+        // If admin, redirect to admin dashboard for convenience
+        if (user?.role === "admin") {
+          navigate("/admin");
+        }
+
         onClose();
       }
     } else {
@@ -129,7 +142,8 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
         });
       }
 
-      const { success, message } = await registerUser(formData);
+      const { success, message, user, verificationRequired } =
+        await registerUser(formData);
 
       if (!success) {
         toast({
@@ -140,26 +154,107 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
           isClosable: true,
           position: "top",
         });
+      } else if (verificationRequired) {
+        toast({
+          title: "Hoàn tất bước 1",
+          description: message,
+          status: "info",
+          duration: 4000,
+          isClosable: true,
+          position: "top",
+        });
+        // Show verify step
+        setStep("verify");
       } else {
         toast({
           title: "Thành công",
-          description: "Tài khoản đã được tạo và tự động đăng nhập!",
+          description: "Tài khoản đã được tạo và đăng nhập!",
           status: "success",
           duration: 3000,
           isClosable: true,
           position: "top",
         });
-        window.location.reload();
+        if (user) updateUser(user);
         onClose();
       }
     }
+  };
+
+  // Verify email code flow
+  const handleVerify = async () => {
+    const res = await useUserStore
+      .getState()
+      .verifyEmail(formData.email, formData.code);
+    if (!res.success) {
+      toast({
+        title: "Xác thực thất bại",
+        description: res.message,
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+    toast({
+      title: "Xác thực thành công",
+      description: res.message,
+      status: "success",
+      duration: 3000,
+      isClosable: true,
+    });
+    if (res.user) updateUser(res.user);
+    onClose();
+  };
+
+  const handleResend = async () => {
+    const res = await useUserStore
+      .getState()
+      .resendVerification(formData.email);
+    toast({
+      title: res.success ? "Đã gửi lại mã" : "Gửi thất bại",
+      description: res.message,
+      status: res.success ? "success" : "error",
+    });
+  };
+
+  // Forgot / reset password flows
+  const handleSendReset = async () => {
+    const res = await useUserStore.getState().sendResetCode(formData.email);
+    if (!res.success)
+      return toast({
+        title: "Gửi thất bại",
+        description: res.message,
+        status: "error",
+      });
+    toast({
+      title: "Đã gửi mã đặt lại",
+      description: res.message,
+      status: "success",
+    });
+    setStep("reset");
+  };
+
+  const handleResetPassword = async () => {
+    if (formData.password !== formData.confirmPassword)
+      return toast({ title: "Mật khẩu không khớp", status: "error" });
+    const res = await useUserStore
+      .getState()
+      .resetPasswordWithCode(formData.email, formData.code, formData.password);
+    if (!res.success)
+      return toast({
+        title: "Thất bại",
+        description: res.message,
+        status: "error",
+      });
+    toast({ title: "Thành công", description: res.message, status: "success" });
+    onClose();
   };
 
   const handleSuccess = async (response) => {
     const { credential } = response; //Nhan ID token tu google
     console.log(credential);
     try {
-      const { success, message } = await requestLoginGoogle(credential);
+      const { success, message, user } = await requestLoginGoogle(credential);
       if (!success) {
         toast({
           title: "Đăng nhập thất bại",
@@ -179,7 +274,8 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
           position: "top",
         });
 
-        window.location.reload();
+        if (user) updateUser(user);
+        if (user?.role === "admin") navigate("/admin");
         onClose();
       }
     } catch (error) {
@@ -221,7 +317,7 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
             </FormControl>
 
             {/* Register Fields */}
-            {mode === "register" && (
+            {mode === "register" && step === "form" && (
               <>
                 <FormControl isRequired>
                   <FormLabel>Xác nhận mật khẩu</FormLabel>
@@ -268,6 +364,106 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
               </>
             )}
 
+            {/* Verify Step */}
+            {step === "verify" && (
+              <>
+                <FormControl isRequired>
+                  <FormLabel>Email</FormLabel>
+                  <Input
+                    name="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                  />
+                </FormControl>
+                <FormControl isRequired>
+                  <FormLabel>Mã xác thực</FormLabel>
+                  <Input
+                    name="code"
+                    value={formData.code || ""}
+                    onChange={handleChange}
+                  />
+                </FormControl>
+                <HStack>
+                  <Button colorScheme="blue" onClick={handleVerify}>
+                    Xác thực
+                  </Button>
+                  <Button variant="ghost" onClick={handleResend}>
+                    Gửi lại mã
+                  </Button>
+                </HStack>
+              </>
+            )}
+
+            {/* Forgot password */}
+            {mode === "login" && step === "forgot" && (
+              <>
+                <FormControl isRequired>
+                  <FormLabel>Email</FormLabel>
+                  <Input
+                    name="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                  />
+                </FormControl>
+                <HStack>
+                  <Button colorScheme="blue" onClick={handleSendReset}>
+                    Gửi mã
+                  </Button>
+                  <Button variant="ghost" onClick={() => setStep("form")}>
+                    Quay lại
+                  </Button>
+                </HStack>
+              </>
+            )}
+
+            {/* Reset password by code */}
+            {step === "reset" && (
+              <>
+                <FormControl isRequired>
+                  <FormLabel>Email</FormLabel>
+                  <Input
+                    name="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                  />
+                </FormControl>
+                <FormControl isRequired>
+                  <FormLabel>Mã xác thực</FormLabel>
+                  <Input
+                    name="code"
+                    value={formData.code || ""}
+                    onChange={handleChange}
+                  />
+                </FormControl>
+                <FormControl isRequired>
+                  <FormLabel>Mật khẩu mới</FormLabel>
+                  <Input
+                    name="password"
+                    type="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                  />
+                </FormControl>
+                <FormControl isRequired>
+                  <FormLabel>Xác nhận mật khẩu</FormLabel>
+                  <Input
+                    name="confirmPassword"
+                    type="password"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                  />
+                </FormControl>
+                <HStack>
+                  <Button colorScheme="blue" onClick={handleResetPassword}>
+                    Đặt lại mật khẩu
+                  </Button>
+                </HStack>
+              </>
+            )}
+
             {/* 3. Divider ngăn cách */}
             <HStack w="full" py={2}>
               <Divider />
@@ -302,6 +498,17 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
               >
                 {mode === "login" ? "Đăng ký ngay" : "Đăng nhập"}
               </Button>
+              +{" "}
+              {mode === "login" && (
+                <Button
+                  variant="link"
+                  size="sm"
+                  colorScheme="red"
+                  onClick={() => setStep("forgot")}
+                >
+                  Quên mật khẩu?
+                </Button>
+              )}{" "}
             </HStack>
           </VStack>
         </ModalBody>

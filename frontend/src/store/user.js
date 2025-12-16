@@ -22,18 +22,67 @@ export const useUserStore = create((set) => ({
       
       // Gọi API đăng ký
       const res = await api.post("/users/register", userData);
-      
-      // Đăng ký thành công -> Server trả về user info + cookie token
-      set({
-        user: res.data.user,
-        loading: false,
-        error: null,
-      });
-      return { success: true, message: "Đăng ký thành công!" };
+
+      // Nếu server yêu cầu xác thực email
+      if (res.data.verificationRequired) {
+        set({ loading: false, error: null });
+        return { success: true, verificationRequired: true, message: res.data.message, user: res.data.user };
+      }
+
+      // Nếu server trả về user (đã verify và đăng nhập tự động)
+      if (res.data.user) {
+        set({ user: res.data.user, loading: false, error: null });
+        return { success: true, message: "Đăng ký thành công!", user: res.data.user };
+      }
+
+      return { success: true, message: res.data.message };
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message;
       set({ loading: false, error: errorMessage, user: null });
       return { success: false, message: errorMessage };
+    }
+  },
+
+  resendVerification: async (email) => {
+    try {
+      const res = await api.post('/users/resend-verification', { email });
+      return { success: true, message: res.data.message };
+    } catch (err) {
+      const message = err?.response?.data?.message || err.message;
+      return { success: false, message };
+    }
+  },
+
+  verifyEmail: async (email, code) => {
+    try {
+      const res = await api.post('/users/verify-email', { email, code });
+      // After verification server sets cookie and returns user
+      if (res.data.user) set({ user: res.data.user });
+      return { success: true, message: res.data.message, user: res.data.user };
+    } catch (err) {
+      const message = err?.response?.data?.message || err.message;
+      return { success: false, message };
+    }
+  },
+
+  sendResetCode: async (email) => {
+    try {
+      const res = await api.post('/users/forgot-password-code', { email });
+      return { success: true, message: res.data.message };
+    } catch (err) {
+      const message = err?.response?.data?.message || err.message;
+      return { success: false, message };
+    }
+  },
+
+  resetPasswordWithCode: async (email, code, password) => {
+    try {
+      const res = await api.post('/users/reset-password-code', { email, code, password });
+      // Optionally server may set cookie after reset
+      return { success: true, message: res.data.message };
+    } catch (err) {
+      const message = err?.response?.data?.message || err.message;
+      return { success: false, message };
     }
   },
 
@@ -55,7 +104,7 @@ export const useUserStore = create((set) => ({
         error: null,
       });
       
-      return { success: true, message: "Đăng nhập thành công" };
+      return { success: true, message: "Đăng nhập thành công", user: res.data.user };
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message;
       set({
@@ -78,7 +127,7 @@ export const useUserStore = create((set) => ({
         error: null,
       });
 
-      return { success: true, message: "Đăng nhập thành công" };
+      return { success: true, message: "Đăng nhập thành công", user: res.data.user };
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message;
       set({

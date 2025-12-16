@@ -3,6 +3,8 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken"; // Import jwt
 import dotenv from "dotenv";
 import { generateTokenAndSetCookie } from "../utils/generateToken.js";
+import sendEmail from "../utils/sendEmail.js";
+import crypto from "crypto";
 import { jwtDecode } from "jwt-decode";
 import { OAuth2Client } from "google-auth-library";
 
@@ -12,7 +14,7 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 export const userRegister = async (req, res) => {
   try {
-    const { username, password, name, phone, role } = req.body;
+    const { username, password, name, phone, role, email } = req.body;
 
     let user = await User.findOne({ username });
     if (user) {
@@ -30,24 +32,173 @@ export const userRegister = async (req, res) => {
       name: name,
       phone: phone,
       role: role || "guest",
+      email: email,
+      emailVerified: false,
     });
 
-    await user.save();
+    // Generate verification code and send email
+    const code = user.generateEmailVerificationCode();
+    await user.save({ validateBeforeSave: false });
 
-    generateTokenAndSetCookie(res, user._id, user.role);
+    const message = `
+      <h1>Mã xác thực đăng ký</h1>
+      <p>Mã xác thực của bạn là: <strong>${code}</strong></p>
+      <p>Mã sẽ hết hạn sau 2 phút.</p>
+    `;
 
-    // Gửi cookie chứa token
+    try {
+      await sendEmail({
+        email: user.email,
+        subject: "Xác minh email",
+        message,
+      });
+    } catch (err) {
+      console.error("Failed to send verification email", err);
+    }
+
     const { password: userPassword, ...userInfo } = user._doc;
 
     return res.status(201).json({
-      message: "Đăng ký thành công",
+      message:
+        "Tài khoản đã được tạo. Vui lòng nhập mã xác thực gửi tới email để hoàn tất đăng ký.",
       user: userInfo,
+      verificationRequired: true,
     });
   } catch (error) {
     console.log(error.message);
     return res.status(500).json({
       message: "Server Error",
     });
+  }
+};
+
+export const resendVerification = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: "Missing email" });
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: "User not found" });
+    if (user.emailVerified)
+      return res.status(400).json({ message: "Email already verified" });
+
+    const code = user.generateEmailVerificationCode();
+    await user.save({ validateBeforeSave: false });
+
+    const message = `<p>Mã xác thực mới của bạn là <strong>${code}</strong>. Mã sẽ hết hạn sau 2 phút.</p>`;
+    try {
+      await sendEmail({
+        email: user.email,
+        subject: "Xác minh email - Mã mới",
+        message,
+      });
+    } catch (e) {
+      console.error(e);
+    }
+
+    return res.json({ message: "Mã xác thực đã được gửi lại" });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const verifyEmail = async (req, res) => {
+  try {
+    const { email, code } = req.body;
+    if (!email || !code)
+      return res.status(400).json({ message: "Missing email or code" });
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: "User not found" });
+    if (user.emailVerified)
+      return res.status(400).json({ message: "Email already verified" });
+
+    const hashed = crypto.createHash("sha256").update(code).digest("hex");
+    if (
+      user.emailVerificationCode !== hashed ||
+      !user.emailVerificationExpire ||
+      user.emailVerificationExpire < Date.now()
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Mã xác thực không hợp lệ hoặc đã hết hạn" });
+    }
+
+    user.emailVerified = true;
+    user.emailVerificationCode = undefined;
+    user.emailVerificationExpire = undefined;
+    await user.save();
+
+    // Auto login after verification
+    generateTokenAndSetCookie(res, user._id, user.role);
+
+    const { password: _p, ...userInfo } = user._doc;
+    return res.json({ message: "Xác thực thành công", user: userInfo });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const sendResetCode = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: "Missing email" });
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const code = user.generateResetPasswordCode();
+    await user.save({ validateBeforeSave: false });
+
+    const message = `<h1>Mã đặt lại mật khẩu</h1><p>Mã của bạn là <strong>${code}</strong>.</p> <p>Mã sẽ hết hạn sau 15 phút.</p>`;
+    try {
+      await sendEmail({
+        email: user.email,
+        subject: "Mã đặt lại mật khẩu",
+        message,
+      });
+    } catch (e) {
+      console.error(e);
+    }
+
+    return res.json({ message: "Mã đặt lại mật khẩu đã được gửi" });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const resetPasswordWithCode = async (req, res) => {
+  try {
+    const { email, code, password } = req.body;
+    if (!email || !code || !password)
+      return res.status(400).json({ message: "Missing params" });
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const hashed = crypto.createHash("sha256").update(code).digest("hex");
+    if (
+      user.resetPasswordCode !== hashed ||
+      !user.resetPasswordCodeExpire ||
+      user.resetPasswordCodeExpire < Date.now()
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Mã không hợp lệ hoặc đã hết hạn" });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(password, salt);
+    user.resetPasswordCode = undefined;
+    user.resetPasswordCodeExpire = undefined;
+    await user.save();
+
+    // Auto login after password reset
+    generateTokenAndSetCookie(res, user._id, user.role);
+
+    return res.json({ message: "Mật khẩu đã được cập nhật" });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -90,6 +241,11 @@ export const loginUser = async (req, res) => {
       return res.status(401).json({
         message: "Username wrong",
       });
+    }
+
+    // If account is banned, prevent login
+    if (user.isBanned) {
+      return res.status(403).json({ message: "Tài khoản đã bị khóa" });
     }
 
     const match = await bcrypt.compare(password, user.password);
@@ -154,7 +310,13 @@ export const loginGoogle = async (req, res) => {
         password: hashedPassword,
         phone: "Chưa cập nhật",
         role: "guest",
+        emailVerified: true,
       });
+    }
+
+    // Prevent banned users logging in via Google
+    if (user.isBanned) {
+      return res.status(403).json({ message: "Tài khoản đã bị khóa" });
     }
 
     generateTokenAndSetCookie(res, user._id, user.role);
@@ -237,11 +399,7 @@ export const updateUserInfo = async (req, res) => {
   }
 };
 
-// Hàm này không cần thiết với JWT vì client có thể tự check token hoặc gọi api/check-auth
-// Tuy nhiên nếu muốn giữ lại logic cũ thì sửa như sau:
 export const checkSession = (req, res) => {
-  // Logic này thực tế đã được chuyển sang middleware hoặc endpoint /api/check-auth trong server.js
-  // Bạn có thể xóa hàm này hoặc giữ lại dưới dạng check token đơn giản
   const token = req.cookies.token;
   if (!token)
     return res.status(401).json({ message: "No active session", user: null });
