@@ -4,7 +4,7 @@ import { createStandaloneToast } from "@chakra-ui/react";
 const { toast } = createStandaloneToast();
 
 const api = axios.create({
-  baseURL: "https://real-estate-demo-m86e.onrender.com/api",
+  baseURL: import.meta.env.MODE === 'production' ? "https://real-estate-demo-m86e.onrender.com/api" : import.meta.env.VITE_API_BASE_URL,
   withCredentials: true,
 });
 
