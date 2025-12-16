@@ -37,6 +37,7 @@ const MapboxMap = ({
      1️⃣ SET MAPBOX TOKEN
      ======================= */
   useEffect(() => {
+    console.log("ENV:", import.meta.env);
     if (!token) {
       console.error("❌ VITE_MAPBOX_TOKEN is missing");
       return;
