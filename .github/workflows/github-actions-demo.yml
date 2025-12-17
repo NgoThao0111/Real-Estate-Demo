@@ -1,4 +1,4 @@
-name: Build & Push Docker Images
+name: Build & Push Backend & Frontend Images
 
 on:
   push:
@@ -23,7 +23,9 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # 🔹 Backend
+      # =========================
+      # Backend
+      # =========================
       - name: Build & push backend image
         uses: docker/build-push-action@v5
         with:
@@ -33,12 +35,19 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository }}-backend:latest
 
-      # 🔹 Frontend
+      # =========================
+      # Frontend
+      # =========================
       - name: Build & push frontend image
         uses: docker/build-push-action@v5
         with:
           context: ./frontend
           file: ./frontend/Dockerfile
           push: true
+          build-args: |
+            VITE_API_BASE_URL=https://real-estate-backend.onrender.com/api
+            VITE_SOCKET_URL=https://real-estate-backend.onrender.com
+            VITE_MAPBOX_TOKEN=${{ secrets.VITE_MAPBOX_TOKEN }}
+            VITE_GOOGLE_CLIENT_ID=${{ secrets.VITE_GOOGLE_CLIENT_ID }}
           tags: |
             ghcr.io/${{ github.repository }}-frontend:latest
