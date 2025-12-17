@@ -56,6 +56,8 @@ jobs:
             VITE_SOCKET_URL=https://real-estate-demo-backend-latest.onrender.com
             VITE_MAPBOX_TOKEN=${{ secrets.VITE_MAPBOX_TOKEN }}
             VITE_GOOGLE_CLIENT_ID=${{ secrets.VITE_GOOGLE_CLIENT_ID }}
+            VITE_SKIP_API=true
+            VITE_SKIP_AUTH_CHECK=true
           tags: |
             ghcr.io/${{ env.REPO_LOWER }}-frontend:latest
             ghcr.io/${{ env.REPO_LOWER }}-frontend:${{ github.sha }}
