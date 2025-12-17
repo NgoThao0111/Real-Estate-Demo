@@ -51,8 +51,8 @@ jobs:
           file: ./frontend/Dockerfile
           push: true
           build-args: |
-            VITE_API_BASE_URL=https://real-estate-backend.onrender.com/api
-            VITE_SOCKET_URL=https://real-estate-backend.onrender.com
+            VITE_API_BASE_URL=https://real-estate-demo-backend-latest.onrender.com/api
+            VITE_SOCKET_URL=https://real-estate-demo-backend-latest.onrender.com
             VITE_MAPBOX_TOKEN=${{ secrets.VITE_MAPBOX_TOKEN }}
             VITE_GOOGLE_CLIENT_ID=${{ secrets.VITE_GOOGLE_CLIENT_ID }}
           tags: |
@@ -64,5 +64,8 @@ jobs:
       # =========================
       - name: Trigger Render Deploy (Backend)
         run: |
-          printf '%q\n' "${{ secrets.RENDER_BACKEND_DEPLOY_HOOK }}"
           curl -X POST "${{ secrets.RENDER_BACKEND_DEPLOY_HOOK }}"
+          
+      - name: Trigger Render Deploy (Frontend)
+        run: |
+          curl -X POST "${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK }}"
