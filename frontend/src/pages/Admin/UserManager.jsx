@@ -19,32 +19,149 @@ import {
   AlertDialogHeader,
   AlertDialogContent,
   AlertDialogOverlay,
+  VStack,
+  Alert,
+  AlertIcon,
   useDisclosure,
-  useColorModeValue
+  useColorModeValue,
 } from "@chakra-ui/react";
 import adminService from "../../services/adminService";
+import ActionConfirmModal from "../../components/ActionConfirmModal.jsx";
 
 export default function UserManager() {
   const [users, setUsers] = useState([]);
   const toast = useToast();
+  const [isLoading, setIsLoading] = useState(false);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [pending, setPending] = useState({ id: null, ban: false });
   const cancelRef = useRef();
 
+  // State quản lý Modal
+  const [modalConfig, setModalConfig] = useState({
+    isOpen: false,
+    type: null, // 'BAN' | 'UNBAN'
+    data: null, // user object
+    title: "",
+    message: "",
+    isDanger: false,
+    requireReason: false,
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   useEffect(() => {
     const load = async () => {
+      setIsLoading(true);
       try {
         const res = await adminService.getUsers();
         setUsers(res.data.users || []);
       } catch (e) {
         console.error(e);
+        toast({ status: "error", title: "Lỗi tải danh sách người dùng" });
+      } finally {
+        setIsLoading(false);
       }
     };
     load();
   }, []);
 
-  const cardBg = useColorModeValue('white','gray.800');
-  const textColor = useColorModeValue('gray.800','white');
+  const cardBg = useColorModeValue("white", "gray.800");
+  const textColor = useColorModeValue("gray.800", "white");
+
+  // 1. Xử lý khi bấm vào Switch
+  const handleToggleBan = (user, nextBanStatus) => {
+    // nextBanStatus = true (Sắp Cấm) | false (Sắp Bỏ cấm)
+    if (nextBanStatus) {
+      // Trường hợp CẤM
+      setModalConfig({
+        isOpen: true,
+        type: "BAN",
+        data: user,
+        title: "Khóa tài khoản người dùng",
+        message: (
+          <VStack align="start" spacing={3}>
+            <Alert status="error" borderRadius="md">
+              <AlertIcon />
+              Bạn sắp khóa tài khoản người dùng.
+            </Alert>
+
+            <Text>
+              Tài khoản{" "}
+              <Text as="span" fontWeight="bold">
+                “{user.username}”
+              </Text>{" "}
+              sẽ bị{" "}
+              <Text as="span" fontWeight="bold">
+                đăng xuất ngay lập tức
+              </Text>
+              .
+            </Text>
+
+            <Text color="red.500" fontWeight="semibold">
+              Hành động này không thể hoàn tác.
+            </Text>
+          </VStack>
+        ),
+        isDanger: true,
+        requireReason: true, // Bắt buộc nhập lý do khi cấm
+      });
+    } else {
+      // Trường hợp BỎ CẤM
+      setModalConfig({
+        isOpen: true,
+        type: "UNBAN",
+        data: user,
+        title: "Mở khóa tài khoản",
+        message: (
+          <VStack align="start" spacing={3}>
+            <Alert status="success" borderRadius="md">
+              <AlertIcon />
+              Bạn sắp mở khóa tài khoản người dùng.
+            </Alert>
+
+            <Text>
+              Khôi phục quyền truy cập cho tài khoản{" "}
+              <Text as="span" fontWeight="bold">
+                “{user.username}”
+              </Text>
+              .
+            </Text>
+          </VStack>
+        ),
+        isDanger: false,
+        requireReason: false, // Không bắt buộc (tùy chọn)
+      });
+    }
+  };
+
+  // 2. Gọi API khi nhấn Xác nhận trên Modal
+  const onConfirmAction = async (reason) => {
+    setIsSubmitting(true);
+    const { type, data } = modalConfig;
+    const isBanning = type === "BAN"; // true nếu đang cấm, false nếu bỏ cấm
+
+    try {
+      // Gọi service toggleBanUser(id, ban, reason)
+      await adminService.toggleBanUser(data._id, isBanning, reason);
+
+      // Cập nhật State UI
+      setUsers((prev) =>
+        prev.map((u) =>
+          u._id === data._id ? { ...u, isBanned: isBanning } : u
+        )
+      );
+
+      toast({
+        status: "success",
+        title: isBanning ? "Đã khóa tài khoản" : "Đã mở khóa tài khoản",
+      });
+    } catch (e) {
+      console.error(e);
+      toast({ status: "error", title: "Thao tác thất bại" });
+    } finally {
+      setIsSubmitting(false);
+      setModalConfig((prev) => ({ ...prev, isOpen: false }));
+    }
+  };
 
   const confirmToggle = (id, ban) => {
     setPending({ id, ban });
@@ -55,7 +172,9 @@ export default function UserManager() {
     try {
       const { id, ban } = pending;
       await adminService.toggleBanUser(id, ban);
-      setUsers((prev) => prev.map((u) => (u._id === id ? { ...u, isBanned: ban } : u)));
+      setUsers((prev) =>
+        prev.map((u) => (u._id === id ? { ...u, isBanned: ban } : u))
+      );
       toast({ status: "success", title: "Cập nhật thành công" });
     } catch (e) {
       toast({ status: "error", title: "Thao tác thất bại" });
@@ -77,7 +196,7 @@ export default function UserManager() {
             <Tr>
               <Th>Tên đăng nhập</Th>
               <Th>Email</Th>
-                <Th>Phone</Th>
+              <Th>Phone</Th>
               <Th>Tên</Th>
               <Th>Vai trò</Th>
               <Th>Ngày tham gia</Th>
@@ -88,15 +207,26 @@ export default function UserManager() {
             {users.map((u) => (
               <Tr key={u._id}>
                 <Td>{u.username}</Td>
-                <Td>{u.email || '-'}</Td>
-                <Td>{u.phone || '-'}</Td>
+                <Td>{u.email || "-"}</Td>
+                <Td>{u.phone || "-"}</Td>
                 <Td>{u.name}</Td>
-                <Td>{u.role === 'guest' ? 'User' : (u.role || '')}</Td>
+                <Td>{u.role === "guest" ? "User" : u.role || ""}</Td>
                 <Td>{new Date(u.createdAt).toLocaleDateString()}</Td>
                 <Td>
                   <HStack>
-                    <Switch colorScheme="red" isChecked={u.isBanned} onChange={(e) => confirmToggle(u._id, e.target.checked)} />
-                    <Text fontSize="sm" color={u.isBanned ? 'red.500' : undefined}>{u.isBanned ? "Bị cấm" : "Hoạt động"}</Text>
+                    <Switch
+                      colorScheme="red"
+                      isChecked={u.isBanned}
+                      // e.target.checked = true (muốn cấm), false (muốn bỏ cấm)
+                      onChange={(e) => handleToggleBan(u, e.target.checked)}
+                      // onChange={(e) => confirmToggle(u._id, e.target.checked)}
+                    />
+                    <Text
+                      fontSize="sm"
+                      color={u.isBanned ? "red.500" : undefined}
+                    >
+                      {u.isBanned ? "Bị cấm" : "Hoạt động"}
+                    </Text>
                   </HStack>
                 </Td>
               </Tr>
@@ -104,14 +234,28 @@ export default function UserManager() {
           </Tbody>
         </Table>
 
-        <AlertDialog isOpen={isOpen} leastDestructiveRef={cancelRef} onClose={onClose}>
+        {users.length === 0 && !isLoading && (
+          <Text p={4} textAlign="center" color="gray.500">
+            Không có người dùng nào.
+          </Text>
+        )}
+
+        {/* <AlertDialog
+          isOpen={isOpen}
+          leastDestructiveRef={cancelRef}
+          onClose={onClose}
+        >
           <AlertDialogOverlay>
             <AlertDialogContent>
               <AlertDialogHeader fontSize="lg" fontWeight="bold">
                 Xác nhận hành động
               </AlertDialogHeader>
 
-              <AlertDialogBody>{pending.ban ? 'Bạn có chắc muốn cấm người dùng này?' : 'Bạn có chắc muốn bỏ cấm người dùng này?'}</AlertDialogBody>
+              <AlertDialogBody>
+                {pending.ban
+                  ? "Bạn có chắc muốn cấm người dùng này?"
+                  : "Bạn có chắc muốn bỏ cấm người dùng này?"}
+              </AlertDialogBody>
 
               <AlertDialogFooter>
                 <Button ref={cancelRef} onClick={onClose}>
@@ -123,8 +267,19 @@ export default function UserManager() {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialogOverlay>
-        </AlertDialog>
+        </AlertDialog> */}
       </Box>
+      {/* MODAL XÁC NHẬN + NHẬP LÝ DO */}
+      <ActionConfirmModal
+        isOpen={modalConfig.isOpen}
+        onClose={() => setModalConfig((prev) => ({ ...prev, isOpen: false }))}
+        onConfirm={onConfirmAction}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        isDanger={modalConfig.isDanger}
+        requireReason={modalConfig.requireReason}
+        isLoading={isSubmitting}
+      />
     </Box>
   );
 }

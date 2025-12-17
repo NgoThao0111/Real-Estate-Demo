@@ -19,18 +19,36 @@ import {
   AlertDialogOverlay,
   useDisclosure,
   HStack,
-  useColorModeValue
+  VStack,
+  Alert,
+  AlertIcon,
+  useColorModeValue,
 } from "@chakra-ui/react";
 import adminService from "../../services/adminService";
+
+import ActionConfirmModal from "../../components/ActionConfirmModal.jsx";
 
 export default function ReportsManager() {
   const [reports, setReports] = useState([]);
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
   const toast = useToast();
+  const [isLoading, setIsLoading] = useState(false);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const cancelRef = useRef();
   const [pending, setPending] = useState({ id: null, action: null });
+
+  // State quản lý Modal
+  const [modalConfig, setModalConfig] = useState({
+    isOpen: false,
+    type: null, // 'RESOLVE' | 'DELETE_LISTING' | 'BAN_USER'
+    data: null, // report object
+    title: "",
+    message: "",
+    isDanger: false,
+    requireReason: false,
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const mapStatus = (s) => {
     if (!s) return "";
@@ -42,6 +60,7 @@ export default function ReportsManager() {
   };
 
   const fetchReports = async (p = 1) => {
+    setIsLoading(true);
     try {
       const res = await adminService.getReports(p);
       setReports(res.data.reports || []);
@@ -49,6 +68,8 @@ export default function ReportsManager() {
       setPages(res.data.pages || 1);
     } catch (e) {
       toast({ status: "error", title: "Không thể tải báo cáo" });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -63,6 +84,101 @@ export default function ReportsManager() {
   const confirmAction = (id, action) => {
     setPending({ id, action });
     onOpen();
+  };
+
+  // 1. Giải quyết (Đánh dấu đã xem/Không vi phạm)
+  const handleResolve = (report) => {
+    setModalConfig({
+      isOpen: true,
+      type: "RESOLVE",
+      data: report,
+      title: "Đánh dấu đã giải quyết",
+      message: (
+        <VStack align="start" spacing={3}>
+          <Alert status="info" borderRadius="md">
+            <AlertIcon />
+            Báo cáo này sẽ được đóng lại.
+          </Alert>
+
+          <Text>
+            Không có hành động trừng phạt nào được áp dụng cho bài viết hoặc
+            người dùng liên quan.
+          </Text>
+        </VStack>
+      ),
+      isDanger: false,
+      requireReason: false, // Tùy chọn
+    });
+  };
+
+  // 2. Xóa bài viết bị report
+  const handleDeleteListing = (report) => {
+    setModalConfig({
+      isOpen: true,
+      type: "DELETE_LISTING",
+      data: report,
+      title: "Xử lý vi phạm: Xóa bài viết",
+      message: (
+        <VStack align="start" spacing={3}>
+          <Text>
+            Bạn đang xóa bài viết{" "}
+            <Text as="span" fontWeight="bold">
+              “{report.listing?.title}”
+            </Text>
+            .
+          </Text>
+
+          <Alert status="warning" borderRadius="md">
+            <AlertIcon />
+            Hành động này sẽ gửi thông báo đến:
+          </Alert>
+
+          <VStack pl={5} spacing={1} align="start">
+            <Text>• Chủ bài đăng</Text>
+            <Text>• Người báo cáo</Text>
+          </VStack>
+
+          <Text color="red.500" fontWeight="semibold">
+            Hành động này không thể hoàn tác.
+          </Text>
+        </VStack>
+      ),
+
+      isDanger: true,
+      requireReason: true,
+    });
+  };
+
+  // 3. Cấm người đăng bài bị report
+  const handleBanUser = (report) => {
+    setModalConfig({
+      isOpen: true,
+      type: "BAN_USER",
+      data: report,
+      title: "Xử lý vi phạm: Cấm người dùng",
+      message: (
+        <VStack align="start" spacing={3}>
+          <Alert status="error" borderRadius="md">
+            <AlertIcon />
+            Bạn sắp khóa tài khoản của chủ bài đăng.
+          </Alert>
+
+          <Text>
+            Người dùng sẽ bị{" "}
+            <Text as="span" fontWeight="bold">
+              đăng xuất ngay lập tức
+            </Text>{" "}
+            và không thể tiếp tục sử dụng hệ thống.
+          </Text>
+
+          <Text color="red.500" fontWeight="semibold">
+            Hành động này không thể hoàn tác.
+          </Text>
+        </VStack>
+      ),
+      isDanger: true,
+      requireReason: true,
+    });
   };
 
   const getConfirmMessage = (action, r) => {
@@ -103,6 +219,42 @@ export default function ReportsManager() {
     }
   };
 
+  // --- GỌI API ---
+  const onConfirmAction = async (reason) => {
+    setIsSubmitting(true);
+    const { type, data } = modalConfig;
+
+    try {
+      if (type === "RESOLVE") {
+        // Resolve đơn thuần (Không xóa bài)
+        await adminService.resolveReport(data._id, "resolved");
+        toast({ status: "success", title: "Đã giải quyết báo cáo" });
+      } else if (type === "DELETE_LISTING") {
+        // Xóa bài + Resolve
+        await adminService.actionOnReport(data._id, "delete_listing", reason);
+        toast({ status: "success", title: "Đã xóa bài viết và đóng báo cáo" });
+      } else if (type === "BAN_USER") {
+        // Ban user + Resolve
+        await adminService.actionOnReport(data._id, "ban_user", reason);
+        toast({
+          status: "success",
+          title: "Đã cấm người dùng và đóng báo cáo",
+        });
+      }
+
+      // Reload data
+      fetchReports(page);
+    } catch (e) {
+      toast({
+        status: "error",
+        title: e?.response?.data?.message || "Thao tác thất bại",
+      });
+    } finally {
+      setIsSubmitting(false);
+      setModalConfig((prev) => ({ ...prev, isOpen: false }));
+    }
+  };
+
   return (
     <Box>
       <Heading size="md" mb={4}>
@@ -115,46 +267,45 @@ export default function ReportsManager() {
           tableLayout="fixed"
           width="100%"
         >
-        <Thead>
-          <Tr>
-            <Th w={{ base: "60%", md: "20%" }}>Tin</Th>
-            <Th w="15%">Người báo</Th>
-            <Th w="25%">Lý do</Th>
-            <Th w="5%">Ngày</Th>
-            <Th w="15%">Trạng thái</Th>
-            <Th w="30%">Hành động</Th>
-          </Tr>
-        </Thead>
+          <Thead>
+            <Tr>
+              <Th w={{ base: "60%", md: "20%" }}>Tin</Th>
+              <Th w="15%">Người báo</Th>
+              <Th w="25%">Lý do</Th>
+              <Th w="5%">Ngày</Th>
+              <Th w="15%">Trạng thái</Th>
+              <Th w="30%">Hành động</Th>
+            </Tr>
+          </Thead>
           <Tbody>
             {reports.map((r) => (
-              <Tr 
+              <Tr
                 key={r._id}
                 cursor="pointer"
-                onClick={() => window.open(`/listings/${r.listing?._id}`, "_blank")}
+                onClick={() =>
+                  window.open(`/listings/${r.listing?._id}`, "_blank")
+                }
               >
                 <Td
                   w={{ base: "60%", md: "40%" }}
                   maxW={{ base: "60%", md: "40%" }}
                 >
                   {r.listing?.title ? (
-                    <Text
-                      fontWeight={600}
-                      noOfLines={2}
-                      wordBreak="break-word"
-                    >
+                    <Text fontWeight={600} noOfLines={2} wordBreak="break-word">
                       {r.listing.title}
                     </Text>
                   ) : (
-                    <Text
-                      color={mutedColor}
-                      fontStyle="italic"
-                      noOfLines={2}
-                    >
+                    <Text color={mutedColor} fontStyle="italic" noOfLines={2}>
                       (Bài viết đã xóa)
                     </Text>
                   )}
+                  {r.listing && (
+                    <Text fontSize="xs" color="gray.500">
+                      Chủ bài: {r.listing.owner?.username || "Unknown"}
+                    </Text>
+                  )}
                 </Td>
-                
+
                 <Td>{r.reporter?.username || r.reporter?.name || "—"}</Td>
                 <Td maxW="20%">
                   <Text noOfLines={2} wordBreak="break-word">
@@ -166,7 +317,7 @@ export default function ReportsManager() {
                     </Text>
                   )}
                 </Td>
-                <Td>{new Date(r.createdAt).toLocaleString()}</Td>
+                <Td>{new Date(r.createdAt).toLocaleString("vi-VN")}</Td>
                 <Td>{mapStatus(r.status)}</Td>
                 <Td>
                   <HStack onClick={(e) => e.stopPropagation()}>
@@ -174,7 +325,8 @@ export default function ReportsManager() {
                       size="sm"
                       colorScheme="green"
                       mr={2}
-                      onClick={() => confirmAction(r._id, "resolve")}
+                      // onClick={() => confirmAction(r._id, "resolve")}
+                      onClick={() => handleResolve(r)}
                     >
                       Giải quyết
                     </Button>
@@ -182,7 +334,9 @@ export default function ReportsManager() {
                       size="sm"
                       colorScheme="red"
                       mr={2}
-                      onClick={() => confirmAction(r._id, "delete")}
+                      // onClick={() => confirmAction(r._id, "delete")}
+                      variant="outline"
+                      onClick={() => handleDeleteListing(r)}
                       isDisabled={!r.listing}
                     >
                       Xóa tin
@@ -190,7 +344,9 @@ export default function ReportsManager() {
                     <Button
                       size="sm"
                       colorScheme="orange"
-                      onClick={() => confirmAction(r._id, "ban")}
+                      // onClick={() => confirmAction(r._id, "ban")}
+                      variant="solid"
+                      onClick={() => handleBanUser(r)}
                       isDisabled={!r.listing}
                     >
                       Cấm người đăng
@@ -237,7 +393,7 @@ export default function ReportsManager() {
           </HStack>
         </Box>
 
-        <AlertDialog
+        {/* <AlertDialog
           isOpen={isOpen}
           leastDestructiveRef={cancelRef}
           onClose={onClose}
@@ -263,8 +419,19 @@ export default function ReportsManager() {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialogOverlay>
-        </AlertDialog>
+        </AlertDialog> */}
       </Box>
+      {/* MODAL XÁC NHẬN */}
+      <ActionConfirmModal
+        isOpen={modalConfig.isOpen}
+        onClose={() => setModalConfig((prev) => ({ ...prev, isOpen: false }))}
+        onConfirm={onConfirmAction}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        isDanger={modalConfig.isDanger}
+        requireReason={modalConfig.requireReason}
+        isLoading={isSubmitting}
+      />
     </Box>
   );
 }

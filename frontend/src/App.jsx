@@ -31,6 +31,7 @@ import AuthModal from "./components/AuthModal.jsx";
 
 import { useAuthContext } from "./context/AuthContext.jsx";
 
+
 function App() {
   const { currentUser, isLoading, logout } = useAuthContext();
   const location = useLocation();

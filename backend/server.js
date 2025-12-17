@@ -19,6 +19,7 @@ import propertyTypeRoutes from "./routes/property_type.route.js";
 import chatRoutes from "./routes/chat.route.js";
 import reportRoutes from "./routes/report.route.js";
 import adminRoutes from "./routes/admin.route.js";
+import notificationRoute from "./routes/notification.route.js";
 
 dotenv.config();
 
@@ -201,6 +202,7 @@ app.use("/api/property_type", propertyTypeRoutes);
 app.use("/api/chats", chatRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/notifications", notificationRoute);
 
 app.get("/", (req, res) => {
   res.send("Server is running correctly with Docker/CORS Fixes.");

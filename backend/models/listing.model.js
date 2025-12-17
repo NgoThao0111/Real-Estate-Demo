@@ -81,6 +81,9 @@ const listingSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    rejectionReason: {
+      type: String,
+    },
 
     //Mối quan hệ M-N với Utility, thêm thuộc tính amount
     amenities: [
