@@ -3,10 +3,8 @@ import { NavLink, Outlet, useNavigate, useLocation, Link } from "react-router-do
 import { useState } from 'react';
 import { HamburgerIcon } from "@chakra-ui/icons";
 import { MdDashboard, MdHome, MdPeople, MdMessage, MdBarChart, MdHistory, MdLogout, MdWarning } from "react-icons/md";
-import { useAuthContext } from "../../context/AuthContext.jsx";
 
 export default function AdminLayout() {
-  const { currentUser, logout } = useAuthContext();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();

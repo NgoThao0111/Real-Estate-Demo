@@ -26,7 +26,7 @@ export const userRegister = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    const username = email.split('@')[0];
+    const username = email.split("@")[0];
 
     user = new User({
       username: username,
@@ -238,7 +238,7 @@ export const loginUser = async (req, res) => {
     }
 
     const user = await User.findOne({
-      email,
+      $or: [{ email: email }, { username: email }],
     });
 
     if (!user) {

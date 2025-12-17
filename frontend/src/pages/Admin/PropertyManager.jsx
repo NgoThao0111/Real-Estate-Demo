@@ -23,9 +23,16 @@ import {
   useColorModeValue,
   Image,
   Badge,
+  Tooltip,
+  IconButton,
+  VStack,
+  Alert,
+  AlertIcon,
 } from "@chakra-ui/react";
 import { useRef } from "react";
+import { CheckIcon, CloseIcon, DeleteIcon } from "@chakra-ui/icons";
 import adminService from "../../services/adminService";
+import ActionConfirmModal from "../../components/ActionConfirmModal.jsx";
 
 export default function PropertyManager() {
   const [listings, setListings] = useState([]);
@@ -36,11 +43,23 @@ export default function PropertyManager() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const cancelRef = useRef();
   const [pending, setPending] = useState({ id: null, action: null });
+  const [modalConfig, setModalConfig] = useState({
+    isOpen: false,
+    type: null, // 'REJECT' | 'DELETE'
+    data: null, // listing object
+    title: "",
+    message: "",
+    isDanger: false,
+  });
+  const [isLoadingAction, setIsLoadingAction] = useState(false); // Loading khi đang submit modal
 
   const fetchListings = async () => {
     setLoading(true);
     try {
-      const res = await adminService.getListings({ status: statusFilter, rental_type: typeFilter });
+      const res = await adminService.getListings({
+        status: statusFilter,
+        rental_type: typeFilter,
+      });
       const items = res.data.listings || [];
       console.log(
         "Admin listings statuses:",
@@ -53,36 +72,161 @@ export default function PropertyManager() {
       setLoading(false);
     }
   };
-      Image,
-      Badge,
-
-  useEffect(() => {
-    fetchListings();
-  }, []);
+  Image,
+    Badge,
+    useEffect(() => {
+      fetchListings();
+    }, []);
 
   const confirmAction = (id, action) => {
     setPending({ id, action });
     onOpen();
   };
 
+  // Mở Modal Từ chối (Reject)
+  const openRejectModal = (listing) => {
+    setModalConfig({
+      isOpen: true,
+      type: "REJECT",
+      data: listing,
+      title: "Từ chối bài đăng",
+      message: (
+        <VStack align="start" spacing={3}>
+          <Alert status="warning" borderRadius="md">
+            <AlertIcon />
+            Bạn sắp từ chối bài đăng này.
+          </Alert>
+
+          <Text>
+            Bài viết{" "}
+            <Text as="span" fontWeight="bold">
+              “{listing.title}”
+            </Text>{" "}
+            sẽ không được hiển thị trên hệ thống.
+          </Text>
+
+          <Text>
+            Vui lòng nhập{" "}
+            <Text as="span" fontWeight="bold">
+              lý do từ chối
+            </Text>{" "}
+            để thông báo cho người đăng.
+          </Text>
+        </VStack>
+      ),
+      isDanger: false,
+    });
+  };
+
+  // Duyệt bài (Approve) - Không cần lý do
+  const handleApprove = async (listing) => {
+    try {
+      await adminService.updateListingStatus(listing._id, "approved");
+
+      // Update UI Optimistically
+      setListings((prev) =>
+        prev.map((l) =>
+          l._id === listing._id ? { ...l, status: "approved" } : l
+        )
+      );
+      toast({ status: "success", title: "Đã duyệt bài đăng" });
+    } catch (e) {
+      console.error("Approve failed", e);
+      toast({ status: "error", title: "Duyệt thất bại" });
+    }
+  };
+
+  // Mở Modal Xóa (Delete)
+  const openDeleteModal = (listing) => {
+    setModalConfig({
+      isOpen: true,
+      type: "DELETE",
+      data: listing,
+      title: "Xóa bài đăng vĩnh viễn",
+      message: (
+        <VStack align="start" spacing={3}>
+          <Alert status="error" borderRadius="md">
+            <AlertIcon />
+            Bạn sắp xóa vĩnh viễn bài đăng này.
+          </Alert>
+
+          <Text>
+            Bài viết{" "}
+            <Text as="span" fontWeight="bold">
+              “{listing.title}”
+            </Text>{" "}
+            sẽ bị xóa{" "}
+            <Text as="span" fontWeight="bold">
+              vĩnh viễn
+            </Text>{" "}
+            khỏi hệ thống.
+          </Text>
+
+          <Text color="red.500" fontWeight="semibold">
+            Hành động này không thể khôi phục.
+          </Text>
+        </VStack>
+      ),
+      isDanger: true,
+    });
+  };
+
+  //Xử lý xác nhận từ Modal (Gửi API kèm Reason)
+  const onConfirmAction = async (reason) => {
+    const { type, data } = modalConfig;
+    setIsLoadingAction(true);
+
+    try {
+      if (type === "REJECT") {
+        await adminService.updateListingStatus(data._id, "rejected", reason);
+
+        setListings((prev) =>
+          prev.map((l) =>
+            l._id === data._id ? { ...l, status: "rejected" } : l
+          )
+        );
+        toast({ status: "success", title: "Đã từ chối bài đăng" });
+      }
+
+      if (type === "DELETE") {
+        await adminService.deleteListing(data._id, reason);
+
+        setListings((prev) => prev.filter((l) => l._id !== data._id));
+        toast({ status: "success", title: "Đã xóa bài đăng" });
+      }
+    } catch (e) {
+      console.error("Action failed", e);
+      toast({
+        status: "error",
+        title: "Thao tác thất bại",
+        description: e.message,
+      });
+    } finally {
+      setIsLoadingAction(false);
+      setModalConfig((prev) => ({ ...prev, isOpen: false })); // Đóng modal
+    }
+  };
+
   const performAction = async () => {
     const { id, action } = pending;
     try {
-      if (action === 'approve' || action === 'reject') {
-        const status = action === 'approve' ? 'approved' : 'rejected';
+      if (action === "approve" || action === "reject") {
+        const status = action === "approve" ? "approved" : "rejected";
         await adminService.updateListingStatus(id, status);
-        setListings((prev) => prev.map((l) => (l._id === id ? { ...l, status } : l)));
+        setListings((prev) =>
+          prev.map((l) => (l._id === id ? { ...l, status } : l))
+        );
       }
 
-      if (action === 'delete') {
+      if (action === "delete") {
         await adminService.deleteListing(id);
         setListings((prev) => prev.filter((l) => l._id !== id));
       }
 
-      toast({ status: 'success', title: 'Thành công' });
+      toast({ status: "success", title: "Thành công" });
     } catch (e) {
-      console.error('Admin action failed', e);
-      toast({ status: 'error', title: 'Thao tác thất bại' });
+      console.error("Admin action failed", e);
+      toast({ status: "error", title: "Thao tác thất bại" });
     } finally {
       setPending({ id: null, action: null });
       onClose();
@@ -118,9 +262,12 @@ export default function PropertyManager() {
     if (isNaN(amount)) return price;
     if (amount >= 1000000000) {
       // show billions with comma as decimal separator
-      return (amount / 1000000000).toFixed(1).replace(/\.0$/, '').replace('.', ',') + ' Tỷ';
+      return (
+        (amount / 1000000000).toFixed(1).replace(/\.0$/, "").replace(".", ",") +
+        " Tỷ"
+      );
     }
-    return new Intl.NumberFormat('vi-VN').format(amount) + ' đ';
+    return new Intl.NumberFormat("vi-VN").format(amount) + " đ";
   };
 
   const getConfirmMessage = (action) => {
@@ -177,7 +324,7 @@ export default function PropertyManager() {
       {loading ? (
         <Text>Đang tải...</Text>
       ) : (
-        <Box bg={cardBg} borderRadius="md" p={4} overflowX="auto">
+        <Box bg={cardBg} borderRadius="md" p={4} overflowX="auto" shadow="sm">
           <Table
             variant="simple"
             color={textColor}
@@ -254,7 +401,10 @@ export default function PropertyManager() {
                           <Button
                             size="sm"
                             colorScheme="green"
-                            onClick={() => confirmAction(l._id, "approve")}
+                            isDisabled={normalize(l.status) === "approved"}
+                            onClick={() => handleApprove(l)}
+                            aria-label="Approve"
+                            // onClick={() => confirmAction(l._id, "approve")}
                           >
                             Duyệt
                           </Button>
@@ -262,7 +412,10 @@ export default function PropertyManager() {
                             size="sm"
                             colorScheme="red"
                             variant="outline"
-                            onClick={() => confirmAction(l._id, "reject")}
+                            // onClick={() => confirmAction(l._id, "reject")}
+                            isDisabled={normalize(l.status) === "rejected"}
+                            onClick={() => openRejectModal(l)}
+                            aria-label="Reject"
                           >
                             Từ chối
                           </Button>
@@ -272,7 +425,10 @@ export default function PropertyManager() {
                           <Button
                             size="sm"
                             colorScheme="orange"
-                            onClick={() => confirmAction(l._id, "reject")}
+                            // onClick={() => confirmAction(l._id, "reject")}
+                            isDisabled={normalize(l.status) === "rejected"}
+                            onClick={() => openRejectModal(l)}
+                            aria-label="Reject"
                           >
                             Hủy duyệt
                           </Button>
@@ -280,7 +436,9 @@ export default function PropertyManager() {
                             size="sm"
                             colorScheme="red"
                             variant="outline"
-                            onClick={() => confirmAction(l._id, "delete")}
+                            // onClick={() => confirmAction(l._id, "delete")}
+                            onClick={() => openDeleteModal(l)}
+                            aria-label="Delete"
                           >
                             Xóa
                           </Button>
@@ -290,7 +448,10 @@ export default function PropertyManager() {
                           <Button
                             size="sm"
                             colorScheme="green"
-                            onClick={() => confirmAction(l._id, "approve")}
+                            // onClick={() => confirmAction(l._id, "approve")}
+                            isDisabled={normalize(l.status) === "approved"}
+                            onClick={() => handleApprove(l)}
+                            aria-label="Approve"
                           >
                             Duyệt
                           </Button>
@@ -299,7 +460,9 @@ export default function PropertyManager() {
                             size="sm"
                             colorScheme="red"
                             variant="outline"
-                            onClick={() => confirmAction(l._id, "delete")}
+                            // onClick={() => confirmAction(l._id, "delete")}
+                            onClick={() => openDeleteModal(l)}
+                            aria-label="Delete"
                           >
                             Xóa
                           </Button>
@@ -311,7 +474,8 @@ export default function PropertyManager() {
               ))}
             </Tbody>
           </Table>
-          <AlertDialog
+
+          {/* <AlertDialog
             isOpen={isOpen}
             leastDestructiveRef={cancelRef}
             onClose={onClose}
@@ -334,9 +498,21 @@ export default function PropertyManager() {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialogOverlay>
-          </AlertDialog>
+          </AlertDialog> */}
         </Box>
       )}
+
+      {/* COMPONENT MODAL NHẬP LÝ DO */}
+      <ActionConfirmModal
+        isOpen={modalConfig.isOpen}
+        onClose={() => setModalConfig((prev) => ({ ...prev, isOpen: false }))}
+        onConfirm={onConfirmAction}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        isDanger={modalConfig.isDanger}
+        isLoading={isLoadingAction}
+        requireReason={true}
+      />
     </Box>
   );
 }
