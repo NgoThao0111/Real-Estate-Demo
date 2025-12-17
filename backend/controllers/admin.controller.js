@@ -17,17 +17,17 @@ export const createSystemAnnouncement = async (req, res) => {
       type,
       targetAudience,
       expiresAt,
-      createdBy: req.userId
+      createdBy: req.userId,
     });
 
     // 2. Bắn Socket cho TOÀN BỘ server
     if (req.io) {
-      req.io.emit('system_notification', {
+      req.io.emit("system_notification", {
         _id: newAnnouncement._id,
         title: newAnnouncement.title,
         message: newAnnouncement.message,
-        type: 'SYSTEM_ANNOUNCEMENT',
-        createdAt: newAnnouncement.createdAt
+        type: "SYSTEM_ANNOUNCEMENT",
+        createdAt: newAnnouncement.createdAt,
       });
     }
 
@@ -43,7 +43,10 @@ export const createSystemAnnouncement = async (req, res) => {
       console.error(e);
     }
 
-    return res.json({ message: "Broadcast sent successfully", data: newAnnouncement });
+    return res.json({
+      message: "Broadcast sent successfully",
+      data: newAnnouncement,
+    });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Server error" });
@@ -57,7 +60,7 @@ export const createNotification = async (
   try {
     const newNotif = await Notification.create({
       recipient,
-      type, 
+      type,
       title,
       message,
       reason: reason || "",
@@ -163,13 +166,13 @@ export const getAllListings = async (req, res) => {
 export const updateListingStatus = async (req, res) => {
   try {
     const id = req.params.id;
-    const { status, reason } = req.body; 
+    const { status, reason } = req.body;
 
     const listing = await Listing.findById(id);
     if (!listing) return res.status(404).json({ message: "Listing not found" });
 
     listing.status = status;
-    if (status === 'rejected') listing.rejectionReason = reason;
+    if (status === "rejected") listing.rejectionReason = reason;
     await listing.save();
 
     if (listing.owner) {
@@ -207,7 +210,9 @@ export const updateListingStatus = async (req, res) => {
         target: listing._id,
         meta: { status, reason },
       });
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
 
     return res.json({ message: "Listing status updated", listing });
   } catch (error) {
@@ -413,7 +418,14 @@ export const getReports = async (req, res) => {
     const [reports, total] = await Promise.all([
       Report.find()
         .populate("reporter", "username name")
-        .populate("listing", "title owner")
+        .populate({
+          path: "listing",
+          select: "title owner",
+          populate: {
+            path: "owner",
+            select: "name profile createdAt",
+          },
+        })
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),
