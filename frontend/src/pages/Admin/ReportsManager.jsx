@@ -301,12 +301,12 @@ export default function ReportsManager() {
                   )}
                   {r.listing && (
                     <Text fontSize="xs" color="gray.500">
-                      Chủ bài: {r.listing.owner?.username || "Unknown"}
+                      Chủ bài: {r.listing.owner?.name || "Unknown"}
                     </Text>
                   )}
                 </Td>
 
-                <Td>{r.reporter?.username || r.reporter?.name || "—"}</Td>
+                <Td>{r.reporter?.name || r.reporter?.username || "—"}</Td>
                 <Td maxW="20%">
                   <Text noOfLines={2} wordBreak="break-word">
                     {r.reason}
