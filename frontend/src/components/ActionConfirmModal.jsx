@@ -8,6 +8,7 @@ import {
   ModalCloseButton,
   Button,
   Text,
+  Box,
   Textarea,
   FormControl,
   FormLabel,
@@ -53,7 +54,7 @@ const ActionConfirmModal = ({
         <ModalCloseButton />
         
         <ModalBody>
-          <Text mb={4}>{message}</Text>
+          <Box mb={4}>{message}</Box>
           
           {requireReason && (
             <FormControl isInvalid={!!error}>
