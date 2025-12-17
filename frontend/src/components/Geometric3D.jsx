@@ -71,9 +71,12 @@ const Geometric3D = () => {
     const materials = imageUrls.map((url) => {
       const texture = textureLoader.load(url);
       
-      // Không wrap texture, hiển thị đầy đủ hình ảnh trên mỗi mặt
+      // Cấu hình texture trước khi load xong
       texture.wrapS = THREE.ClampToEdgeWrapping;
       texture.wrapT = THREE.ClampToEdgeWrapping;
+      texture.minFilter = THREE.LinearFilter;
+      texture.magFilter = THREE.LinearFilter;
+      texture.generateMipmaps = false;
       
       return new THREE.MeshStandardMaterial({
         map: texture,
