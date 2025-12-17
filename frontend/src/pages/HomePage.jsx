@@ -8,8 +8,12 @@ import {
   Box,
   Button,
   useColorModeValue,
+  IconButton,
+  HStack,
+  VStack,
+  Badge,
 } from "@chakra-ui/react";
-import { FiUsers, FiGrid, FiCheckCircle } from "react-icons/fi";
+import { FiUsers, FiGrid, FiCheckCircle, FiChevronLeft, FiChevronRight, FiMapPin, FiHome } from "react-icons/fi";
 import { useEffect, useState } from "react";
 import ListingCard from "../components/ListingCard";
 import HomePanel from "../components/HomePanel";
@@ -35,6 +39,11 @@ const HomePage = () => {
       : useColorModeValue("gray.100", "gray.900");
   const aosDuration = 800;
   const aosDelay = 50;
+  
+  // Slideshow state
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  
   // 1. Fetch Listing thường (cho danh sách hiển thị bên dưới)
   useEffect(() => {
     fetchListings();
@@ -50,6 +59,32 @@ const HomePage = () => {
         }
       } catch (error) {
         console.error("Lỗi set data lên bản đồ: ", error);
+  // Auto-play slideshow
+  useEffect(() => {
+    if (!isAutoPlaying || !listings || listings.length === 0) return;
+    
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % Math.min(3, listings.length));
+    }, 5000); // Chuyển slide mỗi 5 giây
+
+    return () => clearInterval(interval);
+  }, [isAutoPlaying, listings]);
+
+  const handlePrevSlide = () => {
+    setIsAutoPlaying(false);
+    setCurrentSlide((prev) => (prev - 1 + Math.min(3, listings.length)) % Math.min(3, listings.length));
+  };
+
+  const handleNextSlide = () => {
+    setIsAutoPlaying(false);
+    setCurrentSlide((prev) => (prev + 1) % Math.min(3, listings.length));
+  };
+
+  const formatPrice = (price) => {
+    if (!price) return "Liên hệ";
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
+  };
+
       }
     };
     fetchMapData();
