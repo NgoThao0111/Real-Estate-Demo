@@ -5,11 +5,15 @@ const notificationSchema = new mongoose.Schema(
     recipient: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true,
+      // Not required to support system-wide notifications (audience-based)
     },
     sender: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
+    },
+    // Audience for system notifications (e.g., 'all', 'admins', 'users', 'user:<id>', 'email:<address>')
+    audience: {
+      type: String,
     },
     type: {
       type: String,
@@ -19,6 +23,7 @@ const notificationSchema = new mongoose.Schema(
         "POST_DELETED",
         "USER_BANNED",
         "REPORT_RESOLVED",
+        "info",
       ],
       required: true,
     },
@@ -27,7 +32,7 @@ const notificationSchema = new mongoose.Schema(
     },
     referenceModel: {
       type: String,
-      enum: ['List', 'Report', 'User'],
+      enum: ['Listing', 'Report', 'User'],
     },
     title: {
       type: String,
@@ -36,8 +41,7 @@ const notificationSchema = new mongoose.Schema(
     message: { type: String },
     reason: {
       type: String,
-      default: "",
-      required: true
+      default: ""
     },
     isRead: {
       type: Boolean,

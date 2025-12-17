@@ -328,7 +328,7 @@ export default function PropertyManager() {
           <Table
             variant="simple"
             color={textColor}
-            tableLayout="fixed"
+            table-layout="fixed"
             width="100%"
           >
             <Thead>
