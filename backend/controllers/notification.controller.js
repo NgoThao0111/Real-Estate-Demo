@@ -6,44 +6,59 @@ export const getMyNotifications = async (req, res) => {
   try {
     const userId = req.userId;
 
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const unreadCount = await Notification.countDocuments({
+      recipient: userId,
+      isRead: false,
+    });
+
+    let systemNotifs = [];
+    if (page == 1) {
+      systemNotifs = await Announcement.find({
+        $or: [
+          { expiresAt: { $exists: false } }, // Không có hạn
+          { expiresAt: { $gt: new Date() } }, // Hoặc chưa hết hạn
+        ],
+        // Nếu user là 'user' thường thì không lấy cái của 'agent'
+        targetAudience: { $in: ["all", req.userRole] },
+      })
+        .sort({ createdAt: -1 })
+        .limit(3);
+    }
     // 1. Lấy thông báo cá nhân (Của riêng tôi)
     const personalNotifs = await Notification.find({ recipient: userId })
       .sort({ createdAt: -1 })
-      .limit(20);
-
-    // 2. Lấy thông báo toàn hệ thống (Còn hạn)
-    const globalNotifs = await Announcement.find({
-      $or: [
-          { expiresAt: { $exists: false } }, // Không có hạn
-          { expiresAt: { $gt: new Date() } } // Hoặc chưa hết hạn
-      ],
-      // Nếu user là 'user' thường thì không lấy cái của 'agent'
-      targetAudience: { $in: ['all', req.userRole] } 
-    }).sort({ createdAt: -1 }).limit(5);
+      .skip(skip)
+      .limit(limit);
 
     // 3. (Optional) Kiểm tra xem user đã đọc thông báo toàn hệ thống nào chưa
     // Lấy danh sách ID các thông báo global đã đọc
     const readGlobalIds = await AnnouncementRead.find({ userId })
-      .select('announcementId')
-      .distinct('announcementId'); // Trả về mảng [id1, id2...]
+      .select("announcementId")
+      .distinct("announcementId"); // Trả về mảng [id1, id2...]
 
     // Map lại globalNotifs để thêm cờ isRead
-    const mappedGlobal = globalNotifs.map(notif => ({
-      _id: notif._id,
-      title: notif.title,
-      message: notif.message,
-      type: 'SYSTEM_ANNOUNCEMENT', // Đánh dấu loại
-      createdAt: notif.createdAt,
-      isRead: readGlobalIds.some(id => id.toString() === notif._id.toString())
+    const formattedSystem = systemNotifs.map((n) => ({
+      _id: n._id,
+      title: n.title,
+      message: n.message,
+      type: "SYSTEM_ANNOUNCEMENT",
+      createdAt: n.createdAt,
+      isRead: false, // Mặc định tin hệ thống coi như chưa đọc hoặc xử lý logic read riêng
     }));
 
-    // 4. Trộn 2 mảng lại và sắp xếp theo thời gian
-    const allNotifications = [...personalNotifs, ...mappedGlobal].sort(
-      (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-    );
+    const notifications = [...formattedSystem, ...personalNotifs];
 
-    return res.json({ notifications: allNotifications });
+    notifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
+    return res.json({
+      notifications,
+      totalUnread: unreadCount,
+      hasMore: personalNotifs.length === limit, // Nếu lấy đủ limit tức là có thể còn trang sau
+    });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Error fetching notifications" });
@@ -54,7 +69,7 @@ export const getMyNotifications = async (req, res) => {
 export const markAsRead = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     // Tìm thông báo cá nhân và update
     const notif = await Notification.findOneAndUpdate(
       { _id: id, recipient: req.userId },
@@ -63,7 +78,7 @@ export const markAsRead = async (req, res) => {
     );
 
     // Nếu không tìm thấy trong Notification, có thể đó là Announcement (xử lý sau)
-    
+
     return res.json({ success: true, notification: notif });
   } catch (error) {
     console.error(error);
@@ -73,13 +88,13 @@ export const markAsRead = async (req, res) => {
 
 // Đánh dấu tất cả là đã đọc
 export const markAllAsRead = async (req, res) => {
-    try {
-        await Notification.updateMany(
-            { recipient: req.userId, isRead: false },
-            { isRead: true }
-        );
-        return res.json({ success: true });
-    } catch (error) {
-        return res.status(500).json({ message: "Server error" });
-    }
-}
+  try {
+    await Notification.updateMany(
+      { recipient: req.userId, isRead: false },
+      { isRead: true }
+    );
+    return res.json({ success: true });
+  } catch (error) {
+    return res.status(500).json({ message: "Server error" });
+  }
+};
