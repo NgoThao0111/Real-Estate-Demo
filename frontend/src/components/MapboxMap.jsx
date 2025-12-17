@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import MapboxGeocoder from "@mapbox/mapbox-gl-geocoder";
+import { ChakraProvider } from "@chakra-ui/react";
 import MapboxDirections from "@mapbox/mapbox-gl-directions/dist/mapbox-gl-directions";
 import "mapbox-gl/dist/mapbox-gl.css";
 import "@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css";
@@ -27,13 +28,11 @@ const MapboxMap = ({
   const markersArrayRef = useRef([]);
   const directionsRef = useRef(null);
   const geolocateRef = useRef(null);
+  const mapClickFnRef = useRef(null);
 
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const navigate = useNavigate();
 
-  /* =======================
-     1️⃣ SET MAPBOX TOKEN
-     ======================= */
   useEffect(() => {
     const token = import.meta.env.VITE_MAPBOX_TOKEN;
     console.log("ENV:", import.meta.env);
@@ -43,10 +42,18 @@ const MapboxMap = ({
     }
     mapboxgl.accessToken = token;
   }, []);
-  /* =======================
-     2️⃣ GLOBAL STYLES
-     ======================= */
+
   const GlobalStyles = css`
+    .mapboxgl-ctrl-geocoder--input {
+      padding-left: 36px !important; /* Đẩy chữ sang phải để tránh icon */
+      padding-top: 6px !important; /* Căn chỉnh dọc cho đẹp */
+      padding-bottom: 6px !important;
+    }
+
+    .mapboxgl-ctrl-geocoder--icon-search {
+      top: 10px !important;
+      left: 10px !important;
+    }
     .mapboxgl-popup-content {
       padding: 0 !important;
       background: transparent !important;
@@ -64,9 +71,6 @@ const MapboxMap = ({
     }
   `;
 
-  /* =======================
-     3️⃣ INIT MAP
-     ======================= */
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
     if (!mapboxgl.accessToken) return;
@@ -92,9 +96,6 @@ const MapboxMap = ({
     };
   }, []);
 
-  /* =======================
-     4️⃣ CLEANUP
-     ======================= */
   const cleanUp = () => {
     markerRef.current?.remove();
     markerRef.current = null;
@@ -116,11 +117,13 @@ const MapboxMap = ({
       mapRef.current.removeControl(geolocateRef.current);
       geolocateRef.current = null;
     }
+
+    if (mapClickFnRef.current) {
+      mapRef.current.off("click", mapClickFnRef.current);
+      mapClickFnRef.current = null;
+    }
   };
 
-  /* =======================
-     5️⃣ MODE HANDLER
-     ======================= */
   useEffect(() => {
     if (!isMapLoaded || !mapRef.current) return;
     cleanUp();
@@ -131,10 +134,32 @@ const MapboxMap = ({
     if (mode === "directions") setupDirectionsMode();
   }, [isMapLoaded, mode, JSON.stringify(data), JSON.stringify(initialCoords)]);
 
-  /* =======================
-     MODES
-     ======================= */
   const setupPickerMode = () => {
+    const updateMarkerAndSelect = (lng, lat, addressName) => {
+      if (markerRef.current) markerRef.current.remove();
+
+      markerRef.current = new mapboxgl.Marker({
+        color: "#E53935",
+        draggable: true,
+      })
+        .setLngLat([lng, lat])
+        .addTo(mapRef.current);
+
+      markerRef.current.on("dragend", () => {
+        const { lng, lat } = markerRef.current.getLngLat();
+        onLocationSelect?.(lng, lat, "Vị trí đã ghim");
+      });
+
+      onLocationSelect?.(lng, lat, addressName || "Vị trí đã chọn");
+
+      mapRef.current.flyTo({
+        center: [lng, lat],
+        zoom: 15,
+        speed: 0.5,
+        curve: 1.5,
+      });
+    };
+
     geocoderRef.current = new MapboxGeocoder({
       accessToken: mapboxgl.accessToken,
       mapboxgl,
@@ -146,8 +171,24 @@ const MapboxMap = ({
 
     geocoderRef.current.on("result", (e) => {
       const [lng, lat] = e.result.center;
-      onLocationSelect?.(lng, lat, e.result.place_name);
+      updateMarkerAndSelect(lng, lat, e.result.place_name);
     });
+
+    const onMapClick = (e) => {
+      const { lng, lat } = e.lngLat;
+      updateMarkerAndSelect(lng, lat, "Vị trí tùy chỉnh");
+    };
+
+    mapClickFnRef.current = onMapClick;
+    mapRef.current.on("click", onMapClick);
+
+    if (initialCoords) {
+      updateMarkerAndSelect(
+        initialCoords[0],
+        initialCoords[1],
+        "Vị trí hiện tại"
+      );
+    }
   };
 
   const setupViewMode = () => {
@@ -164,22 +205,47 @@ const MapboxMap = ({
         .setLngLat(item.location.coords.coordinates)
         .addTo(mapRef.current);
 
-      marker.getElement().addEventListener("click", () => {
+      marker.getElement().addEventListener("click", (e) => {
+        e.stopPropagation();
+
+        mapRef.current.flyTo({
+          center: item.location.coords.coordinates,
+          zoom: 17,
+          speed: 1.2,
+          curve: 1,
+          essential: true,
+        });
+
         const popupNode = document.createElement("div");
         const root = createRoot(popupNode);
 
         root.render(
-          <ListingPopup
-            item={item}
-            onNavigate={(id) => navigate(`/listings/${id}`)}
-          />
+          <ChakraProvider>
+            <ListingPopup
+              item={item}
+              onNavigate={(id) => navigate(`/listings/${id}`)}
+              onClose={() => popup.remove()}
+            />
+          </ChakraProvider>
         );
 
-        const popup = new mapboxgl.Popup({ closeButton: false })
-          .setDOMContent(popupNode);
+        const popup = new mapboxgl.Popup({
+          closeButton: false,
+          closeOnClick: true,
+          offset: 25,
+          maxWidth: "300px",
+        })
+          .setLngLat(item.location.coords.coordinates)
+          .setDOMContent(popupNode)
+          .addTo(mapRef.current);
 
-        marker.setPopup(popup).togglePopup();
-        popup.on("close", () => root.unmount());
+        popup.on("close", () => {
+          setTimeout(() => {
+            if (root) {
+              root.unmount();
+            }
+          }, 0);
+        });
       });
 
       markersArrayRef.current.push(marker);
@@ -198,9 +264,6 @@ const MapboxMap = ({
     directionsRef.current.setDestination(initialCoords);
   };
 
-  /* =======================
-     RENDER
-     ======================= */
   return (
     <>
       <Global styles={GlobalStyles} />
