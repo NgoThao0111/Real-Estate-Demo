@@ -1,6 +1,6 @@
 import Listing from "../models/listing.model.js";
 import User from "../models/user.model.js";
-import SystemNotification from "../models/notification.model.js";
+import Notification from "../models/notification.model.js";
 import AdminAction from "../models/adminAction.model.js";
 import Report from "../models/report.model.js";
 import Announcement from "../models/announcement.model.js";
@@ -711,7 +711,7 @@ export const broadcastSystemNotification = async (req, res) => {
       return res.status(400).json({ message: "Missing title or message" });
 
     // 1. Persist notification
-    const notif = await SystemNotification.create({
+    const notif = await Notification.create({
       title,
       message,
       type,
@@ -791,7 +791,7 @@ export const broadcastSystemNotification = async (req, res) => {
 
 export const getNotifications = async (req, res) => {
   try {
-    const items = await SystemNotification.find()
+    const items = await Notification.find()
       .sort({ createdAt: -1 })
       .limit(100);
     return res.json({ notifications: items });
