@@ -11,7 +11,7 @@ export const useUserStore = create((set) => ({
   // --- 1. REGISTER ---
   registerUser: async (userData) => {
     try {
-      if (!userData.username || !userData.password || !userData.name || !userData.phone) {
+      if (!userData.email || !userData.password || !userData.name || !userData.phone) {
         throw new Error("Vui lòng điền tất cả các trường bắt buộc.");
       }
       if (userData.password !== userData.confirmPassword) {
@@ -89,8 +89,8 @@ export const useUserStore = create((set) => ({
   // --- 2. LOGIN ---
   loginUser: async (loginData) => {
     try {
-      if (!loginData.username || !loginData.password) {
-        throw new Error("Vui lòng nhập tên đăng nhập và mật khẩu");
+      if (!loginData.email || !loginData.password) {
+        throw new Error("Vui lòng nhập gmail và mật khẩu");
       }
 
       set({ loading: true, error: null });

@@ -296,12 +296,12 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
           <VStack spacing={4}>
             {/* Username */}
             <FormControl isRequired>
-              <FormLabel>Tên đăng nhập</FormLabel>
+              <FormLabel>Email</FormLabel>
               <Input
-                name="username"
-                value={formData.username}
+                name="email"
+                value={formData.email}
                 onChange={handleChange}
-                placeholder="Nhập tên đăng nhập"
+                placeholder="example@gmail.com"
               />
             </FormControl>
             {/* Password */}
@@ -337,17 +337,6 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
                     value={formData.name}
                     onChange={handleChange}
                     placeholder="Nguyễn Văn A"
-                  />
-                </FormControl>
-
-                <FormControl isRequired>
-                  <FormLabel>Email</FormLabel>
-                  <Input
-                    name="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    placeholder="example@gmail.com"
                   />
                 </FormControl>
 
@@ -398,15 +387,6 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
             {/* Forgot password */}
             {mode === "login" && step === "forgot" && (
               <>
-                <FormControl isRequired>
-                  <FormLabel>Email</FormLabel>
-                  <Input
-                    name="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                  />
-                </FormControl>
                 <HStack>
                   <Button colorScheme="blue" onClick={handleSendReset}>
                     Gửi mã

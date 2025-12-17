@@ -1,6 +1,5 @@
 import express from 'express';
-import { verifyToken } from '../middleware/verifyToken.js'; // <--- QUAN TRỌNG: Import middleware
-
+import { verifyToken } from '../middleware/verifyToken.js'; 
 import {
   createConversation,
   getConversations,

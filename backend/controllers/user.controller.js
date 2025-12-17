@@ -14,17 +14,19 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 export const userRegister = async (req, res) => {
   try {
-    const { username, password, name, phone, role, email } = req.body;
+    const { password, name, phone, role, email } = req.body;
 
-    let user = await User.findOne({ username });
+    let user = await User.findOne({ email });
     if (user) {
       return res.status(400).json({
-        message: "Tên người dùng đã tồn tại",
+        message: "Gmail đang dùng đã tồn tại",
       });
     }
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
+
+    const username = email.split('@')[0];
 
     user = new User({
       username: username,
@@ -227,19 +229,21 @@ export const deleteUser = async (req, res) => {
 
 export const loginUser = async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { email, password } = req.body;
 
-    if (!username || !password) {
+    if (!email || !password) {
       return res.status(400).json({
         message: "Not Enough Information",
       });
     }
 
-    const user = await User.findOne({ username });
+    const user = await User.findOne({
+      email,
+    });
 
     if (!user) {
       return res.status(401).json({
-        message: "Username wrong",
+        message: "Email incorrect",
       });
     }
 
@@ -259,7 +263,7 @@ export const loginUser = async (req, res) => {
 
     const { password: userPassword, ...userInfo } = user._doc;
 
-    return res.status(201).json({
+    return res.status(200).json({
       message: "Đăng nhập thành công",
       user: userInfo,
     });

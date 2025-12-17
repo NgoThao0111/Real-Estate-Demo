@@ -55,7 +55,7 @@ const ListingCard = ({ listing }) => {
     if (amount >= 1000000000) {
       return (amount / 1000000000).toFixed(1).replace(/\.0$/, '') + ' tỷ';
     } else if (amount >= 1000000) {
-      return (amount / 1000000).toFixed(0) + ' triệu';
+      return (amount / 1000000).toFixed(1).replace(/\.0$/, '') + ' triệu';
     } else {
       return amount.toLocaleString('vi-VN') + ' đ';
     }
@@ -120,7 +120,7 @@ const ListingCard = ({ listing }) => {
 
   const mapStatusLabel = (s) => {
     if (s === 'approved') return { text: 'Đã duyệt', color: 'green' };
-    if (s === 'pending') return { text: 'Chờ duyệt', color: 'yellow' };
+    if (s === 'pending') return { text: 'Chờ duyệt', color: 'black' };
     if (s === 'rejected') return { text: 'Bị từ chối', color: 'red' };
     return { text: s, color: 'gray' };
   };
