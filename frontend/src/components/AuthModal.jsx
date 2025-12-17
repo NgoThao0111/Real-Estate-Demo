@@ -310,6 +310,7 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
               <Input
                 name="password"
                 type="password"
+                autoComplete="new-password"
                 value={formData.password}
                 onChange={handleChange}
                 placeholder="Nhập mật khẩu"
@@ -324,6 +325,7 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
                   <Input
                     name="confirmPassword"
                     type="password"
+                    autoComplete="new-password"
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     placeholder="Nhập lại mật khẩu"
@@ -423,6 +425,7 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
                   <Input
                     name="password"
                     type="password"
+                    autoComplete="new-password"
                     value={formData.password}
                     onChange={handleChange}
                   />
@@ -432,6 +435,7 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
                   <Input
                     name="confirmPassword"
                     type="password"
+                    autoComplete="new-password"
                     value={formData.confirmPassword}
                     onChange={handleChange}
                   />

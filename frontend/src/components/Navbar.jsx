@@ -21,6 +21,7 @@ import { useUserStore } from "../store/user.js";
 import UserMenu from "./UserMenu";
 import { MdDarkMode, MdLightMode } from "react-icons/md";
 import { IoSunny, IoMoon, IoChatbubble, IoNotifications } from "react-icons/io5";
+import NotificationBell from "./NotificationBell.jsx";
 
 const Navbar = () => {
   const linkColor = useColorModeValue("gray.700", "gray.100");
@@ -35,13 +36,10 @@ const Navbar = () => {
     setIsAuthOpen(true);
   };
 
-  // --- SỬA LỖI: Lấy checkAuth thay vì checkSession ---
   const { user, logoutUser, checkAuth } = useUserStore();
 
   useEffect(() => {
-    // Gọi hàm checkAuth mới để kiểm tra Cookie JWT
     checkAuth();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -67,17 +65,17 @@ const Navbar = () => {
           {/* Middle: Nav Links */}
           <HStack spacing={8} display={{ base: "none", lg: "flex" }}>
             <Link to="/listings">
-              <Text color={linkColor} _hover={{ color: "blue.500" }}>
+              <Text color={linkColor} _hover={{ color: "blue.500" }} fontWeight="semibold">
                 Tìm kiếm
               </Text>
             </Link>
             <Link to="/listings?rental_type=rent">
-              <Text color={linkColor} _hover={{ color: "blue.500" }}>
+              <Text color={linkColor} _hover={{ color: "blue.500" }} fontWeight="semibold">
                 Cho thuê
               </Text>
             </Link>
             <Link to="/listings?rental_type=sell">
-              <Text color={linkColor} _hover={{ color: "blue.500" }}>
+              <Text color={linkColor} _hover={{ color: "blue.500" }} fontWeight="semibold">
                 Rao bán
               </Text>
             </Link>
@@ -114,11 +112,13 @@ const Navbar = () => {
                     aria-label="Go to chat"
                   />
 
-                  <IconButton
+                  <NotificationBell />
+
+                  {/* <IconButton
                     icon={<IoNotifications size={20}/>}
                     variant={"ghost"}
                     aria-label="Open notifications"
-                  />
+                  /> */}
                 </HStack>
               ): null}
             </HStack>  
