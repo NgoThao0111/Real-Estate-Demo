@@ -10,9 +10,15 @@ import {
   SimpleGrid,
   Icon,
   useToast,
-  useColorModeValue
+  useColorModeValue,
 } from "@chakra-ui/react";
-import { FiMapPin, FiHeart, FiShare2, FiHome, FiMaximize } from "react-icons/fi";
+import {
+  FiMapPin,
+  FiHeart,
+  FiShare2,
+  FiHome,
+  FiMaximize,
+} from "react-icons/fi";
 import { IoWarningOutline } from "react-icons/io5";
 import { FaHeart } from "react-icons/fa";
 import { useState, useEffect } from "react";
@@ -20,20 +26,55 @@ import { useUserStore } from "../store/user.js";
 import { useListStore } from "../store/list.js";
 import ReportModal from "./ReportModal.jsx";
 
-const ListingInfoSection = ({ user, listing, onContact}) => {
+const ListingInfoSection = ({ user, listing, onContact }) => {
   const toggleSave = useUserStore((s) => s.toggleSaveListing);
   const savedListings = useUserStore((s) => s.savedListings);
   const fallbackToggle = useListStore((s) => s.toggleSaveListing);
   const toast = useToast();
-  
+  const [isContacting, setIsContacting] = useState(false);
+
   const contentBg = useColorModeValue("white", "gray.800");
   const subTextColor = useColorModeValue("gray.600", "white");
-  
+
   const [isSaved, setIsSaved] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
 
-  // Kiểm tra xem listing có được lưu không
+  const handleContact = async () => {
+    if (!listing.owner?._id) {
+      return toast({
+        title: "Lỗi",
+        description: "Không tìm thấy thông tin người bán.",
+        status: "error",
+        duration: 3000,
+      });
+    }
+
+    setIsContacting(true);
+    try {
+      const result = await createOrFindConversation(listing.owner?._id);
+
+      if (result.success) {
+        navigate(`/chat`);
+      } else {
+        toast({
+          title: "Thông báo",
+          description: result.message,
+          status: "info",
+          duration: 3000,
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Lỗi",
+        description: "Có lỗi xảy ra khi kết nối tin nhắn. Có vẻ bạn chưa đăng nhập",
+        status: "error",
+      });
+    } finally {
+      setIsContacting(false);
+    }
+  };
+
   useEffect(() => {
     setIsSaved(savedListings.includes(listing._id));
   }, [savedListings, listing._id]);
@@ -111,12 +152,28 @@ const ListingInfoSection = ({ user, listing, onContact}) => {
             <Text fontSize="sm" color={subTextColor} mb={1}>
               Trạng thái:
             </Text>
-            <Badge
-              colorScheme={listing.status === "available" ? "green" : "red"}
-              size="sm"
-            >
-              {listing.status === "available" ? "Còn trống" : "Đã thuê"}
-            </Badge>
+            {(() => {
+              const getStatusInfo = (status) => {
+                switch (status) {
+                  case "approved":
+                    return { text: "Còn trống", color: "green" };
+                  case "pending":
+                    return { text: "Chờ duyệt", color: "yellow" };
+                  case "rejected":
+                    return { text: "Không được duyệt", color: "red" };
+                  case "closed":
+                    return { text: "Đã thuê", color: "gray" };
+                  default:
+                    return { text: status, color: "gray" };
+                }
+              };
+              const { text, color } = getStatusInfo(listing.status);
+              return (
+                <Badge colorScheme={color} size="sm">
+                  {text}
+                </Badge>
+              );
+            })()}
           </Box>
 
           {listing.description && (
@@ -139,8 +196,9 @@ const ListingInfoSection = ({ user, listing, onContact}) => {
             colorScheme="red"
             size="lg"
             width="full"
-            onClick={onContact}
-            isDisabled={listing.status !== "available"}
+            onClick={handleContact}
+            isLoading={isContacting}
+            isDisabled={listing.status !== "approved"}
           >
             {listing.rental_type === "rent" ? "Thuê ngay" : "Mua ngay"}
           </Button>

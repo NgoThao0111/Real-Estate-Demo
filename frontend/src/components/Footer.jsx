@@ -41,10 +41,10 @@ const Footer = () => {
             
             <VStack align="start" spacing={3}>
               <Text>
-                <strong>Điện thoại:</strong> +(690) 2560 0020
+                <strong>Điện thoại:</strong> +(89) 2560 0020
               </Text>
               <Text>
-                <strong>Email:</strong> real@property.com
+                <strong>Email:</strong> real-estate@gmail.com
               </Text>
             </VStack>
           </VStack>
