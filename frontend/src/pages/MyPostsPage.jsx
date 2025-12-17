@@ -48,6 +48,12 @@ const MyPostsPage = () => {
   return (
     <Box py={8}>
       <Container maxW="1140px">
+        <Box
+          bg={useColorModeValue("white", "gray.800")}
+          borderRadius="xl"
+          shadow="lg"
+          p={8}
+        >
         <Heading 
           size={{ base: "lg", md: "xl" }}
           textAlign="center"
@@ -97,6 +103,7 @@ const MyPostsPage = () => {
             ))}
           </SimpleGrid>
         )}
+        </Box>
         
       </Container>
 

@@ -75,12 +75,22 @@ const HomePage = () => {
 
   return (
     <>
-      <Box data-aos="fade-in" data-aos-duration="100">
+      <Box 
+        data-aos="fade-in" 
+        data-aos-duration="100"
+        mb={4}
+      >
         <HomePanel />
       </Box>
 
       {/* --- SECTION DANH SÁCH BÀI ĐĂNG --- */}
-      <Box bg={getSectionBg(1)} py={10}>
+      <Box 
+        bg={getSectionBg(1)} 
+        py={10}
+        borderRadius="xl"
+        shadow={cardShadow}
+        mb={4}
+      >
         <Container
           maxW={"1140px"}
           textAlign="left"
@@ -165,22 +175,12 @@ const HomePage = () => {
       </Box>
 
       {/* --- SECTION BẢN ĐỒ KHÁM PHÁ --- */}
-      <Box bg={getSectionBg(2)} py={10}>
+      <Box 
+        bg="transparent"
+        py={10}
+        mb={4}
+      >
         <Container maxW={"1140px"}>
-          <Box
-            mb={6}
-            data-aos="fade-up"
-            data-aos-duration={aosDuration}
-            data-aos-delay={aosDelay}
-          >
-            <Heading as="h3" size="lg" mb={2}>
-              Bản đồ bất động sản
-            </Heading>
-            <Text color={subText}>
-              Xem tổng quan vị trí và mật độ bất động sản trên toàn khu vực.
-            </Text>
-          </Box>
-
           <Box
             h="600px"
             w="100%"
@@ -190,11 +190,31 @@ const HomePage = () => {
             border="1px solid"
             borderColor="gray.200"
             position="relative"
-            bg="gray.100"
+            bg="transparent"
             data-aos="zoom-in"
             data-aos-duration={aosDuration}
             data-aos-delay={aosDelay + 50}
           >
+            {/* Text overlay ở góc trên bên trái */}
+            <Box
+              position="absolute"
+              top={4}
+              left={4}
+              zIndex={10}
+              bg="transparent"
+              px={4}
+              py={3}
+              borderRadius="lg"
+              maxW="400px"
+              data-aos="fade-up"
+              data-aos-duration={aosDuration}
+              data-aos-delay={aosDelay}
+            >
+              <Heading as="h3" size="lg" mb={2}>
+                Bản đồ bất động sản
+              </Heading>
+            </Box>
+
             {/* QUAN TRỌNG: Luôn hiển thị bản đồ, bất kể có dữ liệu hay không */}
             <MapboxMap
               mode="explorer"
@@ -206,191 +226,211 @@ const HomePage = () => {
         </Container>
       </Box>
 
-      {/* Features section (Giữ nguyên) */}
-      <Box bg={getSectionBg(3)} py={10}>
+      {/* Features section */}
+      <Box 
+        bg="transparent"
+        py={10}
+        borderRadius="xl"
+        mb={4}
+        overflow="hidden"
+        position="relative"
+      >
+        {/* Animated Text Background */}
+        <Box
+          position="absolute"
+          top="-50px"
+          left="0"
+          width="200%"
+          overflow="hidden"
+          pointerEvents="none"
+          zIndex={100}
+          opacity={1}
+          sx={{
+            '@keyframes scrollText': {
+              '0%': { transform: 'translateX(0)' },
+              '100%': { transform: 'translateX(-50%)' }
+            }
+          }}
+        >
+          <Text
+            fontSize={{ base: "80px", md: "120px", lg: "150px" }}
+            fontWeight="900"
+            color={useColorModeValue("blue.400", "blue.300")}
+            whiteSpace="nowrap"
+            animation="scrollText 20s linear infinite"
+            sx={{
+              textShadow: useColorModeValue(
+                "0 2px 10px rgba(59, 130, 246, 0.3)",
+                "0 2px 10px rgba(96, 165, 250, 0.5)"
+              )
+            }}
+          >
+            RealEstate Demo RealEstate Demo RealEstate Demo RealEstate Demo
+          </Text>
+        </Box>
+
         <Container
           maxW={"1140px"}
           mt={6}
           mb={12}
+          position="relative"
+          zIndex={5}
           data-aos="fade-up"
           data-aos-duration={aosDuration}
           data-aos-delay={aosDelay}
         >
-          <Box
-            textAlign="center"
-            mb={6}
-            data-aos="fade-down"
-            data-aos-duration={aosDuration}
-            data-aos-delay={aosDelay}
-          >
-            <Heading
-              as="h3"
-              size="lg"
-              data-aos="zoom-in"
-              data-aos-duration={aosDuration}
-              data-aos-delay={aosDelay}
-            >
-              Tại sao chọn RealEstate Demo?
-            </Heading>
-            <Text
-              color={subText}
-              mt={2}
-              data-aos="fade-up"
-              data-aos-duration={aosDuration}
-              data-aos-delay={aosDelay + 50}
-            >
-              Đối tác tin cậy giúp bạn tìm bất động sản phù hợp.
-            </Text>
-          </Box>
-
-          <SimpleGrid
-            columns={{ base: 1, md: 3 }}
-            spacing={6}
-            data-aos="fade-up"
-            data-aos-duration={aosDuration}
-            data-aos-delay={aosDelay + 150}
-          >
-            <Box
-              bg={contentBg}
-              borderRadius="md"
-              p={6}
-              boxShadow={cardShadow}
-              textAlign="center"
-              data-aos="flip-up"
-              data-aos-duration={aosDuration}
-              ata-aos-delay={aosDelay + 200}
-            >
+          <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={10} alignItems="center">
+            {/* Left Side - Features */}
+            <Box>
               <Box
-                mx="auto"
-                mb={4}
-                w="56px"
-                h="56px"
-                borderRadius="full"
-                bg="blue.50"
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-                data-aos="zoom-in"
-                data-aos-duration={aosDuration / 2}
-                ata-aos-delay={aosDelay + 250}
+                textAlign="left"
+                mb={8}
+                data-aos="fade-right"
+                data-aos-duration={aosDuration}
+                data-aos-delay={aosDelay}
               >
-                <FiGrid size={24} color="#2B6CB0" />
+                <Heading
+                  as="h3"
+                  size="xl"
+                  mb={3}
+                  data-aos="zoom-in"
+                  data-aos-duration={aosDuration}
+                  data-aos-delay={aosDelay}
+                >
+                  Tại sao chọn RealEstate Demo?
+                </Heading>
+                <Text
+                  color={subText}
+                  fontSize="lg"
+                  data-aos="fade-up"
+                  data-aos-duration={aosDuration}
+                  data-aos-delay={aosDelay + 50}
+                >
+                  Đối tác tin cậy giúp bạn tìm bất động sản phù hợp.
+                </Text>
               </Box>
-              <Heading
-                as="h4"
-                size="md"
-                mb={2}
-                data-aos="fade-up"
-                data-aos-duration={aosDuration / 2}
-                ata-aos-delay={aosDelay + 300}
+
+              <Box
+                display="flex"
+                flexDirection="column"
+                gap={6}
               >
-                Nguồn lựa chọn đa dạng
-              </Heading>
-              <Text
-                color={subText}
-                fontSize="sm"
-                data-aos="fade-up"
-                data-aos-duration={aosDuration / 2}
-                ata-aos-delay={aosDelay + 350}
-              >
-                Hàng nghìn tin đăng đã được kiểm duyệt, dễ dàng tìm được bất
-                động sản phù hợp.
-              </Text>
+                <Box
+                  display="flex"
+                  alignItems="start"
+                  gap={4}
+                  data-aos="fade-right"
+                  data-aos-duration={aosDuration}
+                  data-aos-delay={aosDelay + 100}
+                >
+                  <Box
+                    minW="56px"
+                    h="56px"
+                    borderRadius="full"
+                    bg="blue.50"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                  >
+                    <FiGrid size={24} color="#2B6CB0" />
+                  </Box>
+                  <Box>
+                    <Heading as="h4" size="md" mb={2}>
+                      Nguồn lựa chọn đa dạng
+                    </Heading>
+                    <Text color={subText} fontSize="sm">
+                      Hàng nghìn tin đăng đã được kiểm duyệt, dễ dàng tìm được bất
+                      động sản phù hợp.
+                    </Text>
+                  </Box>
+                </Box>
+
+                <Box
+                  display="flex"
+                  alignItems="start"
+                  gap={4}
+                  data-aos="fade-right"
+                  data-aos-duration={aosDuration}
+                  data-aos-delay={aosDelay + 200}
+                >
+                  <Box
+                    minW="56px"
+                    h="56px"
+                    borderRadius="full"
+                    bg="blue.50"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                  >
+                    <FiCheckCircle size={24} color="#2B6CB0" />
+                  </Box>
+                  <Box>
+                    <Heading as="h4" size="md" mb={2}>
+                      Quy trình liền mạch
+                    </Heading>
+                    <Text color={subText} fontSize="sm">
+                      Ứng dụng công nghệ giúp trải nghiệm mua bán, thuê mướn trở nên
+                      suôn sẻ.
+                    </Text>
+                  </Box>
+                </Box>
+
+                <Box
+                  display="flex"
+                  alignItems="start"
+                  gap={4}
+                  data-aos="fade-right"
+                  data-aos-duration={aosDuration}
+                  data-aos-delay={aosDelay + 300}
+                >
+                  <Box
+                    minW="56px"
+                    h="56px"
+                    borderRadius="full"
+                    bg="blue.50"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                  >
+                    <FiUsers size={24} color="#2B6CB0" />
+                  </Box>
+                  <Box>
+                    <Heading as="h4" size="md" mb={2}>
+                      Chuyên gia môi giới
+                    </Heading>
+                    <Text color={subText} fontSize="sm">
+                      Đội ngũ tư vấn chuyên nghiệp đồng hành cùng bạn trong mọi bước.
+                    </Text>
+                  </Box>
+                </Box>
+              </Box>
             </Box>
 
+            {/* Right Side - Image */}
             <Box
-              bg={contentBg}
-              borderRadius="md"
-              p={6}
-              boxShadow={cardShadow}
-              textAlign="center"
-              data-aos="flip-right"
+              data-aos="fade-left"
               data-aos-duration={aosDuration}
-              ata-aos-delay={aosDelay + 200}
+              data-aos-delay={aosDelay + 200}
+              display={{ base: "none", lg: "block" }}
             >
               <Box
-                mx="auto"
-                mb={4}
-                w="56px"
-                h="56px"
-                borderRadius="full"
-                bg="blue.50"
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-                data-aos="zoom-in"
-                data-aos-duration={aosDuration / 2}
-                ata-aos-delay={aosDelay + 250}
+                borderRadius="2xl"
+                overflow="hidden"
+                boxShadow="2xl"
+                position="relative"
+                height="500px"
               >
-                <FiCheckCircle size={24} color="#2B6CB0" />
+                <Box
+                  as="img"
+                  src="/anh-3.jpg"
+                  alt="Real Estate Demo"
+                  width="100%"
+                  height="100%"
+                  objectFit="cover"
+                  transition="transform 0.3s ease"
+                  _hover={{ transform: "scale(1.05)" }}
+                />
               </Box>
-              <Heading
-                as="h4"
-                size="md"
-                mb={2}
-                data-aos="fade-up"
-                data-aos-duration={aosDuration / 2}
-                ata-aos-delay={aosDelay + 300}
-              >
-                Quy trình liền mạch
-              </Heading>
-              <Text
-                color={subText}
-                fontSize="sm"
-                data-aos="fade-up"
-                data-aos-duration={aosDuration / 2}
-                ata-aos-delay={aosDelay + 350}
-              >
-                Ứng dụng công nghệ giúp trải nghiệm mua bán, thuê mướn trở nên
-                suôn sẻ.
-              </Text>
-            </Box>
-
-            <Box
-              bg={contentBg}
-              borderRadius="md"
-              p={6}
-              boxShadow={cardShadow}
-              textAlign="center"
-              data-aos="flip-right"
-              data-aos-duration={aosDuration}
-              ata-aos-delay={aosDelay + 200}
-            >
-              <Box
-                mx="auto"
-                mb={4}
-                w="56px"
-                h="56px"
-                borderRadius="full"
-                bg="blue.50"
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-                data-aos="zoom-in"
-                data-aos-duration={aosDuration / 2}
-                ata-aos-delay={aosDelay + 250}
-              >
-                <FiUsers size={24} color="#2B6CB0" />
-              </Box>
-              <Heading
-                as="h4"
-                size="md"
-                mb={2}
-                data-aos="fade-up"
-                data-aos-duration={aosDuration / 2}
-                ata-aos-delay={aosDelay + 300}
-              >
-                Chuyên gia môi giới
-              </Heading>
-              <Text
-                color={subText}
-                fontSize="sm"
-                data-aos="fade-up"
-                data-aos-duration={aosDuration / 2}
-                ata-aos-delay={aosDelay + 350}
-              >
-                Đội ngũ tư vấn chuyên nghiệp đồng hành cùng bạn trong mọi bước.
-              </Text>
             </Box>
           </SimpleGrid>
         </Container>
