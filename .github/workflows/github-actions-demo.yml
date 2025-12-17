@@ -64,4 +64,5 @@ jobs:
       # =========================
       - name: Trigger Render Deploy (Backend)
         run: |
+          printf '%q\n' "${{ secrets.RENDER_BACKEND_DEPLOY_HOOK }}"
           curl -X POST "${{ secrets.RENDER_BACKEND_DEPLOY_HOOK }}"
