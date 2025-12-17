@@ -11,6 +11,7 @@ permissions:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    environment: production
 
     steps:
       - name: Checkout code
@@ -65,7 +66,7 @@ jobs:
       - name: Trigger Render Deploy (Backend)
         run: |
           curl -X POST "${{ secrets.RENDER_BACKEND_DEPLOY_HOOK }}"
-          
+
       - name: Trigger Render Deploy (Frontend)
         run: |
           curl -X POST "${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK }}"

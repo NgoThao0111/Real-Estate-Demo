@@ -51,7 +51,7 @@ const Navbar = () => {
           {/* Left: Logo */}
           <Link to="/">
             <HStack>
-              <Image src="/public/logo.png" alt="Logo" h="40px" />
+              <Image src="logo.png" alt="Logo" h="40px" />
               <Text
                 fontSize="24px"
                 fontWeight="bold"
