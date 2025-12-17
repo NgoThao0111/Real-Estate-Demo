@@ -39,9 +39,17 @@ export const createSystemAnnouncement = async (req, res) => {
         target: newAnnouncement._id, // Fix lỗi: listing._id -> newAnnouncement._id
         meta: { title, targetAudience }, // Fix lỗi: status, reason -> title, audience
       });
-      console.log("AdminAction created: system_announcement", { id: adminAction._id, admin: req.userId });
+      console.log("AdminAction created: system_announcement", {
+        id: adminAction._id,
+        admin: req.userId,
+      });
     } catch (e) {
-      console.error("Error creating admin action: system_announcement", { admin: req.userId, target: newAnnouncement._id, meta: { title, targetAudience }, error: e });
+      console.error("Error creating admin action: system_announcement", {
+        admin: req.userId,
+        target: newAnnouncement._id,
+        meta: { title, targetAudience },
+        error: e,
+      });
     }
 
     return res.json({
@@ -75,7 +83,13 @@ export const createNotification = async (
     }
     return newNotif;
   } catch (error) {
-    console.error("Error creating notification:", { recipient, type, referenceId, referenceModel, error });
+    console.error("Error creating notification:", {
+      recipient,
+      type,
+      referenceId,
+      referenceModel,
+      error,
+    });
     return null;
   }
 };
@@ -170,7 +184,13 @@ export const updateListingStatus = async (req, res) => {
     const id = req.params.id;
     const { status, reason } = req.body;
 
-    console.log("updateListingStatus called", { admin: req.userId, listingId: id, status, reason, ip: req.ip });
+    console.log("updateListingStatus called", {
+      admin: req.userId,
+      listingId: id,
+      status,
+      reason,
+      ip: req.ip,
+    });
 
     const listing = await Listing.findById(id);
     if (!listing) return res.status(404).json({ message: "Listing not found" });
@@ -214,9 +234,17 @@ export const updateListingStatus = async (req, res) => {
         target: listing._id,
         meta: { status, reason },
       });
-      console.log("AdminAction created: update_listing_status", { id: adminAction._id, admin: req.userId });
+      console.log("AdminAction created: update_listing_status", {
+        id: adminAction._id,
+        admin: req.userId,
+      });
     } catch (e) {
-      console.error("Error creating admin action: update_listing_status", { admin: req.userId, target: listing._id, meta: { status, reason }, error: e });
+      console.error("Error creating admin action: update_listing_status", {
+        admin: req.userId,
+        target: listing._id,
+        meta: { status, reason },
+        error: e,
+      });
     }
 
     return res.json({ message: "Listing status updated", listing });
@@ -403,9 +431,17 @@ export const deleteListingAdmin = async (req, res) => {
         target: id,
         meta: { reason },
       });
-      console.log("AdminAction created: delete_listing", { id: adminAction._id, admin: req.userId });
+      console.log("AdminAction created: delete_listing", {
+        id: adminAction._id,
+        admin: req.userId,
+      });
     } catch (e) {
-      console.error("Error creating admin action: delete_listing", { admin: req.userId, target: id, meta: { reason }, error: e });
+      console.error("Error creating admin action: delete_listing", {
+        admin: req.userId,
+        target: id,
+        meta: { reason },
+        error: e,
+      });
     }
 
     return res.json({ message: "Listing deleted by admin" });
@@ -472,9 +508,17 @@ export const resolveReport = async (req, res) => {
         target: id,
         meta: {},
       });
-      console.log("AdminAction created: delete_report", { id: adminAction._id, admin: req.userId });
+      console.log("AdminAction created: delete_report", {
+        id: adminAction._id,
+        admin: req.userId,
+      });
     } catch (e) {
-      console.error("Error creating admin action: delete_report", { admin: req.userId, target: id, meta: {}, error: e });
+      console.error("Error creating admin action: delete_report", {
+        admin: req.userId,
+        target: id,
+        meta: {},
+        error: e,
+      });
     }
     return res.json({ message: "Report deleted" });
   } catch (error) {
@@ -501,9 +545,15 @@ export const actionOnReport = async (req, res) => {
           target: r._id,
           meta: {},
         });
-        console.log("AdminAction created: resolve_report_missing_listing", { id: adminAction._id, admin: req.userId });
+        console.log("AdminAction created: resolve_report_missing_listing", {
+          id: adminAction._id,
+          admin: req.userId,
+        });
       } catch (e) {
-        console.error("Error creating admin action: resolve_report_missing_listing", { admin: req.userId, target: r._id, meta: {}, error: e });
+        console.error(
+          "Error creating admin action: resolve_report_missing_listing",
+          { admin: req.userId, target: r._id, meta: {}, error: e }
+        );
       }
 
       await Report.findByIdAndDelete(r._id);
@@ -649,7 +699,12 @@ export const toggleBanUser = async (req, res) => {
     const id = req.params.id;
     const { ban, reason } = req.body; // boolean + reason
 
-    console.log("toggleBanUser called", { admin: req.userId, targetUserId: id, body: req.body, ip: req.ip });
+    console.log("toggleBanUser called", {
+      admin: req.userId,
+      targetUserId: id,
+      body: req.body,
+      ip: req.ip,
+    });
 
     const user = await User.findById(id);
     if (!user) return res.status(404).json({ message: "User not found" });
@@ -707,9 +762,17 @@ export const toggleBanUser = async (req, res) => {
         target: user._id,
         meta: { ban: user.isBanned, reason },
       });
-      console.log("AdminAction created: toggle_ban_user", { id: adminAction._id, admin: req.userId });
+      console.log("AdminAction created: toggle_ban_user", {
+        id: adminAction._id,
+        admin: req.userId,
+      });
     } catch (e) {
-      console.error("Error creating admin action: toggle_ban_user", { admin: req.userId, target: user._id, meta: { ban: user.isBanned, reason }, error: e });
+      console.error("Error creating admin action: toggle_ban_user", {
+        admin: req.userId,
+        target: user._id,
+        meta: { ban: user.isBanned, reason },
+        error: e,
+      });
     }
 
     return res.json({ message: "User updated", user });
@@ -726,12 +789,25 @@ export const broadcastSystemNotification = async (req, res) => {
       return res.status(400).json({ message: "Missing title or message" });
 
     // 1. Persist notification
-    let notif;
+    let notif, announce;
     try {
       notif = await Notification.create({ title, message, type, audience });
+      announce = await Announcement.create({
+        title,
+        message,
+        type,
+        audience,
+        createdBy: req.userId,
+      });
     } catch (e) {
-      console.error("Error creating broadcast notification", { admin: req.userId, payload: { title, message, type, audience }, error: e });
-      return res.status(500).json({ message: "Failed to save broadcast notification" });
+      console.error("Error creating broadcast notification", {
+        admin: req.userId,
+        payload: { title, message, type, audience },
+        error: e,
+      });
+      return res
+        .status(500)
+        .json({ message: "Failed to save broadcast notification" });
     }
 
     // 2. Emit event to connected sockets
@@ -791,9 +867,17 @@ export const broadcastSystemNotification = async (req, res) => {
         target: notif._id,
         meta: { title, message, type, audience },
       });
-      console.log("AdminAction created: broadcast", { id: adminAction._id, admin: req.userId });
+      console.log("AdminAction created: broadcast", {
+        id: adminAction._id,
+        admin: req.userId,
+      });
     } catch (e) {
-      console.error("Error creating admin action: broadcast", { admin: req.userId, target: notif._id, meta: { title, message, type, audience }, error: e });
+      console.error("Error creating admin action: broadcast", {
+        admin: req.userId,
+        target: notif._id,
+        meta: { title, message, type, audience },
+        error: e,
+      });
     }
 
     return res.json({
@@ -808,9 +892,7 @@ export const broadcastSystemNotification = async (req, res) => {
 
 export const getNotifications = async (req, res) => {
   try {
-    const items = await Notification.find()
-      .sort({ createdAt: -1 })
-      .limit(100);
+    const items = await Notification.find().sort({ createdAt: -1 }).limit(100);
     return res.json({ notifications: items });
   } catch (error) {
     console.error(error);
