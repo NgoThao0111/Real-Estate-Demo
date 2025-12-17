@@ -76,6 +76,12 @@ export default function UserMenu({ user, logoutUser }) {
 
           <MenuDivider />
 
+          {user?.role === "admin" && (
+            <MenuItem as={Link} to="/admin" icon={<FiSettings />}>
+              Admin Panel
+            </MenuItem>
+          )}
+
           <MenuItem
             icon={<FiLogOut />}
             onClick={async () => {

@@ -82,7 +82,7 @@ const EditListingModal = ({ isOpen, onClose, listing }) => {
       description: form.description,
       area: form.area,
       price: form.price,
-      status: form.status,
+      // status intentionally NOT provided here: only admins can change approval status
       property_type: form.property_type,
       rental_type: form.rental_type,
       images: form.images ? form.images.split(",").map(s=>s.trim()).filter(Boolean) : [],

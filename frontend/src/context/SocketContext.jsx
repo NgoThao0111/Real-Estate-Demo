@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { io } from "socket.io-client";
 import { useAuthContext } from "./AuthContext"; // Import hook từ file bạn vừa xong
+import { useUserStore } from "../store/user";
+import { createStandaloneToast } from "@chakra-ui/react";
 
 const SocketContext = createContext();
 
@@ -18,7 +20,7 @@ export const SocketContextProvider = ({ children }) => {
     if (currentUser) {
       // 1. Khởi tạo kết nối
       // Lưu ý: Socket không đi qua Vite proxy nên tốt nhất trỏ thẳng localhost:5000
-      const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:5000";
+      const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "https://localhost:5000";
       const newSocket = io(SOCKET_URL, {
         withCredentials: true, // QUAN TRỌNG: Để gửi kèm Cookie Session xác thực
         query: {
@@ -28,6 +30,52 @@ export const SocketContextProvider = ({ children }) => {
       });
 
       setSocket(newSocket);
+
+      // Global: Listen for system notifications and show toast
+      const { toast } = createStandaloneToast();
+      newSocket.on("system_notification", (payload) => {
+        toast({
+          title: payload.title || "System Notification",
+          description: payload.message,
+          status: payload.type === "alert" ? "error" : payload.type === "warning" ? "warning" : "info",
+          duration: 8000,
+          isClosable: true,
+          position: "top-right",
+        });
+      });
+
+      // Forced logout from server (e.g., admin banned the account)
+      const logoutUser = useUserStore.getState().logoutUser;
+      newSocket.on("force_logout", async (payload) => {
+        toast({
+          title: "Đã bị khóa",
+          description: payload?.message || "Tài khoản của bạn đã bị khóa",
+          status: "error",
+          duration: 8000,
+          isClosable: true,
+          position: "top-right",
+        });
+
+        try {
+          // Call existing logout flow which clears cookie and resets state
+          await logoutUser();
+        } catch (e) {
+          // best-effort: redirect to home
+          window.location.href = "/";
+        }
+      });
+
+      // Notify user when their listing status changes
+      newSocket.on('listing_status_changed', (payload) => {
+        toast({
+          title: `Listing ${payload.status}`,
+          description: `Listing ${payload.listingId} status: ${payload.status}`,
+          status: payload.status === 'approved' ? 'success' : payload.status === 'rejected' ? 'error' : 'info',
+          duration: 8000,
+          isClosable: true,
+          position: 'top-right',
+        });
+      });
 
       // (Tùy chọn) Lắng nghe các sự kiện global ở đây nếu muốn (ví dụ: danh sách online)
       // newSocket.on("getOnlineUsers", (users) => { ... });

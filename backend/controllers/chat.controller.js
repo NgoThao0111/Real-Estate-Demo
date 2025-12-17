@@ -1,12 +1,9 @@
 import Conversation from "../models/conversation.model.js";
 import Message from "../models/message.model.js";
 
-// ❌ BỎ HELPER: requireAuth (Vì đã có middleware verifyToken lo việc này)
-
 // POST /api/chats
 export const createConversation = async (req, res) => {
   try {
-    // ✅ JWT: Lấy ID từ req.userId (do middleware gán)
     const currentUserId = req.userId;
 
     const { participantIds = [], title, type = "private" } = req.body;
@@ -51,7 +48,7 @@ export const createConversation = async (req, res) => {
 // GET /api/chats -> list conversations for current user
 export const getConversations = async (req, res) => {
   try {
-    const currentUserId = req.userId; // ✅ JWT
+    const currentUserId = req.userId; 
 
     const { page = 1, limit = 20 } = req.query;
     const skip = (Math.max(1, Number(page)) - 1) * Number(limit);
@@ -79,7 +76,6 @@ export const getConversations = async (req, res) => {
 // GET /api/chats/:id/message
 export const getMessages = async (req, res) => {
   try {
-    // const currentUserId = req.userId; // Hàm này không nhất thiết cần userId, chỉ cần biết đã login
 
     const convId = req.params.id;
     const { page = 1, limit = 30, before } = req.query;
@@ -139,7 +135,7 @@ export const markMessagesRead = async (req, res) => {
 // POST /api/chats/:id/participants
 export const addParticipant = async (req, res) => {
   try {
-    const currentUserId = req.userId; // ✅ JWT
+    const currentUserId = req.userId;
 
     const convId = req.params.id;
     const { participantId } = req.body;

@@ -1,0 +1,74 @@
+name: Build & Push Backend & Frontend Images
+
+on:
+  push:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 🔹 Convert repo name to lowercase (Docker requires this)
+      - name: Set lowercase repo name
+        run: |
+          echo "REPO_LOWER=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # =========================
+      # Backend
+      # =========================
+      - name: Build & push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ env.REPO_LOWER }}-backend:latest
+            ghcr.io/${{ env.REPO_LOWER }}-backend:${{ github.sha }}
+
+      # =========================
+      # Frontend
+      # =========================
+      - name: Build & push frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          build-args: |
+            VITE_API_BASE_URL=https://real-estate-demo-backend-latest.onrender.com/api
+            VITE_SOCKET_URL=https://real-estate-demo-backend-latest.onrender.com
+            VITE_MAPBOX_TOKEN=${{ secrets.VITE_MAPBOX_TOKEN }}
+            VITE_GOOGLE_CLIENT_ID=${{ secrets.VITE_GOOGLE_CLIENT_ID }}
+            VITE_SKIP_API=true
+            VITE_SKIP_AUTH_CHECK=true
+          tags: |
+            ghcr.io/${{ env.REPO_LOWER }}-frontend:latest
+            ghcr.io/${{ env.REPO_LOWER }}-frontend:${{ github.sha }}
+
+      # =========================
+      # Trigger Render Deploy
+      # =========================
+      - name: Trigger Render Deploy (Backend)
+        run: |
+          curl -X POST "${{ secrets.RENDER_BACKEND_DEPLOY_HOOK }}"
+
+      - name: Trigger Render Deploy (Frontend)
+        run: |
+          curl -X POST "${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK }}"
