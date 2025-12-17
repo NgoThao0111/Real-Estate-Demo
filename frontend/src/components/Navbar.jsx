@@ -8,7 +8,8 @@ import {
   useDisclosure,
   useColorModeValue,
   Box,
-  useColorMode
+  useColorMode,
+  Image
 } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -45,19 +46,22 @@ const Navbar = () => {
 
   return (
     <Box bg={useColorModeValue("white", "gray.800")} boxShadow="sm" position="sticky" top={0} zIndex={100}>
-      <Container maxW="1140px" px={4}>
+      <Container maxW="none" px={4}>
         <Flex h={16} align="center" justify="space-between">
           {/* Left: Logo */}
           <Link to="/">
-            <Text
-              fontSize="28px"
-              fontWeight="bold"
-              textTransform="uppercase"
-              bgGradient="linear(to-r, cyan.400, blue.500)"
-              bgClip="text"
-            >
-              Real Estate
-            </Text>
+            <HStack>
+              <Image src="/logo/logo.png" alt="Logo" h="40px" />
+              <Text
+                fontSize="24px"
+                fontWeight="bold"
+                textTransform="uppercase"
+                bgGradient="linear(to-r, cyan.400, blue.500)"
+                bgClip="text"
+              >
+                Real Estate
+              </Text>
+            </HStack>
           </Link>
 
           {/* Middle: Nav Links */}

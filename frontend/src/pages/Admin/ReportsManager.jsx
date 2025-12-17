@@ -106,42 +106,70 @@ export default function ReportsManager() {
   return (
     <Box>
       <Heading size="md" mb={4}>
-        Báo cáo
+        Xử lý báo xấu
       </Heading>
       <Box bg={cardBg} p={4} borderRadius="md">
-        <Table variant="simple" color={textColor}>
-          <Thead>
-            <Tr>
-              <Th>Tin</Th>
-              <Th>Người báo</Th>
-              <Th>Lý do</Th>
-              <Th>Ngày</Th>
-              <Th>Trạng thái</Th>
-              <Th>Hành động</Th>
-            </Tr>
-          </Thead>
+        <Table
+          variant="simple"
+          color={textColor}
+          tableLayout="fixed"
+          width="100%"
+        >
+        <Thead>
+          <Tr>
+            <Th w={{ base: "60%", md: "20%" }}>Tin</Th>
+            <Th w="15%">Người báo</Th>
+            <Th w="25%">Lý do</Th>
+            <Th w="5%">Ngày</Th>
+            <Th w="15%">Trạng thái</Th>
+            <Th w="30%">Hành động</Th>
+          </Tr>
+        </Thead>
           <Tbody>
             {reports.map((r) => (
-              <Tr key={r._id}>
-                <Td>
-                  {r.listing?.title || (
-                    <Text color={mutedColor}>(Bài viết đã xóa)</Text>
+              <Tr 
+                key={r._id}
+                cursor="pointer"
+                onClick={() => window.open(`/listings/${r.listing?._id}`, "_blank")}
+              >
+                <Td
+                  w={{ base: "60%", md: "40%" }}
+                  maxW={{ base: "60%", md: "40%" }}
+                >
+                  {r.listing?.title ? (
+                    <Text
+                      fontWeight={600}
+                      noOfLines={2}
+                      wordBreak="break-word"
+                    >
+                      {r.listing.title}
+                    </Text>
+                  ) : (
+                    <Text
+                      color={mutedColor}
+                      fontStyle="italic"
+                      noOfLines={2}
+                    >
+                      (Bài viết đã xóa)
+                    </Text>
                   )}
                 </Td>
+                
                 <Td>{r.reporter?.username || r.reporter?.name || "—"}</Td>
-                <Td>
-                  {r.reason}
-                  {r.detail ? (
-                    <Text
-                      fontSize="xs"
-                      color="gray.600"
-                    >{` — ${r.detail}`}</Text>
-                  ) : null}
+                <Td maxW="20%">
+                  <Text noOfLines={2} wordBreak="break-word">
+                    {r.reason}
+                  </Text>
+                  {r.detail && (
+                    <Text fontSize="xs" color="gray.600" noOfLines={1}>
+                      — {r.detail}
+                    </Text>
+                  )}
                 </Td>
                 <Td>{new Date(r.createdAt).toLocaleString()}</Td>
                 <Td>{mapStatus(r.status)}</Td>
                 <Td>
-                  <HStack>
+                  <HStack onClick={(e) => e.stopPropagation()}>
                     <Button
                       size="sm"
                       colorScheme="green"

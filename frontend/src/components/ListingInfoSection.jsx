@@ -111,12 +111,28 @@ const ListingInfoSection = ({ user, listing, onContact}) => {
             <Text fontSize="sm" color={subTextColor} mb={1}>
               Trạng thái:
             </Text>
-            <Badge
-              colorScheme={listing.status === "available" ? "green" : "red"}
-              size="sm"
-            >
-              {listing.status === "available" ? "Còn trống" : "Đã thuê"}
-            </Badge>
+            {(() => {
+              const getStatusInfo = (status) => {
+                switch (status) {
+                  case 'approved':
+                    return { text: 'Còn trống', color: 'green' };
+                  case 'pending':
+                    return { text: 'Chờ duyệt', color: 'yellow' };
+                  case 'rejected':
+                    return { text: 'Không được duyệt', color: 'red' };
+                  case 'closed':
+                    return { text: 'Đã thuê', color: 'gray' };
+                  default:
+                    return { text: status, color: 'gray' };
+                }
+              };
+              const { text, color } = getStatusInfo(listing.status);
+              return (
+                <Badge colorScheme={color} size="sm">
+                  {text}
+                </Badge>
+              );
+            })()}
           </Box>
 
           {listing.description && (
@@ -140,7 +156,7 @@ const ListingInfoSection = ({ user, listing, onContact}) => {
             size="lg"
             width="full"
             onClick={onContact}
-            isDisabled={listing.status !== "available"}
+            isDisabled={listing.status !== "approved"}
           >
             {listing.rental_type === "rent" ? "Thuê ngay" : "Mua ngay"}
           </Button>

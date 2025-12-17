@@ -20,7 +20,7 @@ export default function AdminActions(){
 
   return (
     <Box>
-      <Heading size="md" mb={4}>Lịch sử hoạt động</Heading>
+      <Heading size="md" mb={4}> Lịch sử hoạt động</Heading>
       <Box bg={cardBg} borderRadius="md" p={4} overflowX="auto">
         <Table>
           <Thead>
