@@ -36,7 +36,6 @@ function App() {
 
   const { isOpen, onOpen, onClose } = useDisclosure();
 
-  // ✅ LẮNG NGHE 401 TỪ AXIOS (KHÔNG RELOAD)
   useEffect(() => {
     const handleUnauthorized = () => {
       logout?.(); // clear user nếu có
@@ -50,7 +49,6 @@ function App() {
     };
   }, [logout, onOpen]);
 
-  // ✅ CHỜ AUTH CHECK XONG
   if (isLoading) {
     return (
       <Box minH="100vh" bg={useColorModeValue("gray.100", "gray.900")}>

@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import api from "../lib/axios.js"; // <--- SỬA: Dùng api instance
+import api from "../lib/axios.js"; 
 
 export const useChatStore = create((set, get) => ({
   chats: [],
@@ -7,6 +7,27 @@ export const useChatStore = create((set, get) => ({
   messages: [],
   loading: false,
   error: null,
+
+  createOrFindConversation: async (receiverId) => {
+    try {
+      // Gọi API POST /api/chats với participantIds theo đúng controller yêu cầu
+      const res = await api.post("/chats", { participantIds: [receiverId] });
+      
+      // Lấy conversation từ object trả về của Backend { conversation: {...} }
+      const conversation = res.data.conversation; 
+
+      set({ currentChat: conversation });
+      get().fetchChats(); // Cập nhật lại danh sách bên trái
+
+      return { success: true, conversationId: conversation._id };
+    } catch (err) {
+      console.error("Lỗi tạo/tìm hội thoại:", err);
+      return { 
+        success: false, 
+        message: err.response?.data?.message || "Lỗi kết nối" 
+      };
+    }
+  },
 
   // Lấy danh sách cuộc trò chuyện
   fetchChats: async () => {
