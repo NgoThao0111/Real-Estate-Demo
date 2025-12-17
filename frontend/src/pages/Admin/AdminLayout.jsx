@@ -1,10 +1,13 @@
-import { Box, Flex, VStack, HStack, Text, IconButton, Button, Avatar, Divider, useColorModeValue } from "@chakra-ui/react";
-import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
+import { Box, Flex, VStack, HStack, Text, IconButton, Button, Avatar, Divider, useColorModeValue, Image, Icon } from "@chakra-ui/react";
+import { NavLink, Outlet, useNavigate, useLocation, Link } from "react-router-dom";
+import { useState } from 'react';
 import { HamburgerIcon } from "@chakra-ui/icons";
+import { MdDashboard, MdHome, MdPeople, MdMessage, MdBarChart, MdHistory, MdLogout, MdWarning } from "react-icons/md";
 import { useAuthContext } from "../../context/AuthContext.jsx";
 
 export default function AdminLayout() {
-  const { currentUser } = useAuthContext();
+  const { currentUser, logout } = useAuthContext();
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const sidebarBg = useColorModeValue('white', 'gray.800');
@@ -28,30 +31,45 @@ export default function AdminLayout() {
 
   return (
     <Flex minH="100vh">
-      <VStack w="250px" p={4} spacing={4} bg={sidebarBg} borderRight="1px solid" borderColor={sidebarBorder}>
-        <HStack w="full" justify="space-between">
-          <Text fontWeight="bold">Quản trị</Text>
-          <IconButton aria-label="menu" icon={<HamburgerIcon />} size="sm" />
-        </HStack>
-
+      <VStack w={isCollapsed ? "60px" : "250px"} p={4} spacing={4} bg={sidebarBg} borderRight="1px solid" borderColor={sidebarBorder}>
         <VStack spacing={2} align="stretch" w="full">
-          <Button as={NavLink} to="/admin" {...itemProps('/admin')}>Tổng quan</Button>
-          <Button as={NavLink} to="/admin/properties" {...itemProps('/admin/properties')}>Quản lý tin đăng</Button>
-          <Button as={NavLink} to="/admin/users" {...itemProps('/admin/users')}>Quản lý người dùng</Button>
-          <Button as={NavLink} to="/admin/messages" {...itemProps('/admin/messages')}>Trung tâm thông báo</Button>
-          <Button as={NavLink} to="/admin/reports" {...itemProps('/admin/reports')}>Báo cáo</Button>
-          <Button as={NavLink} to="/admin/actions" {...itemProps('/admin/actions')}>Lịch sử hoạt động</Button>
+          <Button as={NavLink} to="/admin" {...itemProps('/admin')} w="full">
+            <HStack spacing={2}>
+              <Icon as={MdDashboard} boxSize={5} />
+              {!isCollapsed && <Text>Tổng quan</Text>}
+            </HStack>
+          </Button>
+          <Button as={NavLink} to="/admin/properties" {...itemProps('/admin/properties')} w="full">
+            <HStack spacing={2}>
+              <Icon as={MdHome} boxSize={5} />
+              {!isCollapsed && <Text>Quản lý tin đăng</Text>}
+            </HStack>
+          </Button>
+          <Button as={NavLink} to="/admin/reports" {...itemProps('/admin/reports')} w="full">
+            <HStack spacing={2}>
+              <Icon as={MdWarning} boxSize={5} />
+              {!isCollapsed && <Text>Xử lý báo xấu</Text>}
+            </HStack>
+          </Button>
+          <Button as={NavLink} to="/admin/users" {...itemProps('/admin/users')} w="full">
+            <HStack spacing={2}>
+              <Icon as={MdPeople} boxSize={5} />
+              {!isCollapsed && <Text>Quản lý người dùng</Text>}
+            </HStack>
+          </Button>
+          <Button as={NavLink} to="/admin/messages" {...itemProps('/admin/messages')} w="full">
+            <HStack spacing={2}>
+              <Icon as={MdMessage} boxSize={5} />
+              {!isCollapsed && <Text>Trung tâm thông báo</Text>}
+            </HStack>
+          </Button>
+          <Button as={NavLink} to="/admin/actions" {...itemProps('/admin/actions')} w="full">
+            <HStack spacing={2}>
+              <Icon as={MdHistory} boxSize={5} />
+              {!isCollapsed && <Text>Lịch sử hoạt động</Text>}
+            </HStack>
+          </Button>
         </VStack>
-
-        <Divider />
-
-        <HStack w="full" spacing={3} onClick={() => navigate("/profile") } cursor="pointer">
-          <Avatar name={currentUser?.name} size="sm" />
-          <Box>
-            <Text fontSize="sm" color={useColorModeValue('gray.800','white')}>{currentUser?.name}</Text>
-            <Text fontSize="xs" color={useColorModeValue('gray.500','gray.300')}>{currentUser?.role}</Text>
-          </Box>
-        </HStack>
       </VStack>
 
       <Box flex={1} p={6} bg={mainBg}>

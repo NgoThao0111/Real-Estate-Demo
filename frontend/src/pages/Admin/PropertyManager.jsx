@@ -132,90 +132,179 @@ export default function PropertyManager() {
 
   return (
     <Box>
-      <Heading size="md" mb={4}>Quản lý tin đăng</Heading>
+      <Heading size="md" mb={4}>
+        Quản lý tin đăng
+      </Heading>
 
       <HStack spacing={3} mb={3}>
-        <Select placeholder="Tất cả trạng thái" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} maxW="220px">
+        <Select
+          placeholder="Tất cả trạng thái"
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          maxW="220px"
+        >
           <option value="">Tất cả</option>
           <option value="pending">Chờ duyệt</option>
           <option value="approved">Đã duyệt</option>
           <option value="rejected">Bị từ chối</option>
         </Select>
 
-        <Select placeholder="Tất cả loại" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} maxW="220px">
+        <Select
+          placeholder="Tất cả loại"
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value)}
+          maxW="220px"
+        >
           <option value="">Tất cả</option>
           <option value="rent">Cho thuê</option>
           <option value="sale">Bán</option>
         </Select>
 
-        <Button onClick={fetchListings} colorScheme="blue">Áp dụng</Button>
-        <Button onClick={() => { setStatusFilter(''); setTypeFilter(''); fetchListings(); }}>Đặt lại</Button>
+        <Button onClick={fetchListings} colorScheme="blue">
+          Áp dụng
+        </Button>
+        <Button
+          onClick={() => {
+            setStatusFilter("");
+            setTypeFilter("");
+            fetchListings();
+          }}
+        >
+          Đặt lại
+        </Button>
       </HStack>
 
       {loading ? (
         <Text>Đang tải...</Text>
       ) : (
         <Box bg={cardBg} borderRadius="md" p={4} overflowX="auto">
-          <Table variant="simple" color={textColor}>
+          <Table
+            variant="simple"
+            color={textColor}
+            tableLayout="fixed"
+            width="100%"
+          >
             <Thead>
               <Tr>
-                <Th>Ảnh</Th>
-                <Th>Tiêu đề</Th>
-                <Th>Giá</Th>
+                {/* <Th>Ảnh</Th> */}
+                <Th w={{ base: "60%", md: "40%" }}>Tiêu đề</Th>
+                {/* <Th>Giá</Th>
                 <Th>Diện tích</Th>
-                <Th>Loại</Th>
-                <Th>Tỉnh/Thành</Th>
-                <Th>Trạng thái</Th>
-                <Th>Người đăng</Th>
-                <Th>Hành động</Th>
+                <Th>Tỉnh/Thành</Th> */}
+                <Th w="12%">Loại</Th>
+                <Th w="14%">Trạng thái</Th>
+                <Th w="22%">Người đăng</Th>
+                <Th w="12%">Hành động</Th>
               </Tr>
             </Thead>
             <Tbody>
               {listings.map((l) => (
-                <Tr key={l._id}>
-                  <Td>
+                <Tr
+                  key={l._id}
+                  cursor="pointer"
+                  onClick={() => window.open(`/listings/${l._id}`, "_blank")}
+                >
+                  {/* <Td>
                       {l.images && l.images.length ? (
                         <Image boxSize="60px" objectFit="cover" src={typeof l.images[0] === 'string' ? l.images[0] : l.images[0].url} alt={l.title} borderRadius="md" />
                       ) : (
                         <Box w="60px" h="40px" bg="gray.100" borderRadius="6px" />
                       )}
+                  </Td> */}
+                  <Td
+                    w={{ base: "60%", md: "40%" }}
+                    maxW={{ base: "60%", md: "40%" }}
+                  >
+                    <Text
+                      fontWeight={600}
+                      noOfLines={2} // tối đa 2 dòng
+                      wordBreak="break-word"
+                    >
+                      {l.title}
+                    </Text>
                   </Td>
-                  <Td>
-                    <Text fontWeight={600}>{l.title}</Text>
-                  </Td>
-                  <Td>{formatPrice(l.price)}</Td>
+                  {/* <Td>{formatPrice(l.price)}</Td>
                   <Td>{l.area}</Td>
+                  <Td>{l.location?.province}</Td>*/}
                   <Td>{mapType(l.rental_type)}</Td>
-                  <Td>{l.location?.province}</Td>
                   <Td>
-                      {normalize(l.status) === 'approved' ? (
-                        <Badge colorScheme="green">Đã duyệt</Badge>
-                      ) : normalize(l.status) === 'pending' ? (
-                        <Badge colorScheme="orange">Chờ duyệt</Badge>
-                      ) : normalize(l.status) === 'rejected' ? (
-                        <Badge colorScheme="red">Bị từ chối</Badge>
-                      ) : (
-                        <Badge>{mapStatus(l.status)}</Badge>
-                      )}
+                    {normalize(l.status) === "approved" ? (
+                      <Badge colorScheme="green">Đã duyệt</Badge>
+                    ) : normalize(l.status) === "pending" ? (
+                      <Badge colorScheme="orange">Chờ duyệt</Badge>
+                    ) : normalize(l.status) === "rejected" ? (
+                      <Badge colorScheme="red">Không được duyệt</Badge>
+                    ) : normalize(l.status) === "closed" ? (
+                      <Badge colorScheme="gray">Đã thuê</Badge>
+                    ) : (
+                      <Badge>{mapStatus(l.status)}</Badge>
+                    )}
                   </Td>
-                  <Td>{l.owner?.email ? `${l.owner?.name || l.owner?.username} (${l.owner?.email})` : (l.owner?.name || l.owner?.username)}</Td>
                   <Td>
-                    <HStack>
-                      <Button size="sm" as="a" href={`/listings/${l._id}`} target="_blank">Xem trước</Button>
-                      {normalize(l.status) === 'approved' ? (
-                        <Button size="sm" colorScheme="red" variant="outline" onClick={() => confirmAction(l._id, 'delete')}>Xóa</Button>
-                      ) : normalize(l.status) === 'rejected' ? (
+                    {l.owner?.email
+                      ? `${l.owner?.name || l.owner?.username} (${
+                          l.owner?.email
+                        })`
+                      : l.owner?.name || l.owner?.username}
+                  </Td>
+                  <Td>
+                    <HStack onClick={(e) => e.stopPropagation()}>
+                      {normalize(l.status) === "pending" ? (
                         <>
-                          <Button size="sm" colorScheme="green" onClick={() => confirmAction(l._id, 'approve')}>Duyệt</Button>
-                          <Button size="sm" colorScheme="red" variant="outline" onClick={() => confirmAction(l._id, 'delete')}>Xóa</Button>
+                          <Button
+                            size="sm"
+                            colorScheme="green"
+                            onClick={() => confirmAction(l._id, "approve")}
+                          >
+                            Duyệt
+                          </Button>
+                          <Button
+                            size="sm"
+                            colorScheme="red"
+                            variant="outline"
+                            onClick={() => confirmAction(l._id, "reject")}
+                          >
+                            Từ chối
+                          </Button>
                         </>
-                      ) : (
+                      ) : normalize(l.status) === "approved" ? (
                         <>
-                          <Button size="sm" colorScheme="green" onClick={() => confirmAction(l._id, 'approve')}>Duyệt</Button>
-                          <Button size="sm" colorScheme="red" variant="ghost" onClick={() => confirmAction(l._id, 'reject')}>Từ chối</Button>
-                          <Button size="sm" colorScheme="red" variant="outline" onClick={() => confirmAction(l._id, 'delete')}>Xóa</Button>
+                          <Button
+                            size="sm"
+                            colorScheme="orange"
+                            onClick={() => confirmAction(l._id, "reject")}
+                          >
+                            Hủy duyệt
+                          </Button>
+                          <Button
+                            size="sm"
+                            colorScheme="red"
+                            variant="outline"
+                            onClick={() => confirmAction(l._id, "delete")}
+                          >
+                            Xóa
+                          </Button>
                         </>
-                      )}
+                      ) : normalize(l.status) === "rejected" ? (
+                        <>
+                          <Button
+                            size="sm"
+                            colorScheme="green"
+                            onClick={() => confirmAction(l._id, "approve")}
+                          >
+                            Duyệt
+                          </Button>
+
+                          <Button
+                            size="sm"
+                            colorScheme="red"
+                            variant="outline"
+                            onClick={() => confirmAction(l._id, "delete")}
+                          >
+                            Xóa
+                          </Button>
+                        </>
+                      ) : null}
                     </HStack>
                   </Td>
                 </Tr>

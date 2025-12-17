@@ -5,7 +5,7 @@ import {
   Spinner,
   useDisclosure,
 } from "@chakra-ui/react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 
 import Navbar from "./components/Navbar.jsx";
@@ -33,6 +33,8 @@ import { useAuthContext } from "./context/AuthContext.jsx";
 
 function App() {
   const { currentUser, isLoading, logout } = useAuthContext();
+  const location = useLocation();
+  const isAdminPage = location.pathname.startsWith('/admin');
 
   const { isOpen, onOpen, onClose } = useDisclosure();
 

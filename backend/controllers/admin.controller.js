@@ -300,13 +300,11 @@ export const getReports = async (req, res) => {
 export const resolveReport = async (req, res) => {
   try {
     const id = req.params.id;
-    const { status } = req.body; // expected 'reviewed'|'resolved'
     const r = await Report.findById(id);
     if (!r) return res.status(404).json({ message: 'Report not found' });
-    r.status = status || 'resolved';
-    await r.save();
-    try { await AdminAction.create({ admin: req.userId, action: 'resolve_report', target: r._id, meta: { status: r.status } }); } catch (e) {}
-    return res.json({ message: 'Report updated', report: r });
+    await Report.findByIdAndDelete(id);
+    try { await AdminAction.create({ admin: req.userId, action: 'delete_report', target: id, meta: {} }); } catch (e) {}
+    return res.json({ message: 'Report deleted' });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: 'Server error' });
@@ -317,88 +315,123 @@ export const resolveReport = async (req, res) => {
 export const actionOnReport = async (req, res) => {
   try {
     const id = req.params.id;
-    const { action } = req.body; // 'delete_listing' | 'ban_user' | 'ignore'
-    
-    // Populate listing để lấy thông tin
+    const { action } = req.body;
+
     const r = await Report.findById(id).populate('listing');
-    
     if (!r) return res.status(404).json({ message: 'Report not found' });
 
-    
-    // Kiểm tra xem bài viết có còn tồn tại không trước khi xử lý
+    // Nếu listing đã mất → auto resolve + delete report
     if ((action === 'delete_listing' || action === 'ban_user') && !r.listing) {
-        // Nếu bài viết gốc đã mất, ta coi như báo cáo đã được giải quyết
-        r.status = 'resolved';
-        await r.save();
-        try { await AdminAction.create({ admin: req.userId, action: 'resolve_report_missing_listing', target: r._id, meta: {} }); } catch(e) {}
-        return res.json({ message: "Bài viết gốc không còn tồn tại. Báo cáo đã được đóng lại." });
-    }
-    // ---------------------------
+      try {
+        await AdminAction.create({
+          admin: req.userId,
+          action: 'resolve_report_missing_listing',
+          target: r._id,
+          meta: {}
+        });
+      } catch (e) {}
 
+      await Report.findByIdAndDelete(r._id);
+
+      return res.json({
+        message: 'Bài viết gốc không còn tồn tại. Báo cáo đã được xóa.'
+      });
+    }
+
+    // ================= DELETE LISTING =================
     if (action === 'delete_listing') {
-      
       const listing = await Listing.findById(r.listing._id);
-      
+
       if (listing) {
         try {
           const cloudinary = (await import("../config/cloudinary.js")).default;
-          await Promise.all((listing.images || []).map(async (img) => { 
-            if (img.public_id) await cloudinary.uploader.destroy(img.public_id); 
-          }));
-        } catch (e) { console.error('Image delete failed', e); }
-        
+          await Promise.all(
+            (listing.images || []).map(img =>
+              img.public_id ? cloudinary.uploader.destroy(img.public_id) : null
+            )
+          );
+        } catch (e) {
+          console.error('Image delete failed', e);
+        }
+
         await Listing.findByIdAndDelete(listing._id);
       }
-      
-      r.status = 'resolved';
-      await r.save();
-      
-      try { 
-        // Lưu ý: r.listing._id vẫn an toàn để dùng ở đây vì ta đã check null
-        await AdminAction.create({ admin: req.userId, action: 'delete_listing_from_report', target: r._id, meta: { listing: r.listing._id } }); 
+
+      try {
+        await AdminAction.create({
+          admin: req.userId,
+          action: 'delete_listing_from_report',
+          target: r._id,
+          meta: { listing: r.listing._id }
+        });
       } catch (e) {}
-      
-      return res.json({ message: 'Listing deleted and report resolved' });
+
+      await Report.findByIdAndDelete(r._id);
+
+      return res.json({ message: 'Listing deleted and report removed' });
     }
 
+    // ================= BAN USER =================
     if (action === 'ban_user') {
-      // Tương tự, r.listing._id an toàn để dùng
       const listing = await Listing.findById(r.listing._id);
-      
+
       if (listing) {
         const owner = await User.findById(listing.owner);
         if (owner) {
           owner.isBanned = true;
           await owner.save();
-          
-          try { await AdminAction.create({ admin: req.userId, action: 'ban_user_from_report', target: owner._id, meta: { report: r._id } }); } catch (e) {}
-          
-          // notify and disconnect owner
-          try { 
-            req.io?.in(`user_${owner._id}`).emit('force_logout', { message: 'Bị khóa do báo cáo vi phạm' }); 
-            if (req.io?.in && typeof req.io.in(`user_${owner._id}`).disconnectSockets === 'function') {
-                await req.io.in(`user_${owner._id}`).disconnectSockets(); 
+
+          try {
+            await AdminAction.create({
+              admin: req.userId,
+              action: 'ban_user_from_report',
+              target: owner._id,
+              meta: { report: r._id }
+            });
+          } catch (e) {}
+
+          try {
+            req.io?.in(`user_${owner._id}`).emit('force_logout', {
+              message: 'Bị khóa do báo cáo vi phạm'
+            });
+
+            if (
+              req.io?.in &&
+              typeof req.io.in(`user_${owner._id}`).disconnectSockets === 'function'
+            ) {
+              await req.io.in(`user_${owner._id}`).disconnectSockets();
             }
-          } catch (e) { console.error(e); }
+          } catch (e) {
+            console.error(e);
+          }
         }
       }
-      
-      r.status = 'resolved';
-      await r.save();
-      return res.json({ message: 'User banned and report resolved' });
+
+      await Report.findByIdAndDelete(r._id);
+
+      return res.json({ message: 'User banned and report removed' });
     }
 
-    // default ignore
-    r.status = 'reviewed';
-    await r.save();
-    try { await AdminAction.create({ admin: req.userId, action: 'ignore_report', target: r._id, meta: {} }); } catch (e) {}
-    return res.json({ message: 'Report marked reviewed' });
+    // ================= IGNORE =================
+    try {
+      await AdminAction.create({
+        admin: req.userId,
+        action: 'ignore_report',
+        target: r._id,
+        meta: {}
+      });
+    } catch (e) {}
+
+    await Report.findByIdAndDelete(r._id);
+
+    return res.json({ message: 'Report ignored and removed' });
 
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: 'Server error' });
   }
 };
+
 
 export const toggleBanUser = async (req, res) => {
   try {
