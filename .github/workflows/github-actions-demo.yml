@@ -58,3 +58,10 @@ jobs:
           tags: |
             ghcr.io/${{ env.REPO_LOWER }}-frontend:latest
             ghcr.io/${{ env.REPO_LOWER }}-frontend:${{ github.sha }}
+
+      # =========================
+      # Trigger Render Deploy
+      # =========================
+      - name: Trigger Render Deploy (Backend)
+        run: |
+          curl -X POST "${{ secrets.RENDER_BACKEND_DEPLOY_HOOK }}"
