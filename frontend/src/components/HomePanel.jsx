@@ -29,7 +29,7 @@ import {
 import { FiMapPin, FiStar, FiSearch, FiX } from "react-icons/fi";
 import { useListStore } from "../store/list.js";
 import { useNavigate, Link } from "react-router-dom";
-import axios from "axios";
+import api from "../lib/axios.js";
 
 const HomePanel = () => {
   const { listings, fetchListings } = useListStore();
@@ -105,10 +105,10 @@ const HomePanel = () => {
       try {
         const type = activeTab === 0 ? "sell" : "rent";
         // Gọi API tìm kiếm với limit nhỏ (5 item) để gợi ý nhanh
-        const res = await axios.get(
-          `/api/listings/search?keyword=${keyword}&rental_type=${type}&limit=5`
+        const res = await api.get(
+          `/listings/search?keyword=${keyword}&rental_type=${type}&limit=5`
         );
-
+        console.log("Check API Response:", res); // Xem nó trả về gì
         if (res.data && res.data.data) {
           setSuggestions(res.data.data);
           setShowDropdown(true); // Có dữ liệu mới hiện dropdown

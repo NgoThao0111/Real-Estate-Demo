@@ -148,7 +148,7 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
       if (!success) {
         toast({
           title: "Đăng ký thất bại",
-          description: message,
+          description: "Email này đã tồn tại trong hệ thống",
           status: "error",
           duration: 3000,
           isClosable: true,
