@@ -11,28 +11,42 @@ export const useUserStore = create((set) => ({
   // --- 1. REGISTER ---
   registerUser: async (userData) => {
     try {
-      if (!userData.email || !userData.password || !userData.name || !userData.phone) {
+      if (
+        !userData.email ||
+        !userData.password ||
+        !userData.name ||
+        !userData.phone
+      ) {
         throw new Error("Vui lòng điền tất cả các trường bắt buộc.");
       }
       if (userData.password !== userData.confirmPassword) {
         throw new Error("Mật khẩu và xác nhận mật khẩu không khớp.");
       }
-      
+
       set({ loading: true, error: null });
-      
+
       // Gọi API đăng ký
       const res = await api.post("/users/register", userData);
 
       // Nếu server yêu cầu xác thực email
       if (res.data.verificationRequired) {
         set({ loading: false, error: null });
-        return { success: true, verificationRequired: true, message: res.data.message, user: res.data.user };
+        return {
+          success: true,
+          verificationRequired: true,
+          message: res.data.message,
+          user: res.data.user,
+        };
       }
 
       // Nếu server trả về user (đã verify và đăng nhập tự động)
       if (res.data.user) {
         set({ user: res.data.user, loading: false, error: null });
-        return { success: true, message: "Đăng ký thành công!", user: res.data.user };
+        return {
+          success: true,
+          message: "Đăng ký thành công!",
+          user: res.data.user,
+        };
       }
 
       return { success: true, message: res.data.message };
@@ -45,7 +59,7 @@ export const useUserStore = create((set) => ({
 
   resendVerification: async (email) => {
     try {
-      const res = await api.post('/users/resend-verification', { email });
+      const res = await api.post("/users/resend-verification", { email });
       return { success: true, message: res.data.message };
     } catch (err) {
       const message = err?.response?.data?.message || err.message;
@@ -55,7 +69,7 @@ export const useUserStore = create((set) => ({
 
   verifyEmail: async (email, code) => {
     try {
-      const res = await api.post('/users/verify-email', { email, code });
+      const res = await api.post("/users/verify-email", { email, code });
       // After verification server sets cookie and returns user
       if (res.data.user) set({ user: res.data.user });
       return { success: true, message: res.data.message, user: res.data.user };
@@ -67,7 +81,7 @@ export const useUserStore = create((set) => ({
 
   sendResetCode: async (email) => {
     try {
-      const res = await api.post('/users/forgot-password-code', { email });
+      const res = await api.post("/users/forgot-password-code", { email });
       return { success: true, message: res.data.message };
     } catch (err) {
       const message = err?.response?.data?.message || err.message;
@@ -77,7 +91,11 @@ export const useUserStore = create((set) => ({
 
   resetPasswordWithCode: async (email, code, password) => {
     try {
-      const res = await api.post('/users/reset-password-code', { email, code, password });
+      const res = await api.post("/users/reset-password-code", {
+        email,
+        code,
+        password,
+      });
       // Optionally server may set cookie after reset
       return { success: true, message: res.data.message };
     } catch (err) {
@@ -94,7 +112,7 @@ export const useUserStore = create((set) => ({
       }
 
       set({ loading: true, error: null });
-      
+
       const res = await api.post("/users/login", loginData);
 
       // Login thành công -> Lưu user vào state
@@ -103,8 +121,12 @@ export const useUserStore = create((set) => ({
         loading: false,
         error: null,
       });
-      
-      return { success: true, message: "Đăng nhập thành công", user: res.data.user };
+
+      return {
+        success: true,
+        message: "Đăng nhập thành công",
+        user: res.data.user,
+      };
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message;
       set({
@@ -119,15 +141,21 @@ export const useUserStore = create((set) => ({
   requestLoginGoogle: async (tokenGoogle) => {
     set({ loading: true, error: null });
     try {
-      const res = await api.post('/users/login-google', { tokenGoogle: tokenGoogle });
-      
+      const res = await api.post("/users/login-google", {
+        tokenGoogle: tokenGoogle,
+      });
+
       set({
         user: res.data.user,
         loading: false,
         error: null,
       });
 
-      return { success: true, message: "Đăng nhập thành công", user: res.data.user };
+      return {
+        success: true,
+        message: "Đăng nhập thành công",
+        user: res.data.user,
+      };
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message;
       set({
@@ -207,14 +235,16 @@ export const useUserStore = create((set) => ({
     try {
       // 1. Gọi API toggle
       const res = await api.post(`/users/save/${listingId}`);
-      
+
       // 2. Cập nhật State Optimistic (Để UI phản hồi nhanh)
       set((state) => {
         const isSaved = state.savedListings.includes(listingId);
         if (isSaved) {
-            return { savedListings: state.savedListings.filter(id => id !== listingId) };
+          return {
+            savedListings: state.savedListings.filter((id) => id !== listingId),
+          };
         } else {
-            return { savedListings: [...state.savedListings, listingId] };
+          return { savedListings: [...state.savedListings, listingId] };
         }
       });
 
@@ -222,6 +252,18 @@ export const useUserStore = create((set) => ({
     } catch (err) {
       const message = err?.response?.data?.message || err.message;
       // Nếu lỗi, nên fetch lại để đồng bộ state cũ (Revert)
+      return { success: false, message };
+    }
+  },
+
+  getUserInfor: async () => {
+    try {
+      const res = await api.get("/users/profile");
+      const userProfile = res.data.user || null;
+
+      return { success: true, data: userProfile };
+    } catch (error) {
+      const message = error?.response?.data?.message || error.message;
       return { success: false, message };
     }
   },

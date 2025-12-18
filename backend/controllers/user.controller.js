@@ -486,11 +486,11 @@ export const loginGoogle = async (req, res) => {
 
 export const getUserInfor = async (req, res) => {
   try {
-    // --- JWT: Lấy userId từ middleware verifyToken (đã gán vào req.userId) ---
-    const user_id = req.userId; // Middleware verifyToken đã xử lý việc check auth
+    
+    const user_id = req.userId; 
 
     const user = await User.findById(user_id).select(
-      "username name phone role createdAt"
+      "username name phone email role createdAt"
     );
 
     if (!user) {
