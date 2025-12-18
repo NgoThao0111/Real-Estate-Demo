@@ -48,7 +48,7 @@ const SortViewOpts = ({
       {/* Options on the right */}
       <HStack
         align="center"
-        gap={{ base: 2, md: 4 }} 
+        gap={{ base: 2, md: 4 }}
         flexWrap={{ base: "wrap", lg: "nowrap" }}
         justify={{ base: "flex-start", lg: "flex-end" }}
         w={{ base: "100%", lg: "auto" }}
@@ -107,6 +107,7 @@ const SortViewOpts = ({
             cursor={"pointer"}
           >
             {/* Value dùng dấu gạch dưới (_) để khớp Backend */}
+            <option value="">Không</option>
             <option value="newest">Mới nhất</option>
             <option value="oldest">Cũ nhất</option>
             <option value="price_asc">Giá thấp đến cao</option>
@@ -142,6 +143,7 @@ const SortViewOpts = ({
 
 // Utility function to sort listings (Đã cập nhật case khớp với value ở trên)
 export const sortListings = (listings, sortBy) => {
+  if (!sortBy) return listings;
   return [...listings].sort((a, b) => {
     switch (sortBy) {
       case "newest":
