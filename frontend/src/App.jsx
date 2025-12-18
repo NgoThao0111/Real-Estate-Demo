@@ -29,20 +29,21 @@ import AOSComponent from "./components/AOSComponent.jsx";
 import Footer from "./components/Footer.jsx";
 import AuthModal from "./components/AuthModal.jsx";
 
-import { useAuthContext } from "./context/AuthContext.jsx";
+import UserProfilePage from "./pages/UserProfilePage.jsx";
 
+import { useAuthContext } from "./context/AuthContext.jsx";
 
 function App() {
   const { currentUser, isLoading, logout } = useAuthContext();
   const location = useLocation();
-  const isAdminPage = location.pathname.startsWith('/admin');
+  const isAdminPage = location.pathname.startsWith("/admin");
 
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   useEffect(() => {
     const handleUnauthorized = () => {
       logout?.(); // clear user nếu có
-      onOpen();   // mở modal login
+      onOpen(); // mở modal login
     };
 
     window.addEventListener("auth:unauthorized", handleUnauthorized);
@@ -111,8 +112,13 @@ function App() {
             />
             <Route
               path="/chat"
+              element={currentUser ? <ChatPage /> : <Navigate to="/" replace />}
+            />
+
+            <Route
+              path="/profile"
               element={
-                currentUser ? <ChatPage /> : <Navigate to="/" replace />
+                currentUser ? <UserProfilePage /> : <Navigate to="/" replace />
               }
             />
 

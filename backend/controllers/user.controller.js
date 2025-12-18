@@ -3,86 +3,14 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken"; // Import jwt
 import dotenv from "dotenv";
 import { generateTokenAndSetCookie } from "../utils/generateToken.js";
-// import sendEmail from "../utils/sendEmail.js";
-import { Resend } from "resend";
 import crypto from "crypto";
 import { jwtDecode } from "jwt-decode";
 import { OAuth2Client } from "google-auth-library";
+import { sendEmailViaBrevo } from "../utils/sendEmail.js";
 
 dotenv.config();
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-
-import nodemailer from "nodemailer";
-
-// --- CẤU HÌNH BREVO SMTP ---
-const transporter = nodemailer.createTransport({
-  host: "smtp-relay.brevo.com",
-  port: 587,
-  secure: false, // true for 465, false for other ports
-  auth: {
-    user: process.env.BREVO_LOGIN, // Email đăng nhập Brevo
-    pass: process.env.BREVO_PASS, // Master Password (SMTP Key) của Brevo
-  },
-});
-
-// --- THÊM ĐOẠN NÀY ĐỂ TEST KẾT NỐI NGAY KHI SERVER CHẠY ---
-transporter.verify(function (error, success) {
-  if (error) {
-    console.log("❌ LỖI KẾT NỐI SMTP BREVO:");
-    console.error(error);
-  } else {
-    console.log("✅ KẾT NỐI SMTP BREVO THÀNH CÔNG! Sẵn sàng gửi mail.");
-  }
-});
-
-// Giữ nguyên tên hàm để không ảnh hưởng code cũ
-const sendEmailViaResend = async (toEmail, subject, htmlContent) => {
-  try {
-    // Với Brevo, 'from' bắt buộc phải là email bạn đã verify trong tài khoản Brevo
-    // (Thường chính là email đăng nhập BREVO_USER)
-    const senderEmail = process.env.BREVO_USER;
-
-    const info = await transporter.sendMail({
-      from: `"Support Team" <${senderEmail}>`, // Thêm tên hiển thị cho chuyên nghiệp
-      to: toEmail, // QUAN TRỌNG: Dùng biến toEmail, không được hardcode email của bạn vào đây
-      subject: subject,
-      html: htmlContent,
-    });
-
-    console.log(
-      `Email sent via Brevo to ${toEmail}. Message ID: ${info.messageId}`
-    );
-    return info;
-  } catch (error) {
-    console.error("Error sending email via Brevo:", error);
-    // Không throw error để tránh crash app, chỉ log lại lỗi
-    return null;
-  }
-};
-
-// const sendEmailViaResend = async (toEmail, subject, htmlContent) => {
-//   try {
-//     // LƯU Ý QUAN TRỌNG:
-//     // 1. Nếu chưa add domain riêng: Bắt buộc dùng 'onboarding@resend.dev' và chỉ gửi được cho chính email đăng ký Resend của bạn.
-//     // 2. Nếu đã verify domain (vd: verified@my-app.com): Thay dòng 'from' bên dưới thành email domain của bạn.
-//     const senderEmail = process.env.EMAIL_SENDER || "onboarding@resend.dev";
-
-//     const data = await resend.emails.send({
-//       from: senderEmail,
-//       to: "hoangvanbinh14122005@gmail.com",
-//       subject: subject,
-//       html: htmlContent,
-//     });
-
-//     console.log(`Email sent to ${toEmail}. ID: ${data.id}`);
-//     return data;
-//   } catch (error) {
-//     console.error("Resend Error:", error);
-//     // Không throw error để tránh crash app nếu gửi mail lỗi, chỉ log lại
-//     return null;
-//   }
-// };
 
 const pepperPassword = (password) => {
   if (!process.env.PASSWORD_PEPPER) {
@@ -151,24 +79,42 @@ export const userRegister = async (req, res) => {
     const code = user.generateEmailVerificationCode();
     await user.save({ validateBeforeSave: false });
 
-    // const message = `
-    //   <h1>Mã xác thực đăng ký</h1>
-    //   <p>Mã xác thực của bạn là: <strong>${code}</strong></p>
-    //   <p>Mã sẽ hết hạn sau 2 phút.</p>
-    // `;
-
-    // --- GỬI MAIL BẰNG RESEND ---
     const htmlMessage = `
-      <div style="font-family: Arial, sans-serif; padding: 20px;">
-        <h2 style="color: #333;">Xác thực đăng ký</h2>
-        <p>Mã xác thực của bạn là:</p>
-        <h1 style="color: #007bff; letter-spacing: 5px;">${code}</h1>
-        <p>Mã sẽ hết hạn sau 2 phút.</p>
-      </div>
-    `;
+  <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #ffffff;">
+    
+    <h2 style="color: #333; text-align: center; margin-top: 0;">Xác thực đăng ký</h2>
+    
+    <p style="font-size: 16px; color: #555;">Xin chào <strong>${name}</strong>,</p>
+    
+    <p style="font-size: 16px; color: #555;">Cảm ơn bạn đã đăng ký tài khoản. Để hoàn tất, vui lòng sử dụng mã xác thực dưới đây:</p>
+    
+    <div style="background-color: #f8f9fa; padding: 20px; text-align: center; border-radius: 6px; margin: 20px 0;">
+      <h1 style="color: #007bff; letter-spacing: 5px; margin: 0; font-size: 32px;">${code}</h1>
+      <p style="margin-top: 10px; font-size: 14px; color: #888;">(Mã có hiệu lực trong 4 phút)</p>
+    </div>
 
-    // Gửi mail (Await ở đây vẫn nhanh vì Resend là API, tốn khoảng 200-500ms)
-    await sendEmailViaResend(user.email, "Xác minh email", htmlMessage);
+    <hr style="border: none; border-top: 1px solid #eee; margin: 25px 0;" />
+
+    <div style="font-size: 14px; color: #999; line-height: 1.5;">
+      <p style="margin: 0;"><strong>⚠️ Lưu ý quan trọng:</strong></p>
+      <p style="margin-top: 5px;">Để không bỏ lỡ các thông báo quan trọng tiếp theo, hãy đánh dấu email này là <em>"Không phải Spam" (Not Spam)</em>.</p>
+    </div>
+
+  </div>
+`;
+
+    // --- GỌI HÀM GỬI MAIL ---
+    try {
+      console.log(`Đang gửi mail tới: ${user.email}`);
+
+      // Gọi hàm API mới (nhớ await)
+      await sendEmailViaBrevo(user.email, "Xác minh tài khoản", htmlMessage);
+
+      console.log("Gửi mail thành công!");
+    } catch (emailError) {
+      console.error("Không gửi được mail:", emailError.message);
+      // Tùy chọn: return lỗi hoặc cho qua tùy logic của bạn
+    }
 
     // try {
     //   await sendEmail({
@@ -205,32 +151,46 @@ export const resendVerification = async (req, res) => {
     if (user.emailVerified)
       return res.status(400).json({ message: "Email already verified" });
 
+    // Generate verification code and send email
     const code = user.generateEmailVerificationCode();
     await user.save({ validateBeforeSave: false });
 
-    // const message = `<p>Mã xác thực mới của bạn là <strong>${code}</strong>. Mã sẽ hết hạn sau 2 phút.</p>`;
-    // try {
-    //   await sendEmail({
-    //     email: user.email,
-    //     subject: "Xác minh email - Mã mới",
-    //     message,
-    //   });
-    // } catch (e) {
-    //   console.error(e);
-    // }
-
     const htmlMessage = `
-      <div style="font-family: Arial, sans-serif;">
-         <p>Mã xác thực mới của bạn là: <strong style="font-size: 18px; color: #007bff;">${code}</strong></p>
-         <p>Mã sẽ hết hạn sau 2 phút.</p>
-      </div>
-    `;
+  <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #ffffff;">
+    
+    <h2 style="color: #333; text-align: center; margin-top: 0;">Gửi lại mã xác thực</h2>
+    
+    <p style="font-size: 16px; color: #555;">Xin chào <strong>${user.name}</strong>,</p>
+    
+    <p style="font-size: 16px; color: #555;">Đây là tin nhắn gửi lại mã xác thực. Để hoàn tất, vui lòng sử dụng mã xác thực dưới đây:</p>
+    
+    <div style="background-color: #f8f9fa; padding: 20px; text-align: center; border-radius: 6px; margin: 20px 0;">
+      <h1 style="color: #007bff; letter-spacing: 5px; margin: 0; font-size: 32px;">${code}</h1>
+      <p style="margin-top: 10px; font-size: 14px; color: #888;">(Mã có hiệu lực trong 4 phút)</p>
+    </div>
 
-    await sendEmailViaResend(
-      user.email,
-      "Xác minh email - Mã mới",
-      htmlMessage
-    );
+    <hr style="border: none; border-top: 1px solid #eee; margin: 25px 0;" />
+
+    <div style="font-size: 14px; color: #999; line-height: 1.5;">
+      <p style="margin: 0;"><strong>⚠️ Lưu ý quan trọng:</strong></p>
+      <p style="margin-top: 5px;">Để không bỏ lỡ các thông báo quan trọng tiếp theo, hãy đánh dấu email này là <em>"Không phải Spam" (Not Spam)</em>.</p>
+    </div>
+
+  </div>
+`;
+
+    // --- GỌI HÀM GỬI MAIL ---
+    try {
+      console.log(`Đang gửi mail tới: ${user.email}`);
+
+      // Gọi hàm API mới (nhớ await)
+      await sendEmailViaBrevo(user.email, "Gửi lại mã xác thực", htmlMessage);
+
+      console.log("Gửi mail thành công!");
+    } catch (emailError) {
+      console.error("Không gửi được mail:", emailError.message);
+      // Tùy chọn: return lỗi hoặc cho qua tùy logic của bạn
+    }
 
     return res.json({ message: "Mã xác thực đã được gửi lại" });
   } catch (error) {
@@ -286,26 +246,42 @@ export const sendResetCode = async (req, res) => {
     const code = user.generateResetPasswordCode();
     await user.save({ validateBeforeSave: false });
 
-    // const message = `<h1>Mã đặt lại mật khẩu</h1><p>Mã của bạn là <strong>${code}</strong>.</p> <p>Mã sẽ hết hạn sau 15 phút.</p>`;
-    // try {
-    //   await sendEmail({
-    //     email: user.email,
-    //     subject: "Mã đặt lại mật khẩu",
-    //     message,
-    //   });
-    // } catch (e) {
-    //   console.error(e);
-    // }
-
     const htmlMessage = `
-      <div style="font-family: Arial, sans-serif;">
-        <h1>Mã đặt lại mật khẩu</h1>
-        <p>Mã của bạn là <strong style="font-size: 18px; color: #d9534f;">${code}</strong>.</p> 
-        <p>Mã sẽ hết hạn sau 15 phút.</p>
-      </div>
-    `;
+  <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #ffffff;">
+    
+    <h2 style="color: #333; text-align: center; margin-top: 0;">Đặt lại mật khẩu</h2>
+    
+    <p style="font-size: 16px; color: #555;">Xin chào <strong>${user.name}</strong>,</p>
+    
+    <p style="font-size: 16px; color: #555;">Để hoàn tất đặt lại mật khẩu, vui lòng sử dụng mã xác thực dưới đây:</p>
+    
+    <div style="background-color: #f8f9fa; padding: 20px; text-align: center; border-radius: 6px; margin: 20px 0;">
+      <h1 style="color: #007bff; letter-spacing: 5px; margin: 0; font-size: 32px;">${code}</h1>
+      <p style="margin-top: 10px; font-size: 14px; color: #888;">(Mã có hiệu lực trong 4 phút)</p>
+    </div>
 
-    await sendEmailViaResend(user.email, "Mã đặt lại mật khẩu", htmlMessage);
+    <hr style="border: none; border-top: 1px solid #eee; margin: 25px 0;" />
+
+    <div style="font-size: 14px; color: #999; line-height: 1.5;">
+      <p style="margin: 0;"><strong>⚠️ Lưu ý quan trọng:</strong></p>
+      <p style="margin-top: 5px;">Để không bỏ lỡ các thông báo quan trọng tiếp theo, hãy đánh dấu email này là <em>"Không phải Spam" (Not Spam)</em>.</p>
+    </div>
+
+  </div>
+`;
+
+    // --- GỌI HÀM GỬI MAIL ---
+    try {
+      console.log(`Đang gửi mail tới: ${user.email}`);
+
+      // Gọi hàm API mới (nhớ await)
+      await sendEmailViaBrevo(user.email, "Mã đặt lại mật khẩu", htmlMessage);
+
+      console.log("Gửi mail thành công!");
+    } catch (emailError) {
+      console.error("Không gửi được mail:", emailError.message);
+      // Tùy chọn: return lỗi hoặc cho qua tùy logic của bạn
+    }
 
     return res.json({ message: "Mã đặt lại mật khẩu đã được gửi" });
   } catch (error) {
@@ -486,11 +462,10 @@ export const loginGoogle = async (req, res) => {
 
 export const getUserInfor = async (req, res) => {
   try {
-    // --- JWT: Lấy userId từ middleware verifyToken (đã gán vào req.userId) ---
-    const user_id = req.userId; // Middleware verifyToken đã xử lý việc check auth
+    const user_id = req.userId;
 
     const user = await User.findById(user_id).select(
-      "username name phone role createdAt"
+      "username name phone email role createdAt"
     );
 
     if (!user) {
