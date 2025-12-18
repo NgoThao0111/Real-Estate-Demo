@@ -152,23 +152,30 @@ export const userRegister = async (req, res) => {
     const code = user.generateEmailVerificationCode();
     await user.save({ validateBeforeSave: false });
 
-    // const message = `
-    //   <h1>Mã xác thực đăng ký</h1>
-    //   <p>Mã xác thực của bạn là: <strong>${code}</strong></p>
-    //   <p>Mã sẽ hết hạn sau 2 phút.</p>
-    // `;
-
-    // --- GỬI MAIL BẰNG RESEND ---
-    // --- SETUP HTML CONTENT ---
     const htmlMessage = `
-      <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd;">
-        <h2 style="color: #333;">Xác thực đăng ký</h2>
-        <p>Xin chào <strong>${name}</strong>,</p>
-        <p>Mã xác thực của bạn là:</p>
-        <h1 style="color: #007bff; letter-spacing: 5px;">${code}</h1>
-        <p>Mã này có hiệu lực trong 2 phút.</p>
-      </div>
-    `;
+  <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #ffffff;">
+    
+    <h2 style="color: #333; text-align: center; margin-top: 0;">Xác thực đăng ký</h2>
+    
+    <p style="font-size: 16px; color: #555;">Xin chào <strong>${name}</strong>,</p>
+    
+    <p style="font-size: 16px; color: #555;">Cảm ơn bạn đã đăng ký tài khoản. Để hoàn tất, vui lòng sử dụng mã xác thực dưới đây:</p>
+    
+    <div style="background-color: #f8f9fa; padding: 20px; text-align: center; border-radius: 6px; margin: 20px 0;">
+      <h1 style="color: #007bff; letter-spacing: 5px; margin: 0; font-size: 32px;">${code}</h1>
+      <p style="margin-top: 10px; font-size: 14px; color: #888;">(Mã có hiệu lực trong 2 phút)</p>
+    </div>
+
+    <hr style="border: none; border-top: 1px solid #eee; margin: 25px 0;" />
+
+    <div style="font-size: 13px; color: #999; line-height: 1.5;">
+      <p style="margin: 0;"><strong>⚠️ Lưu ý quan trọng:</strong></p>
+      <p style="margin: 5px 0 0;">Nếu bạn không thấy email này trong Hộp thư đến (Inbox), vui lòng kiểm tra kỹ mục <strong>Thư rác (Spam)</strong> hoặc <strong>Quảng cáo (Promotions)</strong>.</p>
+      <p style="margin-top: 5px;">Để không bỏ lỡ các thông báo quan trọng tiếp theo, hãy đánh dấu email này là <em>"Không phải Spam" (Not Spam)</em>.</p>
+    </div>
+
+  </div>
+`;
 
     // --- GỌI HÀM GỬI MAIL ---
     try {
