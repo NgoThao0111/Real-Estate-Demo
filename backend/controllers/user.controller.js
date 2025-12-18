@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken"; // Import jwt
 import dotenv from "dotenv";
 import { generateTokenAndSetCookie } from "../utils/generateToken.js";
 // import sendEmail from "../utils/sendEmail.js";
-import { Resend } from "resend";
+// import { Resend } from "resend";
 import crypto from "crypto";
 import { jwtDecode } from "jwt-decode";
 import { OAuth2Client } from "google-auth-library";
