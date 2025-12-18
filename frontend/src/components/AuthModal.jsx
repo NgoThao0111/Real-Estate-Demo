@@ -15,6 +15,10 @@ import {
   Text,
   Divider,
   useToast,
+  InputGroup,
+  InputRightElement, 
+  IconButton,
+  Flex
 } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { useUserStore } from "../store/user.js";
@@ -22,10 +26,16 @@ import { useAuthContext } from "../context/AuthContext.jsx";
 import { useNavigate } from "react-router-dom";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { GoogleLogin } from "@react-oauth/google";
+import { ViewIcon, ViewOffIcon } from "@chakra-ui/icons";
+import { FaEye, FaEyeSlash } from "react-icons/fa6";
 
 const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
   const [mode, setMode] = useState(defaultMode);
   const [step, setStep] = useState("form"); // 'form' | 'verify' | 'forgot' | 'reset'
+  const [showPassword, setShowPassword] = useState(false);
+  const [isPasswordFocused, setIsPasswordFocused] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isConfirmPasswordFocused, setIsConfirmPasswordFocused] = useState(false);
 
   // State form data
   const [formData, setFormData] = useState({
@@ -306,15 +316,47 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
             </FormControl>
             {/* Password */}
             <FormControl isRequired>
-              <FormLabel>Mật khẩu</FormLabel>
-              <Input
-                name="password"
-                type="password"
-                autoComplete="new-password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="Nhập mật khẩu"
-              />
+              <Flex justify="space-between" align="center" mb={1}>
+                <FormLabel mb="0">Mật khẩu</FormLabel>
+
+                {mode === "login" && step === "form" && (
+                  <Button
+                    variant="link"
+                    size="sm"
+                    colorScheme="red"
+                    onClick={() => setStep("forgot")}
+                  >
+                    Quên mật khẩu?
+                  </Button>
+                )}
+              </Flex>
+
+              <InputGroup>
+                <Input
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="new-password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="Nhập mật khẩu"
+                  pr={isPasswordFocused ? "4.5rem" : "1rem"}
+                  onFocus={() => setIsPasswordFocused(true)}
+                  onBlur={() => setIsPasswordFocused(false)}
+                />
+
+                {isPasswordFocused && formData.password.length > 0 && (
+                  <InputRightElement width="4.5rem">
+                    <IconButton
+                      aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                      icon={showPassword ? <FaEyeSlash /> : <FaEye />}
+                      size="sm"
+                      variant="ghost"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => setShowPassword((prev) => !prev)}
+                    />
+                  </InputRightElement>
+                )}
+              </InputGroup>
             </FormControl>
 
             {/* Register Fields */}
@@ -322,14 +364,32 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
               <>
                 <FormControl isRequired>
                   <FormLabel>Xác nhận mật khẩu</FormLabel>
-                  <Input
-                    name="confirmPassword"
-                    type="password"
-                    autoComplete="new-password"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    placeholder="Nhập lại mật khẩu"
-                  />
+                  <InputGroup>
+                    <Input
+                      name="confirmPassword"
+                      type={showConfirmPassword ? "text" : "password"}
+                      autoComplete="new-password"
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
+                      placeholder="Nhập lại mật khẩu"
+                      pr={isConfirmPasswordFocused ? "4.5rem" : "1rem"}
+                      onFocus={() => setIsConfirmPasswordFocused(true)}
+                      onBlur={() => setIsConfirmPasswordFocused(false)}
+                    />
+
+                    {isConfirmPasswordFocused && formData.confirmPassword.length > 0 && (
+                      <InputRightElement width="4.5rem">
+                        <IconButton
+                          aria-label={showConfirmPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                          icon={showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                          size="sm"
+                          variant="ghost"
+                          onMouseDown={(e) => e.preventDefault()} 
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        />
+                      </InputRightElement>
+                    )}
+                  </InputGroup>
                 </FormControl>
 
                 <FormControl isRequired>
@@ -478,21 +538,13 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
                 variant="link"
                 colorScheme="blue"
                 size="sm"
-                onClick={() => setMode(mode === "login" ? "register" : "login")}
+                onClick={() => {
+                  setMode(mode === "login" ? "register" : "login");
+                  setStep("form");
+                }}
               >
                 {mode === "login" ? "Đăng ký ngay" : "Đăng nhập"}
               </Button>
-              +{" "}
-              {mode === "login" && (
-                <Button
-                  variant="link"
-                  size="sm"
-                  colorScheme="red"
-                  onClick={() => setStep("forgot")}
-                >
-                  Quên mật khẩu?
-                </Button>
-              )}{" "}
             </HStack>
           </VStack>
         </ModalBody>

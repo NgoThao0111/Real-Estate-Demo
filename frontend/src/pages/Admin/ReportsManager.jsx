@@ -23,6 +23,9 @@ import {
   Alert,
   AlertIcon,
   useColorModeValue,
+  Divider, 
+  Flex,
+  Badge
 } from "@chakra-ui/react";
 import adminService from "../../services/adminService";
 
@@ -255,12 +258,32 @@ export default function ReportsManager() {
     }
   };
 
+  const PropertyRow = ({ label, children, isLast }) => (
+    <Box w="100%">
+      <Flex justify="space-between" align="flex-start">
+        <Text fontSize="sm" color="gray.500" minW="90px">
+          {label}
+        </Text>
+        <Box textAlign="right" flex="1">
+          {children}
+        </Box>
+      </Flex>
+
+      {!isLast && <Divider mt={3} />}
+    </Box>
+  );
+
   return (
     <Box>
       <Heading size="md" mb={4}>
         Xử lý báo xấu
       </Heading>
-      <Box bg={cardBg} p={4} borderRadius="md">
+      <Box
+        bg={cardBg}
+        p={4}
+        borderRadius="md"
+        display={{ base: "none", lg: "block" }}
+      >
         <Table
           variant="simple"
           color={textColor}
@@ -421,6 +444,148 @@ export default function ReportsManager() {
           </AlertDialogOverlay>
         </AlertDialog> */}
       </Box>
+      <VStack
+        spacing={4}
+        display={{ base: "flex", lg: "none" }}
+        align="stretch"
+      >
+        {reports.map((r) => (
+          <Box
+            key={r._id}
+            p={4}
+            borderWidth="1px"
+            borderRadius="lg"
+            cursor="pointer"
+            bg={cardBg}
+            onClick={() =>
+              r.listing && window.open(`/listings/${r.listing?._id}`, "_blank")
+            }
+            _hover={{ bg: "gray.50" }}
+          >
+            <VStack align="stretch" spacing={3}>
+              {/* Tin */}
+              <PropertyRow label="Tin">
+                {r.listing?.title ? (
+                  <Text fontWeight={600} noOfLines={2}>
+                    {r.listing.title}
+                  </Text>
+                ) : (
+                  <Text fontStyle="italic" color="gray.500">
+                    (Bài viết đã xóa)
+                  </Text>
+                )}
+              </PropertyRow>
+
+              {/* Người báo */}
+              <PropertyRow label="Người báo">
+                <Text fontSize="sm">
+                  {r.reporter?.name || r.reporter?.username || "—"}
+                </Text>
+              </PropertyRow>
+
+              {/* Lý do */}
+              <PropertyRow label="Lý do">
+                <VStack align="end" spacing={1}>
+                  <Text fontSize="sm" noOfLines={2}>
+                    {r.reason}
+                  </Text>
+                  {r.detail && (
+                    <Text fontSize="xs" color="gray.600" noOfLines={1}>
+                      — {r.detail}
+                    </Text>
+                  )}
+                </VStack>
+              </PropertyRow>
+
+              {/* Ngày */}
+              <PropertyRow label="Ngày">
+                <Text fontSize="sm">
+                  {new Date(r.createdAt).toLocaleString("vi-VN")}
+                </Text>
+              </PropertyRow>
+
+              {/* Trạng thái */}
+              <PropertyRow label="Trạng thái">
+                <Badge>{mapStatus(r.status)}</Badge>
+              </PropertyRow>
+
+              {/* Hành động */}
+              <PropertyRow label="Hành động" isLast>
+                <VStack
+                  spacing={2}
+                  align="flex-end"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Button
+                    size="sm"
+                    colorScheme="green"
+                    onClick={() => handleResolve(r)}
+                  >
+                    Giải quyết
+                  </Button>
+
+                  <Button
+                    size="sm"
+                    colorScheme="red"
+                    variant="outline"
+                    onClick={() => handleDeleteListing(r)}
+                    isDisabled={!r.listing}
+                  >
+                    Xóa tin
+                  </Button>
+
+                  <Button
+                    size="sm"
+                    colorScheme="orange"
+                    onClick={() => handleBanUser(r)}
+                    isDisabled={!r.listing}
+                  >
+                    Cấm người đăng
+                  </Button>
+                </VStack>
+              </PropertyRow>
+            </VStack>
+          </Box>
+        ))}
+      </VStack>
+      {/* MOBILE PAGINATION */}
+      <Box
+        mt={4}
+        display={{ base: "flex", lg: "none" }}
+        justifyContent="space-between"
+        alignItems="center"
+      >
+        <Text fontSize="sm">
+          Trang {page} / {pages} — Tổng {reports.length}
+        </Text>
+
+        <HStack>
+          <Button
+            size="sm"
+            onClick={() => {
+              if (page > 1) {
+                fetchReports(page - 1);
+              }
+            }}
+            isDisabled={page <= 1}
+          >
+            Trước
+          </Button>
+
+          <Button
+            size="sm"
+            onClick={() => {
+              if (page < pages) {
+                fetchReports(page + 1);
+              }
+            }}
+            isDisabled={page >= pages}
+          >
+            Sau
+          </Button>
+        </HStack>
+      </Box>
+
       {/* MODAL XÁC NHẬN */}
       <ActionConfirmModal
         isOpen={modalConfig.isOpen}

@@ -28,6 +28,8 @@ import {
   VStack,
   Alert,
   AlertIcon,
+  Divider, 
+  Flex
 } from "@chakra-ui/react";
 import { useRef } from "react";
 import { CheckIcon, CloseIcon, DeleteIcon } from "@chakra-ui/icons";
@@ -52,6 +54,7 @@ export default function PropertyManager() {
     isDanger: false,
   });
   const [isLoadingAction, setIsLoadingAction] = useState(false); // Loading khi đang submit modal
+  const rowBg = useColorModeValue("white", "gray.900");
 
   const fetchListings = async () => {
     setLoading(true);
@@ -277,13 +280,28 @@ export default function PropertyManager() {
     return "Bạn có chắc muốn thực hiện hành động này?";
   };
 
+  const PropertyRow = ({ label, children, isLast }) => (
+    <Box w="100%">
+      <Flex justify="space-between" align="flex-start">
+        <Text fontSize="sm" color="gray.500" minW="90px">
+          {label}
+        </Text>
+        <Box textAlign="right" flex="1">
+          {children}
+        </Box>
+      </Flex>
+
+      {!isLast && <Divider mt={3} />}
+    </Box>
+  );
+
   return (
     <Box>
       <Heading size="md" mb={4}>
         Quản lý tin đăng
       </Heading>
 
-      <HStack spacing={3} mb={3}>
+      <HStack spacing={3} mb={3} display={{ base: "none", lg: "flex" }}>
         <Select
           placeholder="Tất cả trạng thái"
           value={statusFilter}
@@ -321,60 +339,260 @@ export default function PropertyManager() {
         </Button>
       </HStack>
 
+      <VStack spacing={3} mb={3} display={{ base: "block", lg: "none" }}>
+        <HStack spacing={3} mb={3}>
+          <Select
+            placeholder="Tất cả trạng thái"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            maxW="220px"
+          >
+            <option value="">Tất cả</option>
+            <option value="pending">Chờ duyệt</option>
+            <option value="approved">Đã duyệt</option>
+            <option value="rejected">Bị từ chối</option>
+          </Select>
+
+          <Select
+            placeholder="Tất cả loại"
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            maxW="220px"
+          >
+            <option value="">Tất cả</option>
+            <option value="rent">Cho thuê</option>
+            <option value="sale">Bán</option>
+          </Select>
+        </HStack>
+        
+        <HStack spacing={3} mb={3}>
+          <Button onClick={fetchListings} colorScheme="blue">
+            Áp dụng
+          </Button>
+          <Button
+            onClick={() => {
+              setStatusFilter("");
+              setTypeFilter("");
+              fetchListings();
+            }}
+          >
+            Đặt lại
+          </Button>
+        </HStack>
+      </VStack>
+
       {loading ? (
         <Text>Đang tải...</Text>
       ) : (
-        <Box bg={cardBg} borderRadius="md" p={4} overflowX="auto" shadow="sm">
-          <Table
-            variant="simple"
-            color={textColor}
-            table-layout="fixed"
-            width="100%"
-          >
-            <Thead>
-              <Tr>
-                {/* <Th>Ảnh</Th> */}
-                <Th w={{ base: "60%", md: "40%" }}>Tiêu đề</Th>
-                {/* <Th>Giá</Th>
-                <Th>Diện tích</Th>
-                <Th>Tỉnh/Thành</Th> */}
-                <Th w="12%">Loại</Th>
-                <Th w="14%">Trạng thái</Th>
-                <Th w="22%">Người đăng</Th>
-                <Th w="12%">Hành động</Th>
-              </Tr>
-            </Thead>
-            <Tbody>
-              {listings.map((l) => (
-                <Tr
-                  key={l._id}
-                  cursor="pointer"
-                  onClick={() => window.open(`/listings/${l._id}`, "_blank")}
-                >
-                  {/* <Td>
-                      {l.images && l.images.length ? (
-                        <Image boxSize="60px" objectFit="cover" src={typeof l.images[0] === 'string' ? l.images[0] : l.images[0].url} alt={l.title} borderRadius="md" />
-                      ) : (
-                        <Box w="60px" h="40px" bg="gray.100" borderRadius="6px" />
-                      )}
-                  </Td> */}
-                  <Td
-                    w={{ base: "60%", md: "40%" }}
-                    maxW={{ base: "60%", md: "40%" }}
+        <>
+          <Box bg={cardBg} borderRadius="md" p={4} overflowX="auto" shadow="sm" display={{ base: "none", lg: "block" }}>
+            <Table
+              variant="simple"
+              color={textColor}
+              table-layout="fixed"
+              width="100%"
+            >
+              <Thead>
+                <Tr>
+                  {/* <Th>Ảnh</Th> */}
+                  <Th w={{ base: "60%", md: "40%" }}>Tiêu đề</Th>
+                  {/* <Th>Giá</Th>
+                  <Th>Diện tích</Th>
+                  <Th>Tỉnh/Thành</Th> */}
+                  <Th w="12%">Loại</Th>
+                  <Th w="14%">Trạng thái</Th>
+                  <Th w="22%">Người đăng</Th>
+                  <Th w="12%">Hành động</Th>
+                </Tr>
+              </Thead>
+              <Tbody>
+                {listings.map((l) => (
+                  <Tr
+                    key={l._id}
+                    cursor="pointer"
+                    onClick={() => window.open(`/listings/${l._id}`, "_blank")}
                   >
-                    <Text
-                      fontWeight={600}
-                      noOfLines={2} // tối đa 2 dòng
-                      wordBreak="break-word"
+                    {/* <Td>
+                        {l.images && l.images.length ? (
+                          <Image boxSize="60px" objectFit="cover" src={typeof l.images[0] === 'string' ? l.images[0] : l.images[0].url} alt={l.title} borderRadius="md" />
+                        ) : (
+                          <Box w="60px" h="40px" bg="gray.100" borderRadius="6px" />
+                        )}
+                    </Td> */}
+                    <Td
+                      w={{ base: "60%", md: "40%" }}
+                      maxW={{ base: "60%", md: "40%" }}
                     >
+                      <Text
+                        fontWeight={600}
+                        noOfLines={2} // tối đa 2 dòng
+                        wordBreak="break-word"
+                      >
+                        {l.title}
+                      </Text>
+                    </Td>
+                    {/* <Td>{formatPrice(l.price)}</Td>
+                    <Td>{l.area}</Td>
+                    <Td>{l.location?.province}</Td>*/}
+                    <Td>{mapType(l.rental_type)}</Td>
+                    <Td>
+                      {normalize(l.status) === "approved" ? (
+                        <Badge colorScheme="green">Đã duyệt</Badge>
+                      ) : normalize(l.status) === "pending" ? (
+                        <Badge colorScheme="orange">Chờ duyệt</Badge>
+                      ) : normalize(l.status) === "rejected" ? (
+                        <Badge colorScheme="red">Không được duyệt</Badge>
+                      ) : normalize(l.status) === "closed" ? (
+                        <Badge colorScheme="gray">Đã thuê</Badge>
+                      ) : (
+                        <Badge>{mapStatus(l.status)}</Badge>
+                      )}
+                    </Td>
+                    <Td>
+                      {l.owner?.email
+                        ? `${l.owner?.name || l.owner?.username} (${
+                            l.owner?.email
+                          })`
+                        : l.owner?.name || l.owner?.username}
+                    </Td>
+                    <Td>
+                      <HStack onClick={(e) => e.stopPropagation()}>
+                        {normalize(l.status) === "pending" ? (
+                          <>
+                            <Button
+                              size="sm"
+                              colorScheme="green"
+                              isDisabled={normalize(l.status) === "approved"}
+                              onClick={() => handleApprove(l)}
+                              aria-label="Approve"
+                              // onClick={() => confirmAction(l._id, "approve")}
+                            >
+                              Duyệt
+                            </Button>
+                            <Button
+                              size="sm"
+                              colorScheme="red"
+                              variant="outline"
+                              // onClick={() => confirmAction(l._id, "reject")}
+                              isDisabled={normalize(l.status) === "rejected"}
+                              onClick={() => openRejectModal(l)}
+                              aria-label="Reject"
+                            >
+                              Từ chối
+                            </Button>
+                          </>
+                        ) : normalize(l.status) === "approved" ? (
+                          <>
+                            <Button
+                              size="sm"
+                              colorScheme="orange"
+                              // onClick={() => confirmAction(l._id, "reject")}
+                              isDisabled={normalize(l.status) === "rejected"}
+                              onClick={() => openRejectModal(l)}
+                              aria-label="Reject"
+                            >
+                              Hủy duyệt
+                            </Button>
+                            <Button
+                              size="sm"
+                              colorScheme="red"
+                              variant="outline"
+                              // onClick={() => confirmAction(l._id, "delete")}
+                              onClick={() => openDeleteModal(l)}
+                              aria-label="Delete"
+                            >
+                              Xóa
+                            </Button>
+                          </>
+                        ) : normalize(l.status) === "rejected" ? (
+                          <>
+                            <Button
+                              size="sm"
+                              colorScheme="green"
+                              // onClick={() => confirmAction(l._id, "approve")}
+                              isDisabled={normalize(l.status) === "approved"}
+                              onClick={() => handleApprove(l)}
+                              aria-label="Approve"
+                            >
+                              Duyệt
+                            </Button>
+
+                            <Button
+                              size="sm"
+                              colorScheme="red"
+                              variant="outline"
+                              // onClick={() => confirmAction(l._id, "delete")}
+                              onClick={() => openDeleteModal(l)}
+                              aria-label="Delete"
+                            >
+                              Xóa
+                            </Button>
+                          </>
+                        ) : null}
+                      </HStack>
+                    </Td>
+                  </Tr>
+                ))}
+              </Tbody>
+            </Table>
+
+            {/* <AlertDialog
+              isOpen={isOpen}
+              leastDestructiveRef={cancelRef}
+              onClose={onClose}
+            >
+              <AlertDialogOverlay>
+                <AlertDialogContent>
+                  <AlertDialogHeader fontSize="lg" fontWeight="bold">
+                    Xác nhận
+                  </AlertDialogHeader>
+                  <AlertDialogBody>
+                    {getConfirmMessage(pending.action)}
+                  </AlertDialogBody>
+                  <AlertDialogFooter>
+                    <Button ref={cancelRef} onClick={onClose}>
+                      Hủy
+                    </Button>
+                    <Button colorScheme="red" ml={3} onClick={performAction}>
+                      {pending.action === "delete" ? "Xóa" : "Xác nhận"}
+                    </Button>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialogOverlay>
+            </AlertDialog> */}
+          </Box>
+        {/* MOBILE VIEW */}
+          <VStack
+            spacing={4}
+            display={{ base: "flex", lg: "none" }}
+            align="stretch"
+          >
+            {listings.map((l) => (
+              <Box
+                key={l._id}
+                p={4}
+                borderWidth="1px"
+                borderRadius="lg"
+                cursor="pointer"
+                bg={rowBg}
+                onClick={() => window.open(`/listings/${l._id}`, "_blank")}
+                _hover={{ bg: "gray.50" }}
+              >
+                <VStack align="stretch" spacing={3}>
+                  {/* Tiêu đề */}
+                  <PropertyRow label="Tiêu đề">
+                    <Text fontWeight={600} noOfLines={2}>
                       {l.title}
                     </Text>
-                  </Td>
-                  {/* <Td>{formatPrice(l.price)}</Td>
-                  <Td>{l.area}</Td>
-                  <Td>{l.location?.province}</Td>*/}
-                  <Td>{mapType(l.rental_type)}</Td>
-                  <Td>
+                  </PropertyRow>
+
+                  {/* Loại */}
+                  <PropertyRow label="Loại">
+                    <Badge>{mapType(l.rental_type)}</Badge>
+                  </PropertyRow>
+
+                  {/* Trạng thái */}
+                  <PropertyRow label="Trạng thái">
                     {normalize(l.status) === "approved" ? (
                       <Badge colorScheme="green">Đã duyệt</Badge>
                     ) : normalize(l.status) === "pending" ? (
@@ -386,25 +604,30 @@ export default function PropertyManager() {
                     ) : (
                       <Badge>{mapStatus(l.status)}</Badge>
                     )}
-                  </Td>
-                  <Td>
-                    {l.owner?.email
-                      ? `${l.owner?.name || l.owner?.username} (${
-                          l.owner?.email
-                        })`
-                      : l.owner?.name || l.owner?.username}
-                  </Td>
-                  <Td>
-                    <HStack onClick={(e) => e.stopPropagation()}>
-                      {normalize(l.status) === "pending" ? (
+                  </PropertyRow>
+
+                  {/* Người đăng */}
+                  <PropertyRow label="Người đăng">
+                    <Text fontSize="sm">
+                      {l.owner?.email
+                        ? `${l.owner?.name || l.owner?.username} (${l.owner?.email})`
+                        : l.owner?.name || l.owner?.username}
+                    </Text>
+                  </PropertyRow>
+
+                  {/* Hành động */}
+                  <PropertyRow label="Hành động" isLast>
+                    <HStack
+                      spacing={2}
+                      justify="flex-end"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {normalize(l.status) === "pending" && (
                         <>
                           <Button
                             size="sm"
                             colorScheme="green"
-                            isDisabled={normalize(l.status) === "approved"}
                             onClick={() => handleApprove(l)}
-                            aria-label="Approve"
-                            // onClick={() => confirmAction(l._id, "approve")}
                           >
                             Duyệt
                           </Button>
@@ -412,23 +635,19 @@ export default function PropertyManager() {
                             size="sm"
                             colorScheme="red"
                             variant="outline"
-                            // onClick={() => confirmAction(l._id, "reject")}
-                            isDisabled={normalize(l.status) === "rejected"}
                             onClick={() => openRejectModal(l)}
-                            aria-label="Reject"
                           >
                             Từ chối
                           </Button>
                         </>
-                      ) : normalize(l.status) === "approved" ? (
+                      )}
+
+                      {normalize(l.status) === "approved" && (
                         <>
                           <Button
                             size="sm"
                             colorScheme="orange"
-                            // onClick={() => confirmAction(l._id, "reject")}
-                            isDisabled={normalize(l.status) === "rejected"}
                             onClick={() => openRejectModal(l)}
-                            aria-label="Reject"
                           >
                             Hủy duyệt
                           </Button>
@@ -436,70 +655,39 @@ export default function PropertyManager() {
                             size="sm"
                             colorScheme="red"
                             variant="outline"
-                            // onClick={() => confirmAction(l._id, "delete")}
                             onClick={() => openDeleteModal(l)}
-                            aria-label="Delete"
                           >
                             Xóa
                           </Button>
                         </>
-                      ) : normalize(l.status) === "rejected" ? (
+                      )}
+
+                      {normalize(l.status) === "rejected" && (
                         <>
                           <Button
                             size="sm"
                             colorScheme="green"
-                            // onClick={() => confirmAction(l._id, "approve")}
-                            isDisabled={normalize(l.status) === "approved"}
                             onClick={() => handleApprove(l)}
-                            aria-label="Approve"
                           >
                             Duyệt
                           </Button>
-
                           <Button
                             size="sm"
                             colorScheme="red"
                             variant="outline"
-                            // onClick={() => confirmAction(l._id, "delete")}
                             onClick={() => openDeleteModal(l)}
-                            aria-label="Delete"
                           >
                             Xóa
                           </Button>
                         </>
-                      ) : null}
+                      )}
                     </HStack>
-                  </Td>
-                </Tr>
-              ))}
-            </Tbody>
-          </Table>
-
-          {/* <AlertDialog
-            isOpen={isOpen}
-            leastDestructiveRef={cancelRef}
-            onClose={onClose}
-          >
-            <AlertDialogOverlay>
-              <AlertDialogContent>
-                <AlertDialogHeader fontSize="lg" fontWeight="bold">
-                  Xác nhận
-                </AlertDialogHeader>
-                <AlertDialogBody>
-                  {getConfirmMessage(pending.action)}
-                </AlertDialogBody>
-                <AlertDialogFooter>
-                  <Button ref={cancelRef} onClick={onClose}>
-                    Hủy
-                  </Button>
-                  <Button colorScheme="red" ml={3} onClick={performAction}>
-                    {pending.action === "delete" ? "Xóa" : "Xác nhận"}
-                  </Button>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialogOverlay>
-          </AlertDialog> */}
-        </Box>
+                  </PropertyRow>
+                </VStack>
+              </Box>
+            ))}
+          </VStack>
+        </>
       )}
 
       {/* COMPONENT MODAL NHẬP LÝ DO */}
