@@ -24,6 +24,9 @@ import {
   AlertIcon,
   useDisclosure,
   useColorModeValue,
+  Badge,
+  Flex,
+  Divider,
 } from "@chakra-ui/react";
 import adminService from "../../services/adminService";
 import ActionConfirmModal from "../../components/ActionConfirmModal.jsx";
@@ -35,6 +38,8 @@ export default function UserManager() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [pending, setPending] = useState({ id: null, ban: false });
   const cancelRef = useRef();
+  const rowBg = useColorModeValue("white", "gray.900");
+  const hoverBg = useColorModeValue("gray.50", "gray.700");
 
   // State quản lý Modal
   const [modalConfig, setModalConfig] = useState({
@@ -184,42 +189,61 @@ export default function UserManager() {
     }
   };
 
+  const PropertyRow = ({ label, children, isLast }) => (
+    <Box w="100%">
+      <Flex justify="space-between" align="flex-start">
+        <Text fontSize="sm" color="gray.500" minW="90px">
+          {label}
+        </Text>
+        <Box textAlign="right" flex="1">
+          {children}
+        </Box>
+      </Flex>
+
+      {!isLast && <Divider mt={3} />}
+    </Box>
+  );
+
   return (
     <Box>
       <Heading size="md" mb={4}>
         Quản lý người dùng
       </Heading>
 
-      <Box bg={cardBg} borderRadius="md" p={4} overflowX="auto">
-        <Table variant="simple" color={textColor}>
+      <Box
+        bg={cardBg}
+        borderRadius="md"
+        p={4}
+        overflowX="hidden"
+        display={{ base: "none", lg: "block" }}
+        width={"100%"}
+      >
+        <Table variant="simple" color={textColor} tableLayout="fixed" w="100%">
           <Thead>
             <Tr>
-              {/* <Th>Tên đăng nhập</Th> */}
-              <Th>Email</Th>
-              <Th>Phone</Th>
-              <Th>Tên</Th>
-              <Th>Vai trò</Th>
-              <Th>Ngày tham gia</Th>
-              <Th>Bị cấm</Th>
+              <Th w="28%">Email</Th>
+              <Th w="14%">Phone</Th>
+              <Th w="16%">Tên</Th>
+              <Th w="12%">Vai trò</Th>
+              <Th w="15%">Ngày tham gia</Th>
+              <Th w="15%">Bị cấm</Th>
             </Tr>
           </Thead>
+
           <Tbody>
             {users.map((u) => (
-              <Tr key={u._id}>
-                {/* <Td>{u.username}</Td> */}
-                <Td>{u.email || "-"}</Td>
+              <Tr key={u._id} _hover={{ bg: hoverBg }}>
+                <Td wordBreak="break-word"><Text noOfLines={2}>{u.email || "-"}</Text></Td>
                 <Td>{u.phone || "-"}</Td>
-                <Td>{u.name}</Td>
-                <Td>{u.role === "guest" ? "User" : u.role || ""}</Td>
+                <Td wordBreak="break-word"><Text noOfLines={2}>{u.name}</Text></Td>
+                <Td>{u.role === "guest" ? "User" : u.role}</Td>
                 <Td>{new Date(u.createdAt).toLocaleDateString()}</Td>
                 <Td>
                   <HStack>
                     <Switch
                       colorScheme="red"
                       isChecked={u.isBanned}
-                      // e.target.checked = true (muốn cấm), false (muốn bỏ cấm)
                       onChange={(e) => handleToggleBan(u, e.target.checked)}
-                      // onChange={(e) => confirmToggle(u._id, e.target.checked)}
                     />
                     <Text
                       fontSize="sm"
@@ -270,6 +294,55 @@ export default function UserManager() {
         </AlertDialog> */}
       </Box>
       {/* MODAL XÁC NHẬN + NHẬP LÝ DO */}
+      <VStack
+        spacing={4}
+        display={{ base: "flex", lg: "none" }}
+        align="stretch"
+      >
+        {users.map((u) => (
+          <Box key={u._id} p={4} borderWidth="1px" borderRadius="lg" bg={rowBg} _hover={{ bg: hoverBg }}>
+            <VStack align="stretch" spacing={3}>
+              <PropertyRow label="Email">
+                <Text fontSize="sm">{u.email || "-"}</Text>
+              </PropertyRow>
+
+              <PropertyRow label="Phone">
+                <Text fontSize="sm">{u.phone || "-"}</Text>
+              </PropertyRow>
+
+              <PropertyRow label="Tên">
+                <Text fontWeight={600}>{u.name}</Text>
+              </PropertyRow>
+
+              <PropertyRow label="Vai trò">
+                <Badge>{u.role === "guest" ? "User" : u.role}</Badge>
+              </PropertyRow>
+
+              <PropertyRow label="Ngày tham gia">
+                <Text fontSize="sm">
+                  {new Date(u.createdAt).toLocaleDateString()}
+                </Text>
+              </PropertyRow>
+
+              <PropertyRow label="Trạng thái" isLast>
+                <HStack justify="flex-end">
+                  <Switch
+                    colorScheme="red"
+                    isChecked={u.isBanned}
+                    onChange={(e) => handleToggleBan(u, e.target.checked)}
+                  />
+                  <Text
+                    fontSize="sm"
+                    color={u.isBanned ? "red.500" : undefined}
+                  >
+                    {u.isBanned ? "Bị cấm" : "Hoạt động"}
+                  </Text>
+                </HStack>
+              </PropertyRow>
+            </VStack>
+          </Box>
+        ))}
+      </VStack>
       <ActionConfirmModal
         isOpen={modalConfig.isOpen}
         onClose={() => setModalConfig((prev) => ({ ...prev, isOpen: false }))}

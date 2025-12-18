@@ -130,7 +130,7 @@ export const userRegister = async (req, res) => {
 
     return res.status(201).json({
       message:
-        "Tài khoản đã được tạo. Vui lòng nhập mã xác thực gửi tới email để hoàn tất đăng ký.",
+        "Tài khoản đã được tạo. Vui lòng nhập mã xác thực gửi tới email để hoàn tất đăng ký. \n(Vui lòng kiểm tra cả mục Thư rác (spam) hoặc Quảng cáo (Promotions))",
       user: userInfo,
       verificationRequired: true,
     });

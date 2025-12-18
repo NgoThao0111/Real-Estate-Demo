@@ -23,9 +23,10 @@ import {
   Alert,
   AlertIcon,
   useColorModeValue,
-  Divider, 
+  Divider,
   Flex,
-  Badge
+  Badge,
+  Stack,
 } from "@chakra-ui/react";
 import adminService from "../../services/adminService";
 
@@ -40,6 +41,8 @@ export default function ReportsManager() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const cancelRef = useRef();
   const [pending, setPending] = useState({ id: null, action: null });
+  
+  const hoverBg = useColorModeValue("gray.50", "gray.700");
 
   // State quản lý Modal
   const [modalConfig, setModalConfig] = useState({
@@ -282,24 +285,35 @@ export default function ReportsManager() {
         bg={cardBg}
         p={4}
         borderRadius="md"
+        overflowX={"hidden"}
         display={{ base: "none", lg: "block" }}
       >
-        <Table
-          variant="simple"
-          color={textColor}
-          table-layout="fixed"
-          width="100%"
-        >
+        <Table variant="simple" color={textColor} tableLayout="fixed" w="100%">
           <Thead>
             <Tr>
-              <Th w={{ base: "60%", md: "20%" }}>Tin</Th>
-              <Th w="15%">Người báo</Th>
-              <Th w="25%">Lý do</Th>
-              <Th w="5%">Ngày</Th>
-              <Th w="15%">Trạng thái</Th>
-              <Th w="30%">Hành động</Th>
+              {/* Cột chính – chiếm nhiều nhất */}
+              <Th w={{ base: "100%", lg: "35%" }}>Tin</Th>
+
+              {/* Các cột phụ – auto */}
+              <Th display={{ base: "none", lg: "table-cell" }}>Người báo</Th>
+
+              <Th display={{ base: "none", lg: "table-cell" }}>Lý do</Th>
+
+              <Th display={{ base: "none", lg: "table-cell" }}>Ngày</Th>
+
+              <Th display={{ base: "none", lg: "table-cell" }}>Trạng thái</Th>
+
+              {/* Action – giới hạn cứng */}
+              <Th
+                w="180px"
+                textAlign="right"
+                display={{ base: "none", lg: "table-cell" }}
+              >
+                Hành động
+              </Th>
             </Tr>
           </Thead>
+
           <Tbody>
             {reports.map((r) => (
               <Tr
@@ -308,47 +322,64 @@ export default function ReportsManager() {
                 onClick={() =>
                   window.open(`/listings/${r.listing?._id}`, "_blank")
                 }
+                _hover={{bg: hoverBg}}
               >
-                <Td
-                  w={{ base: "60%", md: "40%" }}
-                  maxW={{ base: "60%", md: "40%" }}
-                >
+                {/* Tin */}
+                <Td>
                   {r.listing?.title ? (
                     <Text fontWeight={600} noOfLines={2} wordBreak="break-word">
                       {r.listing.title}
                     </Text>
                   ) : (
-                    <Text color={mutedColor} fontStyle="italic" noOfLines={2}>
+                    <Text fontStyle="italic" color={mutedColor}>
                       (Bài viết đã xóa)
                     </Text>
                   )}
+
                   {r.listing && (
-                    <Text fontSize="xs" color="gray.500">
+                    <Text fontSize="xs" color="gray.500" noOfLines={1}>
                       Chủ bài: {r.listing.owner?.name || "Unknown"}
                     </Text>
                   )}
                 </Td>
 
-                <Td>{r.reporter?.name || r.reporter?.username || "—"}</Td>
-                <Td maxW="20%">
+                {/* Người báo */}
+                <Td display={{ base: "none", lg: "table-cell" }}>
+                  {r.reporter?.name || r.reporter?.username || "—"}
+                </Td>
+
+                {/* Lý do */}
+                <Td display={{ base: "none", lg: "table-cell" }}>
                   <Text noOfLines={2} wordBreak="break-word">
                     {r.reason}
                   </Text>
-                  {r.detail && (
-                    <Text fontSize="xs" color="gray.600" noOfLines={1}>
-                      — {r.detail}
-                    </Text>
-                  )}
                 </Td>
-                <Td>{new Date(r.createdAt).toLocaleString("vi-VN")}</Td>
-                <Td>{mapStatus(r.status)}</Td>
-                <Td>
-                  <HStack onClick={(e) => e.stopPropagation()}>
+
+                {/* Ngày */}
+                <Td display={{ base: "none", lg: "table-cell" }}>
+                  {new Date(r.createdAt).toLocaleDateString("vi-VN")}
+                </Td>
+
+                {/* Trạng thái */}
+                <Td display={{ base: "none", lg: "table-cell" }}>
+                  {mapStatus(r.status)}
+                </Td>
+
+                {/* Hành động */}
+                <Td
+                  display={{ base: "none", lg: "table-cell" }}
+                  textAlign="right"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Stack
+                    direction="row"
+                    spacing={2}
+                    justify="flex-end"
+                    flexWrap="wrap"
+                  >
                     <Button
                       size="sm"
                       colorScheme="green"
-                      mr={2}
-                      // onClick={() => confirmAction(r._id, "resolve")}
                       onClick={() => handleResolve(r)}
                     >
                       Giải quyết
@@ -356,25 +387,21 @@ export default function ReportsManager() {
                     <Button
                       size="sm"
                       colorScheme="red"
-                      mr={2}
-                      // onClick={() => confirmAction(r._id, "delete")}
                       variant="outline"
                       onClick={() => handleDeleteListing(r)}
                       isDisabled={!r.listing}
                     >
-                      Xóa tin
+                      Xóa
                     </Button>
                     <Button
                       size="sm"
                       colorScheme="orange"
-                      // onClick={() => confirmAction(r._id, "ban")}
-                      variant="solid"
                       onClick={() => handleBanUser(r)}
                       isDisabled={!r.listing}
                     >
-                      Cấm người đăng
+                      Cấm
                     </Button>
-                  </HStack>
+                  </Stack>
                 </Td>
               </Tr>
             ))}
@@ -460,7 +487,7 @@ export default function ReportsManager() {
             onClick={() =>
               r.listing && window.open(`/listings/${r.listing?._id}`, "_blank")
             }
-            _hover={{ bg: "gray.50" }}
+            _hover={{ bg: hoverBg }}
           >
             <VStack align="stretch" spacing={3}>
               {/* Tin */}

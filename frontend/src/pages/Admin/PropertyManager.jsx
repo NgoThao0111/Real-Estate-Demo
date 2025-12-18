@@ -29,7 +29,8 @@ import {
   Alert,
   AlertIcon,
   Divider, 
-  Flex
+  Flex,
+  Stack
 } from "@chakra-ui/react";
 import { useRef } from "react";
 import { CheckIcon, CloseIcon, DeleteIcon } from "@chakra-ui/icons";
@@ -55,6 +56,7 @@ export default function PropertyManager() {
   });
   const [isLoadingAction, setIsLoadingAction] = useState(false); // Loading khi đang submit modal
   const rowBg = useColorModeValue("white", "gray.900");
+  const hoverBg = useColorModeValue("gray.50", "gray.700");
 
   const fetchListings = async () => {
     setLoading(true);
@@ -364,7 +366,7 @@ export default function PropertyManager() {
             <option value="sale">Bán</option>
           </Select>
         </HStack>
-        
+
         <HStack spacing={3} mb={3}>
           <Button onClick={fetchListings} colorScheme="blue">
             Áp dụng
@@ -385,24 +387,44 @@ export default function PropertyManager() {
         <Text>Đang tải...</Text>
       ) : (
         <>
-          <Box bg={cardBg} borderRadius="md" p={4} overflowX="auto" shadow="sm" display={{ base: "none", lg: "block" }}>
+          <Box
+            bg={cardBg}
+            borderRadius="md"
+            p={4}
+            overflowX="hidden"
+            shadow="sm"
+            display={{ base: "none", lg: "block" }}
+          >
             <Table
               variant="simple"
               color={textColor}
               table-layout="fixed"
-              width="100%"
+              w="100%"
             >
               <Thead>
                 <Tr>
-                  {/* <Th>Ảnh</Th> */}
-                  <Th w={{ base: "60%", md: "40%" }}>Tiêu đề</Th>
-                  {/* <Th>Giá</Th>
-                  <Th>Diện tích</Th>
-                  <Th>Tỉnh/Thành</Th> */}
-                  <Th w="12%">Loại</Th>
-                  <Th w="14%">Trạng thái</Th>
-                  <Th w="22%">Người đăng</Th>
-                  <Th w="12%">Hành động</Th>
+                  {/* CỘT CHÍNH */}
+                  <Th w={{ base: "100%", lg: "38%" }}>Tiêu đề</Th>
+
+                  {/* CỘT PHỤ – AUTO */}
+                  <Th display={{ base: "none", lg: "table-cell" }}>Loại</Th>
+
+                  <Th display={{ base: "none", lg: "table-cell" }}>
+                    Trạng thái
+                  </Th>
+
+                  <Th display={{ base: "none", lg: "table-cell" }}>
+                    Người đăng
+                  </Th>
+
+                  {/* ACTION – WIDTH CỨNG */}
+                  <Th
+                    w="160px"
+                    textAlign="right"
+                    display={{ base: "none", lg: "table-cell" }}
+                  >
+                    Hành động
+                  </Th>
                 </Tr>
               </Thead>
               <Tbody>
@@ -411,53 +433,64 @@ export default function PropertyManager() {
                     key={l._id}
                     cursor="pointer"
                     onClick={() => window.open(`/listings/${l._id}`, "_blank")}
+                    _hover={{ bg: hoverBg }}
                   >
-                    {/* <Td>
-                        {l.images && l.images.length ? (
-                          <Image boxSize="60px" objectFit="cover" src={typeof l.images[0] === 'string' ? l.images[0] : l.images[0].url} alt={l.title} borderRadius="md" />
-                        ) : (
-                          <Box w="60px" h="40px" bg="gray.100" borderRadius="6px" />
-                        )}
-                    </Td> */}
-                    <Td
-                      w={{ base: "60%", md: "40%" }}
-                      maxW={{ base: "60%", md: "40%" }}
-                    >
+                    {/* TIÊU ĐỀ */}
+                    <Td>
                       <Text
                         fontWeight={600}
-                        noOfLines={2} // tối đa 2 dòng
+                        noOfLines={2}
                         wordBreak="break-word"
                       >
                         {l.title}
                       </Text>
                     </Td>
-                    {/* <Td>{formatPrice(l.price)}</Td>
-                    <Td>{l.area}</Td>
-                    <Td>{l.location?.province}</Td>*/}
-                    <Td>{mapType(l.rental_type)}</Td>
-                    <Td>
+
+                    {/* LOẠI */}
+                    <Td display={{ base: "none", lg: "table-cell" }}>
+                      {mapType(l.rental_type)}
+                    </Td>
+
+                    {/* TRẠNG THÁI */}
+                    <Td display={{ base: "none", lg: "table-cell" }}>
                       {normalize(l.status) === "approved" ? (
                         <Badge colorScheme="green">Đã duyệt</Badge>
                       ) : normalize(l.status) === "pending" ? (
                         <Badge colorScheme="orange">Chờ duyệt</Badge>
                       ) : normalize(l.status) === "rejected" ? (
-                        <Badge colorScheme="red">Không được duyệt</Badge>
+                        <Badge colorScheme="red">Không duyệt</Badge>
                       ) : normalize(l.status) === "closed" ? (
                         <Badge colorScheme="gray">Đã thuê</Badge>
                       ) : (
                         <Badge>{mapStatus(l.status)}</Badge>
                       )}
                     </Td>
-                    <Td>
+
+                    {/* NGƯỜI ĐĂNG */}
+                    <Td
+                      display={{ base: "none", lg: "table-cell" }}
+                      wordBreak="break-word"
+                    >
                       {l.owner?.email
                         ? `${l.owner?.name || l.owner?.username} (${
                             l.owner?.email
                           })`
                         : l.owner?.name || l.owner?.username}
                     </Td>
-                    <Td>
-                      <HStack onClick={(e) => e.stopPropagation()}>
-                        {normalize(l.status) === "pending" ? (
+
+                    {/* ACTION */}
+                    <Td
+                      display={{ base: "none", lg: "table-cell" }}
+                      textAlign="right"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Stack
+                        direction="row"
+                        spacing={2}
+                        justify="flex-end"
+                        flexWrap="wrap"
+                      >
+                       {normalize(l.status) === "pending" ? (
                           <>
                             <Button
                               size="sm"
@@ -529,7 +562,7 @@ export default function PropertyManager() {
                             </Button>
                           </>
                         ) : null}
-                      </HStack>
+                      </Stack>
                     </Td>
                   </Tr>
                 ))}
@@ -561,7 +594,7 @@ export default function PropertyManager() {
               </AlertDialogOverlay>
             </AlertDialog> */}
           </Box>
-        {/* MOBILE VIEW */}
+          {/* MOBILE VIEW */}
           <VStack
             spacing={4}
             display={{ base: "flex", lg: "none" }}
@@ -576,7 +609,7 @@ export default function PropertyManager() {
                 cursor="pointer"
                 bg={rowBg}
                 onClick={() => window.open(`/listings/${l._id}`, "_blank")}
-                _hover={{ bg: "gray.50" }}
+                _hover={{ bg: hoverBg }}
               >
                 <VStack align="stretch" spacing={3}>
                   {/* Tiêu đề */}
@@ -610,7 +643,9 @@ export default function PropertyManager() {
                   <PropertyRow label="Người đăng">
                     <Text fontSize="sm">
                       {l.owner?.email
-                        ? `${l.owner?.name || l.owner?.username} (${l.owner?.email})`
+                        ? `${l.owner?.name || l.owner?.username} (${
+                            l.owner?.email
+                          })`
                         : l.owner?.name || l.owner?.username}
                     </Text>
                   </PropertyRow>
