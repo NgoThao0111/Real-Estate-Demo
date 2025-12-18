@@ -28,8 +28,7 @@ import ChatWidget from "./components/ChatWidget.jsx";
 import AOSComponent from "./components/AOSComponent.jsx";
 import Footer from "./components/Footer.jsx";
 import AuthModal from "./components/AuthModal.jsx";
-
-import UserProfilePage from "./pages/UserProfilePage.jsx";
+import UserSettings from "./pages/UserSettings.jsx";
 
 import { useAuthContext } from "./context/AuthContext.jsx";
 
@@ -116,10 +115,8 @@ function App() {
             />
 
             <Route
-              path="/profile"
-              element={
-                currentUser ? <UserProfilePage /> : <Navigate to="/" replace />
-              }
+              path="/setting"
+              element={currentUser ? <UserSettings /> : <Navigate to="/" replace />}
             />
 
             {/* Admin Routes */}
