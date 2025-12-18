@@ -11,7 +11,6 @@ import { OAuth2Client } from "google-auth-library";
 
 dotenv.config();
 
-const resend = new Resend(process.env.RESEND_API_KEY);
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 import nodemailer from "nodemailer";
