@@ -2,8 +2,22 @@ import dotenv from "dotenv";
 import { connectDB } from "../config/db.js";
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 
 dotenv.config();
+
+const pepperPassword = (password) => {
+  if (!process.env.PASSWORD_PEPPER) {
+    throw new Error("Chưa cấu hình PASSWORD_PEPPER trong file .env");
+  }
+
+  // Dùng HMAC-SHA256 để trộn password và pepper
+  // Kết quả trả về là chuỗi hex 64 ký tự (vừa vặn giới hạn 72 bytes của Bcrypt)
+  return crypto
+    .createHmac("sha256", process.env.PASSWORD_PEPPER)
+    .update(password)
+    .digest("hex");
+};
 
 const seed = async () => {
   await connectDB();
@@ -12,6 +26,7 @@ const seed = async () => {
   const password = process.env.SEED_ADMIN_PASSWORD || "Admin@123";
   const name = process.env.SEED_ADMIN_NAME || "Super Admin";
   const phone = process.env.SEED_ADMIN_PHONE || "0000000000";
+  const email = process.env.SEED_ADMIN_EMAIL || "admin@gmail.com";
 
   try {
     let user = await User.findOne({ username });
@@ -21,9 +36,10 @@ const seed = async () => {
     }
 
     const salt = await bcrypt.genSalt(10);
-    const hashed = await bcrypt.hash(password, salt);
+        const passwordWithPepper = pepperPassword(password);
+        const hashedPassword = await bcrypt.hash(passwordWithPepper, salt);
 
-    user = new User({ username, password: hashed, name, phone, role: "admin" });
+    user = new User({ username, email, password: hashedPassword, name, phone, role: "admin" });
     await user.save();
 
     console.log("Created admin user:", username);
