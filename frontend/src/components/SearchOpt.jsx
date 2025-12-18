@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Box,
   VStack,
@@ -10,6 +10,7 @@ import {
   HStack,
   Icon,
   Spinner,
+  Text,
 } from "@chakra-ui/react";
 import { useSearchParams } from "react-router-dom"; // Hook quan trọng
 import { FiRotateCcw } from "react-icons/fi"; // Icon reset
@@ -20,14 +21,25 @@ const SearchOpt = () => {
   // 1. Hook để đọc và ghi URL
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // 2. State quản lý các ô input
+  // // 2. State quản lý các ô input
+  // const [filters, setFilters] = useState({
+  //   keyword: "",
+  //   province: "",
+  //   property_type: "",
+  //   bedroom: "",
+  //   garage: "",
+  // });
+
+  // 2. State input
   const [filters, setFilters] = useState({
-    keyword: "",
-    province: "",
-    property_type: "",
-    bedroom: "",
-    garage: "",
+    keyword: searchParams.get("keyword") || "",
+    province: searchParams.get("province") || "",
+    property_type: searchParams.get("property_type") || "",
+    bedroom: searchParams.get("bedroom") || "",
+    bathroom: searchParams.get("bathroom") || "",
   });
+
+  const isFirstRender = useRef(true);
 
   // UI Colors
   const contentBg = useColorModeValue("gray.800", "white");
@@ -47,14 +59,50 @@ const SearchOpt = () => {
 
   // 3. Effect: Khi URL thay đổi (hoặc mới vào trang), điền giá trị từ URL vào ô input
   useEffect(() => {
-    setFilters({
-      keyword: searchParams.get("keyword") || "",
-      province: searchParams.get("province") || "",
-      property_type: searchParams.get("property_type") || "",
-      bedroom: searchParams.get("bedroom") || "",
-      garage: searchParams.get("garage") || "",
-    });
-  }, [searchParams]);
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    // setFilters({
+    //   keyword: searchParams.get("keyword") || "",
+    //   province: searchParams.get("province") || "",
+    //   property_type: searchParams.get("property_type") || "",
+    //   bedroom: searchParams.get("bedroom") || "",
+    //   garage: searchParams.get("garage") || "",
+    // });
+
+    const timer = setTimeout(() => {
+      // 1. Lọc bỏ các giá trị rỗng
+      const cleanParams = {};
+      Object.keys(filters).forEach((key) => {
+        if (filters[key]) {
+          cleanParams[key] = filters[key];
+        }
+      });
+
+      const newFilters = {};
+      Object.keys(filters).forEach((key) => {
+        if (filters[key]) {
+          newFilters[key] = filters[key];
+        }
+      });
+
+      const currentSort = searchParams.get("sort");
+      const currentPage = searchParams.get("page");
+
+      const finalParams = { ...newFilters };
+
+      if (currentSort) {
+        finalParams.sort = currentSort;
+      }
+
+      // 2. Đẩy lên URL -> AllListings.jsx sẽ tự bắt và fetch lại
+      setSearchParams(finalParams);
+    }, 500); // Chờ 500ms sau khi ngừng thao tác mới update URL
+
+    // Dọn dẹp timer cũ nếu người dùng thao tác tiếp (tránh update liên tục)
+    return () => clearTimeout(timer);
+  }, [filters, setSearchParams]);
 
   // 4. Hàm xử lý khi người dùng nhập liệu
   const handleChange = (e) => {
@@ -83,7 +131,7 @@ const SearchOpt = () => {
       province: "",
       property_type: "",
       bedroom: "",
-      garage: "",
+      bathroom: "",
     });
     setSearchParams({}); // Xóa hết params trên URL
   };
@@ -120,9 +168,10 @@ const SearchOpt = () => {
           name="keyword" // Quan trọng: name phải khớp với key trong state
           value={filters.keyword}
           onChange={handleChange}
-          placeholder="Từ khóa (tên, địa chỉ...)"
+          placeholder="Nhập từ khóa để lọc ngay..."
           size="md"
           bg={bgColor}
+          autoFocus={false} // autofocus giúp trải nghiệm tốt hơn khi gõ
         />
 
         <Box>
@@ -130,7 +179,7 @@ const SearchOpt = () => {
             name="province"
             value={filters.province}
             onChange={handleChange}
-            placeholder="Nhập Tỉnh, Quận, Huyện..."
+            placeholder="Nhập Tỉnh, Thành phố..."
             list="location-suggestions"
             bg={bgColor}
             sx={{
@@ -192,14 +241,16 @@ const SearchOpt = () => {
         </Select>
 
         <Select
-          name="garage"
-          value={filters.garage}
+          name="bathroom"
+          value={filters.bathroom}
           onChange={handleChange}
-          placeholder="Garage"
+          placeholder="Số phòng tắm"
           bg={bgColor}
         >
-          <option value="true">Có Garage</option>{" "}
-          {/* Backend check if(garage) */}
+          <option value="1">1+ phòng tắm</option>
+          <option value="2">2+ phòng tắm</option>
+          <option value="3">3+ phòng tắm</option>
+          <option value="4">4+ phòng tắm</option>
         </Select>
 
         <Button

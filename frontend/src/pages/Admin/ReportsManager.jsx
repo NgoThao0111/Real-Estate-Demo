@@ -23,6 +23,10 @@ import {
   Alert,
   AlertIcon,
   useColorModeValue,
+  Divider,
+  Flex,
+  Badge,
+  Stack,
 } from "@chakra-ui/react";
 import adminService from "../../services/adminService";
 
@@ -37,6 +41,8 @@ export default function ReportsManager() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const cancelRef = useRef();
   const [pending, setPending] = useState({ id: null, action: null });
+  
+  const hoverBg = useColorModeValue("gray.50", "gray.700");
 
   // State quản lý Modal
   const [modalConfig, setModalConfig] = useState({
@@ -255,28 +261,59 @@ export default function ReportsManager() {
     }
   };
 
+  const PropertyRow = ({ label, children, isLast }) => (
+    <Box w="100%">
+      <Flex justify="space-between" align="flex-start">
+        <Text fontSize="sm" color="gray.500" minW="90px">
+          {label}
+        </Text>
+        <Box textAlign="right" flex="1">
+          {children}
+        </Box>
+      </Flex>
+
+      {!isLast && <Divider mt={3} />}
+    </Box>
+  );
+
   return (
     <Box>
       <Heading size="md" mb={4}>
         Xử lý báo xấu
       </Heading>
-      <Box bg={cardBg} p={4} borderRadius="md">
-        <Table
-          variant="simple"
-          color={textColor}
-          table-layout="fixed"
-          width="100%"
-        >
+      <Box
+        bg={cardBg}
+        p={4}
+        borderRadius="md"
+        overflowX={"hidden"}
+        display={{ base: "none", lg: "block" }}
+      >
+        <Table variant="simple" color={textColor} tableLayout="fixed" w="100%">
           <Thead>
             <Tr>
-              <Th w={{ base: "60%", md: "20%" }}>Tin</Th>
-              <Th w="15%">Người báo</Th>
-              <Th w="25%">Lý do</Th>
-              <Th w="5%">Ngày</Th>
-              <Th w="15%">Trạng thái</Th>
-              <Th w="30%">Hành động</Th>
+              {/* Cột chính – chiếm nhiều nhất */}
+              <Th w={{ base: "100%", lg: "35%" }}>Tin</Th>
+
+              {/* Các cột phụ – auto */}
+              <Th display={{ base: "none", lg: "table-cell" }}>Người báo</Th>
+
+              <Th display={{ base: "none", lg: "table-cell" }}>Lý do</Th>
+
+              <Th display={{ base: "none", lg: "table-cell" }}>Ngày</Th>
+
+              <Th display={{ base: "none", lg: "table-cell" }}>Trạng thái</Th>
+
+              {/* Action – giới hạn cứng */}
+              <Th
+                w="180px"
+                textAlign="right"
+                display={{ base: "none", lg: "table-cell" }}
+              >
+                Hành động
+              </Th>
             </Tr>
           </Thead>
+
           <Tbody>
             {reports.map((r) => (
               <Tr
@@ -285,47 +322,64 @@ export default function ReportsManager() {
                 onClick={() =>
                   window.open(`/listings/${r.listing?._id}`, "_blank")
                 }
+                _hover={{bg: hoverBg}}
               >
-                <Td
-                  w={{ base: "60%", md: "40%" }}
-                  maxW={{ base: "60%", md: "40%" }}
-                >
+                {/* Tin */}
+                <Td>
                   {r.listing?.title ? (
                     <Text fontWeight={600} noOfLines={2} wordBreak="break-word">
                       {r.listing.title}
                     </Text>
                   ) : (
-                    <Text color={mutedColor} fontStyle="italic" noOfLines={2}>
+                    <Text fontStyle="italic" color={mutedColor}>
                       (Bài viết đã xóa)
                     </Text>
                   )}
+
                   {r.listing && (
-                    <Text fontSize="xs" color="gray.500">
+                    <Text fontSize="xs" color="gray.500" noOfLines={1}>
                       Chủ bài: {r.listing.owner?.name || "Unknown"}
                     </Text>
                   )}
                 </Td>
 
-                <Td>{r.reporter?.name || r.reporter?.username || "—"}</Td>
-                <Td maxW="20%">
+                {/* Người báo */}
+                <Td display={{ base: "none", lg: "table-cell" }}>
+                  {r.reporter?.name || r.reporter?.username || "—"}
+                </Td>
+
+                {/* Lý do */}
+                <Td display={{ base: "none", lg: "table-cell" }}>
                   <Text noOfLines={2} wordBreak="break-word">
                     {r.reason}
                   </Text>
-                  {r.detail && (
-                    <Text fontSize="xs" color="gray.600" noOfLines={1}>
-                      — {r.detail}
-                    </Text>
-                  )}
                 </Td>
-                <Td>{new Date(r.createdAt).toLocaleString("vi-VN")}</Td>
-                <Td>{mapStatus(r.status)}</Td>
-                <Td>
-                  <HStack onClick={(e) => e.stopPropagation()}>
+
+                {/* Ngày */}
+                <Td display={{ base: "none", lg: "table-cell" }}>
+                  {new Date(r.createdAt).toLocaleDateString("vi-VN")}
+                </Td>
+
+                {/* Trạng thái */}
+                <Td display={{ base: "none", lg: "table-cell" }}>
+                  {mapStatus(r.status)}
+                </Td>
+
+                {/* Hành động */}
+                <Td
+                  display={{ base: "none", lg: "table-cell" }}
+                  textAlign="right"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Stack
+                    direction="row"
+                    spacing={2}
+                    justify="flex-end"
+                    flexWrap="wrap"
+                  >
                     <Button
                       size="sm"
                       colorScheme="green"
-                      mr={2}
-                      // onClick={() => confirmAction(r._id, "resolve")}
                       onClick={() => handleResolve(r)}
                     >
                       Giải quyết
@@ -333,25 +387,21 @@ export default function ReportsManager() {
                     <Button
                       size="sm"
                       colorScheme="red"
-                      mr={2}
-                      // onClick={() => confirmAction(r._id, "delete")}
                       variant="outline"
                       onClick={() => handleDeleteListing(r)}
                       isDisabled={!r.listing}
                     >
-                      Xóa tin
+                      Xóa
                     </Button>
                     <Button
                       size="sm"
                       colorScheme="orange"
-                      // onClick={() => confirmAction(r._id, "ban")}
-                      variant="solid"
                       onClick={() => handleBanUser(r)}
                       isDisabled={!r.listing}
                     >
-                      Cấm người đăng
+                      Cấm
                     </Button>
-                  </HStack>
+                  </Stack>
                 </Td>
               </Tr>
             ))}
@@ -421,6 +471,148 @@ export default function ReportsManager() {
           </AlertDialogOverlay>
         </AlertDialog> */}
       </Box>
+      <VStack
+        spacing={4}
+        display={{ base: "flex", lg: "none" }}
+        align="stretch"
+      >
+        {reports.map((r) => (
+          <Box
+            key={r._id}
+            p={4}
+            borderWidth="1px"
+            borderRadius="lg"
+            cursor="pointer"
+            bg={cardBg}
+            onClick={() =>
+              r.listing && window.open(`/listings/${r.listing?._id}`, "_blank")
+            }
+            _hover={{ bg: hoverBg }}
+          >
+            <VStack align="stretch" spacing={3}>
+              {/* Tin */}
+              <PropertyRow label="Tin">
+                {r.listing?.title ? (
+                  <Text fontWeight={600} noOfLines={2}>
+                    {r.listing.title}
+                  </Text>
+                ) : (
+                  <Text fontStyle="italic" color="gray.500">
+                    (Bài viết đã xóa)
+                  </Text>
+                )}
+              </PropertyRow>
+
+              {/* Người báo */}
+              <PropertyRow label="Người báo">
+                <Text fontSize="sm">
+                  {r.reporter?.name || r.reporter?.username || "—"}
+                </Text>
+              </PropertyRow>
+
+              {/* Lý do */}
+              <PropertyRow label="Lý do">
+                <VStack align="end" spacing={1}>
+                  <Text fontSize="sm" noOfLines={2}>
+                    {r.reason}
+                  </Text>
+                  {r.detail && (
+                    <Text fontSize="xs" color="gray.600" noOfLines={1}>
+                      — {r.detail}
+                    </Text>
+                  )}
+                </VStack>
+              </PropertyRow>
+
+              {/* Ngày */}
+              <PropertyRow label="Ngày">
+                <Text fontSize="sm">
+                  {new Date(r.createdAt).toLocaleString("vi-VN")}
+                </Text>
+              </PropertyRow>
+
+              {/* Trạng thái */}
+              <PropertyRow label="Trạng thái">
+                <Badge>{mapStatus(r.status)}</Badge>
+              </PropertyRow>
+
+              {/* Hành động */}
+              <PropertyRow label="Hành động" isLast>
+                <VStack
+                  spacing={2}
+                  align="flex-end"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Button
+                    size="sm"
+                    colorScheme="green"
+                    onClick={() => handleResolve(r)}
+                  >
+                    Giải quyết
+                  </Button>
+
+                  <Button
+                    size="sm"
+                    colorScheme="red"
+                    variant="outline"
+                    onClick={() => handleDeleteListing(r)}
+                    isDisabled={!r.listing}
+                  >
+                    Xóa tin
+                  </Button>
+
+                  <Button
+                    size="sm"
+                    colorScheme="orange"
+                    onClick={() => handleBanUser(r)}
+                    isDisabled={!r.listing}
+                  >
+                    Cấm người đăng
+                  </Button>
+                </VStack>
+              </PropertyRow>
+            </VStack>
+          </Box>
+        ))}
+      </VStack>
+      {/* MOBILE PAGINATION */}
+      <Box
+        mt={4}
+        display={{ base: "flex", lg: "none" }}
+        justifyContent="space-between"
+        alignItems="center"
+      >
+        <Text fontSize="sm">
+          Trang {page} / {pages} — Tổng {reports.length}
+        </Text>
+
+        <HStack>
+          <Button
+            size="sm"
+            onClick={() => {
+              if (page > 1) {
+                fetchReports(page - 1);
+              }
+            }}
+            isDisabled={page <= 1}
+          >
+            Trước
+          </Button>
+
+          <Button
+            size="sm"
+            onClick={() => {
+              if (page < pages) {
+                fetchReports(page + 1);
+              }
+            }}
+            isDisabled={page >= pages}
+          >
+            Sau
+          </Button>
+        </HStack>
+      </Box>
+
       {/* MODAL XÁC NHẬN */}
       <ActionConfirmModal
         isOpen={modalConfig.isOpen}

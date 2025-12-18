@@ -81,6 +81,11 @@ export default function UserMenu({ user, logoutUser }) {
               Admin Panel
             </MenuItem>
           )}
+          {user?.role === "guest" && (
+            <MenuItem as={Link} to="/setting" icon={<FiSettings />}>
+              Cài đặt
+            </MenuItem>
+          )}
 
           <MenuItem
             icon={<FiLogOut />}

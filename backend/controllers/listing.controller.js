@@ -84,7 +84,7 @@ export const createList = async (req, res) => {
       description,
       area: Number(area),
       price,
-      status: 'pending', // force pending on create
+      status: "pending", // force pending on create
       property_type,
       rental_type,
       images: savedImages,
@@ -167,7 +167,7 @@ export const getListings = async (req, res) => {
     if (rental_type) query.rental_type = rental_type;
     // By default, only surface 'approved' listings to public unless explicitly filtered
     if (status) query.status = status;
-    else query.status = 'approved';
+    else query.status = "approved";
 
     const minP = minPrice !== undefined ? Number(minPrice) : undefined;
     const maxP = maxPrice !== undefined ? Number(maxPrice) : undefined;
@@ -225,24 +225,28 @@ export const getListingById = async (req, res) => {
       .populate("property_type", "name");
     if (!listing) return res.status(404).json({ message: "Not Found" });
     // If listing is not approved, only the owner or admin may view it
-    if (listing.status !== 'approved') {
+    if (listing.status !== "approved") {
       try {
         const token = req.cookies?.token;
         if (!token) return res.status(404).json({ message: "Not Found" });
-        const jwt = (await import('jsonwebtoken')).default;
+        const jwt = (await import("jsonwebtoken")).default;
         const payload = jwt.verify(token, process.env.JWT_SECRET_KEY);
         const viewerId = payload._id || payload.id;
         if (!viewerId) return res.status(404).json({ message: "Not Found" });
 
         // If owner, allow
-        if (listing.owner && (listing.owner._id?.toString() === viewerId.toString() || listing.owner.toString() === viewerId.toString())) {
+        if (
+          listing.owner &&
+          (listing.owner._id?.toString() === viewerId.toString() ||
+            listing.owner.toString() === viewerId.toString())
+        ) {
           return res.json(listing);
         }
 
         // If admin, allow
-        const User = (await import('../models/user.model.js')).default;
-        const viewer = await User.findById(viewerId).select('role');
-        if (viewer && viewer.role === 'admin') return res.json(listing);
+        const User = (await import("../models/user.model.js")).default;
+        const viewer = await User.findById(viewerId).select("role");
+        if (viewer && viewer.role === "admin") return res.json(listing);
       } catch (e) {
         // token invalid or other error -> treat as not found
         return res.status(404).json({ message: "Not Found" });
@@ -432,6 +436,7 @@ export const searchListings = async (req, res) => {
       property_type,
       rental_type,
       bedroom,
+      bathroom,
       minPrice,
       maxPrice,
       minArea,
@@ -444,7 +449,7 @@ export const searchListings = async (req, res) => {
 
     // Default to only show approved listings in public search unless explicit status is requested
     if (status) query.status = status;
-    else query.status = 'approved';
+    else query.status = "approved";
 
     // Dùng new RegExp để an toàn hơn
     if (keyword) {
@@ -462,6 +467,7 @@ export const searchListings = async (req, res) => {
       query.property_type = property_type;
     if (rental_type) query.rental_type = rental_type;
     if (bedroom) query.bedroom = { $gte: Number(bedroom) };
+    if (bathroom) query.bathroom = { $gte: Number(bathroom) };
 
     if (minPrice || maxPrice) {
       query.price = {};
@@ -475,16 +481,49 @@ export const searchListings = async (req, res) => {
       if (maxArea) query.area.$lte = Number(maxArea);
     }
 
-    let sortOption = { createdAt: -1 };
-    if (sort === "price_asc") sortOption = { price: 1 };
-    if (sort === "price_desc") sortOption = { price: -1 };
+    // 1. Định nghĩa từ khóa map sang field database
+    const sortMapping = {
+      price_asc: { price: 1 },
+      price_desc: { price: -1 },
+      area_asc: { area: 1 },
+      area_desc: { area: -1 },
+      oldest: { createdAt: 1 },
+      newest: { createdAt: -1 },
+    };
 
-    // --- SỬA LỖI SORT AREA ---
-    if (sort === "area_asc") sortOption = { area: 1 }; // Trước đây bạn gán nhầm là price: 1
-    if (sort === "area_desc") sortOption = { area: -1 }; // Trước đây bạn gán nhầm là price: -1
+    let sortOption = {};
+    // if (sort === "price_asc") sortOption = { price: 1 };
+    // if (sort === "price_desc") sortOption = { price: -1 };
 
-    if (sort === "oldest") sortOption = { createdAt: 1 };
-    if (sort === "newest") sortOption = { createdAt: -1 };
+    // // --- SỬA LỖI SORT AREA ---
+    // if (sort === "area_asc") sortOption = { area: 1 }; // Trước đây bạn gán nhầm là price: 1
+    // if (sort === "area_desc") sortOption = { area: -1 }; // Trước đây bạn gán nhầm là price: -1
+
+    // if (sort === "oldest") sortOption = { createdAt: 1 };
+    // if (sort === "newest") sortOption = { createdAt: -1 };
+
+    if (sort) {
+      // 2. Tách chuỗi sort bằng dấu phẩy (nếu client gửi dạng price_asc,oldest)
+      // Nếu client gửi ?sort=price_asc&sort=oldest (array) thì Express tự xử lý thành array, ta chuẩn hóa về mảng.
+      const sortParams = Array.isArray(sort) ? sort : sort.split(",");
+
+      // 3. Duyệt qua từng yêu cầu sort và gộp vào object sortOption
+      sortParams.forEach((item) => {
+        const key = item.trim(); // Xóa khoảng trắng thừa
+        if (sortMapping[key]) {
+          // Object.assign giúp gộp object: {price: 1} + {createdAt: 1} => {price: 1, createdAt: 1}
+          Object.assign(sortOption, sortMapping[key]);
+        }
+      });
+    }
+
+    // 4. Nếu không có sort nào hợp lệ (hoặc không truyền), mặc định là mới nhất
+    if (Object.keys(sortOption).length === 0) {
+      sortOption = { createdAt: -1 };
+    }
+
+    // console.log("Final Sort Option:", sortOption);
+    // Kết quả sẽ dạng: { price: 1, createdAt: 1 }
 
     const listings = await Listing.find(query)
       .sort(sortOption)
