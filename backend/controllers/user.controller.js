@@ -8,6 +8,7 @@ import { generateTokenAndSetCookie } from "../utils/generateToken.js";
 import crypto from "crypto";
 import { jwtDecode } from "jwt-decode";
 import { OAuth2Client } from "google-auth-library";
+import { sendEmailViaBrevo } from "../utils/sendEmail.js";
 
 dotenv.config();
 
@@ -158,17 +159,29 @@ export const userRegister = async (req, res) => {
     // `;
 
     // --- GỬI MAIL BẰNG RESEND ---
+    // --- SETUP HTML CONTENT ---
     const htmlMessage = `
-      <div style="font-family: Arial, sans-serif; padding: 20px;">
+      <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd;">
         <h2 style="color: #333;">Xác thực đăng ký</h2>
+        <p>Xin chào <strong>${name}</strong>,</p>
         <p>Mã xác thực của bạn là:</p>
         <h1 style="color: #007bff; letter-spacing: 5px;">${code}</h1>
-        <p>Mã sẽ hết hạn sau 2 phút.</p>
+        <p>Mã này có hiệu lực trong 2 phút.</p>
       </div>
     `;
 
-    // Gửi mail (Await ở đây vẫn nhanh vì Resend là API, tốn khoảng 200-500ms)
-    await sendEmailViaResend(user.email, "Xác minh email", htmlMessage);
+    // --- GỌI HÀM GỬI MAIL ---
+    try {
+      console.log(`Đang gửi mail tới: ${user.email}`);
+
+      // Gọi hàm API mới (nhớ await)
+      await sendEmailViaBrevo(user.email, "Xác minh tài khoản", htmlMessage);
+
+      console.log("Gửi mail thành công!");
+    } catch (emailError) {
+      console.error("Không gửi được mail:", emailError.message);
+      // Tùy chọn: return lỗi hoặc cho qua tùy logic của bạn
+    }
 
     // try {
     //   await sendEmail({
@@ -486,8 +499,7 @@ export const loginGoogle = async (req, res) => {
 
 export const getUserInfor = async (req, res) => {
   try {
-    
-    const user_id = req.userId; 
+    const user_id = req.userId;
 
     const user = await User.findById(user_id).select(
       "username name phone email role createdAt"
