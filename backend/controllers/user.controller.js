@@ -168,9 +168,8 @@ export const userRegister = async (req, res) => {
 
     <hr style="border: none; border-top: 1px solid #eee; margin: 25px 0;" />
 
-    <div style="font-size: 13px; color: #999; line-height: 1.5;">
+    <div style="font-size: 14px; color: #999; line-height: 1.5;">
       <p style="margin: 0;"><strong>⚠️ Lưu ý quan trọng:</strong></p>
-      <p style="margin: 5px 0 0;">Nếu bạn không thấy email này trong Hộp thư đến (Inbox), vui lòng kiểm tra kỹ mục <strong>Thư rác (Spam)</strong> hoặc <strong>Quảng cáo (Promotions)</strong>.</p>
       <p style="margin-top: 5px;">Để không bỏ lỡ các thông báo quan trọng tiếp theo, hãy đánh dấu email này là <em>"Không phải Spam" (Not Spam)</em>.</p>
     </div>
 
