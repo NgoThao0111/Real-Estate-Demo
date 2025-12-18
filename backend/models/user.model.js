@@ -93,7 +93,7 @@ userSchema.methods.generateEmailVerificationCode = function () {
     .createHash("sha256")
     .update(code)
     .digest("hex");
-  this.emailVerificationExpire = Date.now() + 2 * 60 * 1000; // 2 minutes
+  this.emailVerificationExpire = Date.now() + 4 * 60 * 1000; // 2 minutes
   return code;
 };
 
@@ -103,7 +103,7 @@ userSchema.methods.generateResetPasswordCode = function () {
     .createHash("sha256")
     .update(code)
     .digest("hex");
-  this.resetPasswordCodeExpire = Date.now() + 3 * 60 * 1000; // 3 minutes
+  this.resetPasswordCodeExpire = Date.now() + 4 * 60 * 1000; // 3 minutes
   return code;
 };
 
