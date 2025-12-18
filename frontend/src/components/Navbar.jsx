@@ -80,13 +80,13 @@ const Navbar = () => {
               </Text>
             </Link>
             {/* Admin shortcut visible only to admins */}
-            {user && user.role === "admin" && (
+            {/* {user && user.role === "admin" && (
               <Link to="/admin">
                 <Text color={linkColor} _hover={{ color: "red.500" }} fontWeight="semibold">
                   Admin
                 </Text>
               </Link>
-            )}
+            )} */}
           </HStack>
 
           {/* Right: Buttons */}
