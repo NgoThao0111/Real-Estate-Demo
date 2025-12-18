@@ -1,4 +1,4 @@
-import { Box, Container, SimpleGrid, VStack, Heading, Button, Stack, useColorModeValue } from "@chakra-ui/react";
+import { Box, SimpleGrid, VStack, Heading, Button, Stack, useColorModeValue, Flex } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import AOS from "aos";
 import "aos/dist/aos.css";
@@ -7,6 +7,7 @@ import ListingCard from "../components/ListingCard";
 import HorizontalListingCard from "../components/HorizontalListingCard";
 import CreateListingModal from "../components/CreateListingModal.jsx";
 import SortViewOpts, { sortListings, filterListings } from "../components/SortViewOpts";
+import PostsNavigationPanel from "../components/PostsNavigationPanel";
 
 const MyPostsPage = () => {
   const { fetchMyListings, deleteListing } = useListStore();
@@ -45,9 +46,15 @@ const MyPostsPage = () => {
     if (res.success) load();
   };
 
+  const mainBg = useColorModeValue('gray.50', 'gray.900');
+
   return (
-    <Box py={8}>
-      <Container maxW="1140px">
+    <Flex minH="100vh">
+      {/* Left Navigation Panel */}
+      <PostsNavigationPanel />
+
+      {/* Main Content */}
+      <Box flex={1} p={6} bg={mainBg}>
         <Heading 
           size={{ base: "lg", md: "xl" }}
           textAlign="center"
@@ -56,7 +63,6 @@ const MyPostsPage = () => {
         >
           Bài đăng của tôi
         </Heading>
-
         {/* Sorting and View Options */}
         <SortViewOpts
           listings={filteredListings}
@@ -97,11 +103,10 @@ const MyPostsPage = () => {
             ))}
           </SimpleGrid>
         )}
-        
-      </Container>
 
-      <CreateListingModal isOpen={editOpen} onClose={() => { setEditOpen(false); load(); }} defaultValues={selected} />
-    </Box>
+        <CreateListingModal isOpen={editOpen} onClose={() => { setEditOpen(false); load(); }} defaultValues={selected} />
+      </Box>
+    </Flex>
   );
 };
 
