@@ -18,8 +18,8 @@ import nodemailer from "nodemailer";
 // --- CẤU HÌNH BREVO SMTP ---
 const transporter = nodemailer.createTransport({
   host: "smtp-relay.brevo.com",
-  port: 587,
-  secure: false, // true for 465, false for other ports
+  port: 465,
+  secure: true, // true for 465, false for other ports
   auth: {
     user: process.env.BREVO_LOGIN, // Email đăng nhập Brevo
     pass: process.env.BREVO_PASS, // Master Password (SMTP Key) của Brevo
