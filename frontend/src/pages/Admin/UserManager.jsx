@@ -194,7 +194,7 @@ export default function UserManager() {
         <Table variant="simple" color={textColor}>
           <Thead>
             <Tr>
-              <Th>Tên đăng nhập</Th>
+              {/* <Th>Tên đăng nhập</Th> */}
               <Th>Email</Th>
               <Th>Phone</Th>
               <Th>Tên</Th>
@@ -206,7 +206,7 @@ export default function UserManager() {
           <Tbody>
             {users.map((u) => (
               <Tr key={u._id}>
-                <Td>{u.username}</Td>
+                {/* <Td>{u.username}</Td> */}
                 <Td>{u.email || "-"}</Td>
                 <Td>{u.phone || "-"}</Td>
                 <Td>{u.name}</Td>

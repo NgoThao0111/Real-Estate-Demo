@@ -28,7 +28,6 @@ import ChatWidget from "./components/ChatWidget.jsx";
 import AOSComponent from "./components/AOSComponent.jsx";
 import Footer from "./components/Footer.jsx";
 import AuthModal from "./components/AuthModal.jsx";
-import AnimatedBackground from "./components/AnimatedBackground.jsx";
 
 import { useAuthContext } from "./context/AuthContext.jsx";
 
@@ -72,9 +71,6 @@ function App() {
   return (
     <AOSComponent>
       <Box>
-        {/* Animated Background - Luôn tồn tại */}
-        <AnimatedBackground />
-
         {/* Navbar luôn tồn tại – KHÔNG bị unmount */}
         <Box
           position="fixed"
@@ -90,10 +86,8 @@ function App() {
 
         <Box
           minH="100vh"
-          bg="transparent"
+          bg={useColorModeValue("gray.100", "gray.900")}
           pt="64px"
-          px={{ base: "8px", md: "16px", lg: "24px" }}
-          pb="24px"
         >
           <Routes>
             {/* Public */}

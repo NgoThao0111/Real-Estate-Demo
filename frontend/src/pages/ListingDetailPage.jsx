@@ -144,12 +144,6 @@ const ListingDetailPage = () => {
       <Grid templateColumns={{ base: "1fr", lg: "1fr 400px" }} gap={8}>
         {/* Left Container */}
         <GridItem>
-          <Box
-            bg="white"
-            borderRadius="xl"
-            shadow="lg"
-            p={6}
-          >
           {/* Dùng VStack để xếp ảnh và map theo chiều dọc, cách nhau 8 đơn vị */}
           <VStack spacing={8} align="stretch">
             {/* Phần Ảnh */}
@@ -211,25 +205,15 @@ const ListingDetailPage = () => {
               )}
             </Box>
           </VStack>
-          </Box>
         </GridItem>
 
         {/* Right Container - Property Details + Actions */}
         <GridItem>
-          <Box
-            bg="white"
-            borderRadius="xl"
-            shadow="lg"
-            p={6}
-            position="sticky"
-            top="80px"
-          >
           <ListingInfoSection
             listing={listing}
             user={user}
             onContact={handleContact}
           />
-          </Box>
         </GridItem>
       </Grid>
     </Container>

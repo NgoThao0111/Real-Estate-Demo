@@ -30,7 +30,6 @@ import { FiMapPin, FiStar, FiSearch, FiX } from "react-icons/fi";
 import { useListStore } from "../store/list.js";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
-import Geometric3D from "./Geometric3D.jsx";
 
 const HomePanel = () => {
   const { listings, fetchListings } = useListStore();
@@ -324,22 +323,25 @@ const HomePanel = () => {
       pt={"60px"}
       pb={"60px"}
       overflow="hidden"
-      bg="transparent"
+      bgGradient={bgGradient}
     >
-      {/* 3D Geometric Shape */}
+      {/* Background Image */}
       <Box
         position="absolute"
-        top="50%"
-        right="8%"
-        transform="translateY(-50%)"
-        w={{ base: "50%", md: "40%", lg: "35%" }}
-        h={{ base: "60%", md: "55%", lg: "70%" }}
+        bottom={0}
+        left={600}
+        w={{ base: "90%", md: "70%", lg: "65%" }}
+        h={{ base: "90%", md: "85%", lg: "95%" }}
         zIndex={1}
-        display="flex"
-        alignItems="center"
-        justifyContent="center"
       >
-        <Geometric3D />
+        <Image
+          src="hero-image.png"
+          alt="Real Estate Background"
+          w="100%"
+          h="100%"
+          objectFit="contain"
+          objectPosition="bottom right"
+        />
       </Box>
 
       <Container maxW="1100px" position="absolute" zIndex={2}>

@@ -61,10 +61,10 @@ export default function PropertyManager() {
         rental_type: typeFilter,
       });
       const items = res.data.listings || [];
-      console.log(
-        "Admin listings statuses:",
-        items.map((i) => ({ id: i._id, status: i.status }))
-      ); // debug
+      // console.log(
+      //   "Admin listings statuses:",
+      //   items.map((i) => ({ id: i._id, status: i.status }))
+      // ); // debug
       setListings(items);
     } catch (e) {
       console.error("Failed to fetch admin listings", e);
