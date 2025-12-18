@@ -60,19 +60,11 @@ const ChatPage = () => {
   }, [searchParams, chats]);
 
   return (
-    <Box p={5} h="90vh">
+    <Box p={5} h="90vh" >
       <Flex gap={5} h="100%">
         
         {/* CỘT TRÁI: DANH SÁCH CHAT (30%) */}
-        <Box 
-          w="30%" 
-          bg={bgBox} 
-          borderRadius="lg" 
-          boxShadow="lg" 
-          overflow="hidden" 
-          borderWidth="2px" 
-          borderColor={borderColor}
-        >
+        <Box w="30%" bg={bgBox} borderRadius="lg" boxShadow="sm" overflow="hidden" borderWidth="2px" borderColor={borderColor}>
           <Box p={4} borderBottom="2px" borderColor={borderColor}>
             <Heading size="md">Tin nhắn</Heading>
           </Box>
@@ -126,7 +118,7 @@ const ChatPage = () => {
               justify="center" 
               direction="column"
               color="gray.400"
-              boxShadow="lg"
+              boxShadow="sm"
               overflow="hidden" 
               borderWidth="2px"
               borderColor={borderColor} 
