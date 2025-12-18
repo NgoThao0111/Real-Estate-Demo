@@ -110,7 +110,7 @@ userSchema.methods.generateResetPasswordCode = function () {
 userSchema.index(
   { createdAt: 1 },
   {
-    expireAfterSeconds: 3600, // 1 giờ * 60 phút * 60 giây = 3600 giây
+    expireAfterSeconds: 600, //   10 phút * 60 giây = 600 giây
     partialFilterExpression: { emailVerified: false },
   }
 );

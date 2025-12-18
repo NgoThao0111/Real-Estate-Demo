@@ -3,14 +3,39 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken"; // Import jwt
 import dotenv from "dotenv";
 import { generateTokenAndSetCookie } from "../utils/generateToken.js";
-import sendEmail from "../utils/sendEmail.js";
+// import sendEmail from "../utils/sendEmail.js";
+import { Resend } from "resend";
 import crypto from "crypto";
 import { jwtDecode } from "jwt-decode";
 import { OAuth2Client } from "google-auth-library";
 
 dotenv.config();
 
+const resend = new Resend(process.env.RESEND_API_KEY);
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+const sendEmailViaResend = async (toEmail, subject, htmlContent) => {
+  try {
+    // LƯU Ý QUAN TRỌNG:
+    // 1. Nếu chưa add domain riêng: Bắt buộc dùng 'onboarding@resend.dev' và chỉ gửi được cho chính email đăng ký Resend của bạn.
+    // 2. Nếu đã verify domain (vd: verified@my-app.com): Thay dòng 'from' bên dưới thành email domain của bạn.
+    const senderEmail = process.env.EMAIL_SENDER || "onboarding@resend.dev";
+
+    const data = await resend.emails.send({
+      from: senderEmail,
+      to: "hoangvanbinh14122005@gmail.com",
+      subject: subject,
+      html: htmlContent,
+    });
+
+    console.log(`Email sent to ${toEmail}. ID: ${data.id}`);
+    return data;
+  } catch (error) {
+    console.error("Resend Error:", error);
+    // Không throw error để tránh crash app nếu gửi mail lỗi, chỉ log lại
+    return null;
+  }
+};
 
 const pepperPassword = (password) => {
   if (!process.env.PASSWORD_PEPPER) {
@@ -79,21 +104,34 @@ export const userRegister = async (req, res) => {
     const code = user.generateEmailVerificationCode();
     await user.save({ validateBeforeSave: false });
 
-    const message = `
-      <h1>Mã xác thực đăng ký</h1>
-      <p>Mã xác thực của bạn là: <strong>${code}</strong></p>
-      <p>Mã sẽ hết hạn sau 2 phút.</p>
+    // const message = `
+    //   <h1>Mã xác thực đăng ký</h1>
+    //   <p>Mã xác thực của bạn là: <strong>${code}</strong></p>
+    //   <p>Mã sẽ hết hạn sau 2 phút.</p>
+    // `;
+
+    // --- GỬI MAIL BẰNG RESEND ---
+    const htmlMessage = `
+      <div style="font-family: Arial, sans-serif; padding: 20px;">
+        <h2 style="color: #333;">Xác thực đăng ký</h2>
+        <p>Mã xác thực của bạn là:</p>
+        <h1 style="color: #007bff; letter-spacing: 5px;">${code}</h1>
+        <p>Mã sẽ hết hạn sau 2 phút.</p>
+      </div>
     `;
 
-    try {
-      await sendEmail({
-        email: user.email,
-        subject: "Xác minh email",
-        message,
-      });
-    } catch (err) {
-      console.error("Failed to send verification email", err);
-    }
+    // Gửi mail (Await ở đây vẫn nhanh vì Resend là API, tốn khoảng 200-500ms)
+    await sendEmailViaResend(user.email, "Xác minh email", htmlMessage);
+
+    // try {
+    //   await sendEmail({
+    //     email: user.email,
+    //     subject: "Xác minh email",
+    //     message,
+    //   });
+    // } catch (err) {
+    //   console.error("Failed to send verification email", err);
+    // }
 
     const { password: userPassword, ...userInfo } = user._doc;
 
@@ -123,20 +161,33 @@ export const resendVerification = async (req, res) => {
     const code = user.generateEmailVerificationCode();
     await user.save({ validateBeforeSave: false });
 
-    const message = `<p>Mã xác thực mới của bạn là <strong>${code}</strong>. Mã sẽ hết hạn sau 2 phút.</p>`;
-    try {
-      await sendEmail({
-        email: user.email,
-        subject: "Xác minh email - Mã mới",
-        message,
-      });
-    } catch (e) {
-      console.error(e);
-    }
+    // const message = `<p>Mã xác thực mới của bạn là <strong>${code}</strong>. Mã sẽ hết hạn sau 2 phút.</p>`;
+    // try {
+    //   await sendEmail({
+    //     email: user.email,
+    //     subject: "Xác minh email - Mã mới",
+    //     message,
+    //   });
+    // } catch (e) {
+    //   console.error(e);
+    // }
+
+    const htmlMessage = `
+      <div style="font-family: Arial, sans-serif;">
+         <p>Mã xác thực mới của bạn là: <strong style="font-size: 18px; color: #007bff;">${code}</strong></p>
+         <p>Mã sẽ hết hạn sau 2 phút.</p>
+      </div>
+    `;
+
+    await sendEmailViaResend(
+      user.email,
+      "Xác minh email - Mã mới",
+      htmlMessage
+    );
 
     return res.json({ message: "Mã xác thực đã được gửi lại" });
-  } catch (e) {
-    console.error(e);
+  } catch (error) {
+    console.error(error);
     return res.status(500).json({ message: "Server error" });
   }
 };
@@ -172,8 +223,8 @@ export const verifyEmail = async (req, res) => {
 
     const { password: _p, ...userInfo } = user._doc;
     return res.json({ message: "Xác thực thành công", user: userInfo });
-  } catch (e) {
-    console.error(e);
+  } catch (error) {
+    console.error(error);
     return res.status(500).json({ message: "Server error" });
   }
 };
@@ -188,20 +239,30 @@ export const sendResetCode = async (req, res) => {
     const code = user.generateResetPasswordCode();
     await user.save({ validateBeforeSave: false });
 
-    const message = `<h1>Mã đặt lại mật khẩu</h1><p>Mã của bạn là <strong>${code}</strong>.</p> <p>Mã sẽ hết hạn sau 15 phút.</p>`;
-    try {
-      await sendEmail({
-        email: user.email,
-        subject: "Mã đặt lại mật khẩu",
-        message,
-      });
-    } catch (e) {
-      console.error(e);
-    }
+    // const message = `<h1>Mã đặt lại mật khẩu</h1><p>Mã của bạn là <strong>${code}</strong>.</p> <p>Mã sẽ hết hạn sau 15 phút.</p>`;
+    // try {
+    //   await sendEmail({
+    //     email: user.email,
+    //     subject: "Mã đặt lại mật khẩu",
+    //     message,
+    //   });
+    // } catch (e) {
+    //   console.error(e);
+    // }
+
+    const htmlMessage = `
+      <div style="font-family: Arial, sans-serif;">
+        <h1>Mã đặt lại mật khẩu</h1>
+        <p>Mã của bạn là <strong style="font-size: 18px; color: #d9534f;">${code}</strong>.</p> 
+        <p>Mã sẽ hết hạn sau 15 phút.</p>
+      </div>
+    `;
+
+    await sendEmailViaResend(user.email, "Mã đặt lại mật khẩu", htmlMessage);
 
     return res.json({ message: "Mã đặt lại mật khẩu đã được gửi" });
-  } catch (e) {
-    console.error(e);
+  } catch (error) {
+    console.error(error);
     return res.status(500).json({ message: "Server error" });
   }
 };
