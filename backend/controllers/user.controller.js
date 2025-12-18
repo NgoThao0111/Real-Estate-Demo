@@ -12,9 +12,45 @@ dotenv.config();
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
+const pepperPassword = (password) => {
+  if (!process.env.PASSWORD_PEPPER) {
+    throw new Error("Chưa cấu hình PASSWORD_PEPPER trong file .env");
+  }
+
+  // Dùng HMAC-SHA256 để trộn password và pepper
+  // Kết quả trả về là chuỗi hex 64 ký tự (vừa vặn giới hạn 72 bytes của Bcrypt)
+  return crypto
+    .createHmac("sha256", process.env.PASSWORD_PEPPER)
+    .update(password)
+    .digest("hex");
+};
+
 export const userRegister = async (req, res) => {
   try {
     const { password, name, phone, role, email } = req.body;
+
+    // 1. Kiểm tra Email
+    if (!email || !email.trim()) {
+      return res.status(400).json({ message: "Thiếu email" });
+    }
+
+    // Regex đơn giản để check format email (có @ và dấu chấm)
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ message: "Email không hợp lệ" });
+    }
+
+    // 2. Kiểm tra Password
+    if (!password || password.length < 6) {
+      return res
+        .status(400)
+        .json({ message: "Mật khẩu phải có ít nhất 6 ký tự" });
+    }
+
+    // 3. Kiểm tra Tên
+    if (!name || !name.trim()) {
+      return res.status(400).json({ message: "Thiếu tên người dùng" });
+    }
 
     let user = await User.findOne({ email });
     if (user) {
@@ -24,7 +60,8 @@ export const userRegister = async (req, res) => {
     }
 
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    const passwordWithPepper = pepperPassword(password);
+    const hashedPassword = await bcrypt.hash(passwordWithPepper, salt);
 
     const username = email.split("@")[0];
 
@@ -189,7 +226,8 @@ export const resetPasswordWithCode = async (req, res) => {
     }
 
     const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(password, salt);
+    const passwordWithPepper = pepperPassword(password);
+    user.password = await bcrypt.hash(passwordWithPepper, salt);
     user.resetPasswordCode = undefined;
     user.resetPasswordCodeExpire = undefined;
     await user.save();
@@ -252,7 +290,9 @@ export const loginUser = async (req, res) => {
       return res.status(403).json({ message: "Tài khoản đã bị khóa" });
     }
 
-    const match = await bcrypt.compare(password, user.password);
+    const passwordWithPepper = pepperPassword(password);
+
+    const match = await bcrypt.compare(passwordWithPepper, user.password);
     if (!match) {
       return res.status(401).json({
         message: "Password wrong",

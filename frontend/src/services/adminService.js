@@ -10,6 +10,7 @@ const adminService = {
   broadcast: (title, message, type = "info", audience = "all", expiresAt = null) =>
     api.post("/admin/broadcast", { title, message, type, targetAudience: audience, expiresAt }),
   getNotifications: () => api.get("/admin/notifications"),
+  getAnnouncements: () => api.get("/admin/announcements"),
   getUserSignupsLast7Days: () => api.get("/admin/stats/users-7days"),
   getPropertyStatusDistribution: () =>
     api.get("/admin/stats/properties-status"),

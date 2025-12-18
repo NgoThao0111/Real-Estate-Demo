@@ -10,10 +10,17 @@ export const getMyNotifications = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    const unreadCount = await Notification.countDocuments({
+    const unreadAnnounce = await AnnouncementRead.countDocuments({
+      userId: req.userId,
+      isRead: false,
+    });
+
+    const unreadNotif = await Notification.countDocuments({
       recipient: userId,
       isRead: false,
     });
+
+    const unreadCount = unreadAnnounce + unreadNotif;
 
     let systemNotifs = [];
     if (page == 1) {
@@ -47,7 +54,7 @@ export const getMyNotifications = async (req, res) => {
       message: n.message,
       type: "SYSTEM_ANNOUNCEMENT",
       createdAt: n.createdAt,
-      isRead: false, // Mặc định tin hệ thống coi như chưa đọc hoặc xử lý logic read riêng
+      isRead: false,
     }));
 
     const notifications = [...formattedSystem, ...personalNotifs];
@@ -77,9 +84,18 @@ export const markAsRead = async (req, res) => {
       { new: true }
     );
 
-    // Nếu không tìm thấy trong Notification, có thể đó là Announcement (xử lý sau)
+    // Nếu không tìm thấy trong Notification, có thể đó là Announcement
+    const announce = await AnnouncementRead.findOneAndUpdate(
+      { _id: id },
+      { isRead: true },
+      { userId: req.userId }
+    );
 
-    return res.json({ success: true, notification: notif });
+    return res.json({
+      success: true,
+      notification: notif,
+      announcement: announce,
+    });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Server error" });
@@ -91,6 +107,10 @@ export const markAllAsRead = async (req, res) => {
   try {
     await Notification.updateMany(
       { recipient: req.userId, isRead: false },
+      { isRead: true }
+    );
+    await AnnouncementRead.updateMany(
+      { userId: req.userId, isRead: false },
       { isRead: true }
     );
     return res.json({ success: true });

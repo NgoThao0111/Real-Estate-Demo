@@ -5,6 +5,7 @@ import AdminAction from "../models/adminAction.model.js";
 import Report from "../models/report.model.js";
 import Announcement from "../models/announcement.model.js";
 import { TEMPLATES } from "../utils/notificationTemplates.js";
+import AnnouncementRead from "../models/announcementRead.model.js";
 
 export const createSystemAnnouncement = async (req, res) => {
   try {
@@ -788,10 +789,17 @@ export const broadcastSystemNotification = async (req, res) => {
     if (!message || !title)
       return res.status(400).json({ message: "Missing title or message" });
 
+    let user;
+    if (audience !== "all") {
+      user = await User.findOne({
+        $or: [{ email: audience }, { username: audience }],
+      });
+    }
+
     // 1. Persist notification
     let notif, announce;
     try {
-      notif = await Notification.create({ title, message, type, audience });
+      // notif = await Notification.create({ title, message, type, audience });
       announce = await Announcement.create({
         title,
         message,
@@ -799,36 +807,57 @@ export const broadcastSystemNotification = async (req, res) => {
         audience,
         createdBy: req.userId,
       });
-    } catch (e) {
+    } catch (error) {
       console.error("Error creating broadcast notification", {
         admin: req.userId,
         payload: { title, message, type, audience },
-        error: e,
+        error: error,
       });
       return res
         .status(500)
         .json({ message: "Failed to save broadcast notification" });
     }
 
+    let announceRead;
+
+    if (user) {
+      try {
+        announceRead = await AnnouncementRead.create({
+          userId: user._id,
+          announcementId: announce._id,
+          isRead: false,
+        });
+      } catch (error) {
+        console.error("Error creating Announcement Read", {
+          admin: req.userId,
+          payload: { title, message, type, audience },
+          error: error,
+        });
+        return res
+          .status(500)
+          .json({ message: "Failed to save announcement read" });
+      }
+    }
+
     // 2. Emit event to connected sockets
     if (audience === "all") {
       req.io?.emit("system_notification", {
-        id: notif._id,
+        id: announce._id,
         title,
         message,
         type,
         audience,
-        createdAt: notif.createdAt,
+        createdAt: announce.createdAt,
       });
     } else if (typeof audience === "string" && audience.startsWith("user:")) {
       const userId = audience.split(":")[1];
       req.io?.in(`user_${userId}`)?.emit("system_notification", {
-        id: notif._id,
+        id: announce._id,
         title,
         message,
         type,
         audience,
-        createdAt: notif.createdAt,
+        createdAt: announce.createdAt,
       });
     } else if (typeof audience === "string" && audience.startsWith("email:")) {
       const email = audience.split(":")[1];
@@ -837,12 +866,12 @@ export const broadcastSystemNotification = async (req, res) => {
         const u = await User.findOne({ email });
         if (u)
           req.io?.in(`user_${u._id}`)?.emit("system_notification", {
-            id: notif._id,
+            id: announce._id,
             title,
             message,
             type,
             audience,
-            createdAt: notif.createdAt,
+            createdAt: announce.createdAt,
           });
       } catch (e) {
         console.error("Failed to find user by email for broadcast", e);
@@ -850,12 +879,12 @@ export const broadcastSystemNotification = async (req, res) => {
     } else {
       // Fallback: emit to all
       req.io?.emit("system_notification", {
-        id: notif._id,
+        id: announce._id,
         title,
         message,
         type,
         audience,
-        createdAt: notif.createdAt,
+        createdAt: announce.createdAt,
       });
     }
 
@@ -864,7 +893,7 @@ export const broadcastSystemNotification = async (req, res) => {
       const adminAction = await AdminAction.create({
         admin: req.userId,
         action: "broadcast",
-        target: notif._id,
+        target: announce._id,
         meta: { title, message, type, audience },
       });
       console.log("AdminAction created: broadcast", {
@@ -874,7 +903,7 @@ export const broadcastSystemNotification = async (req, res) => {
     } catch (e) {
       console.error("Error creating admin action: broadcast", {
         admin: req.userId,
-        target: notif._id,
+        target: announce._id,
         meta: { title, message, type, audience },
         error: e,
       });
@@ -882,7 +911,7 @@ export const broadcastSystemNotification = async (req, res) => {
 
     return res.json({
       message: "Broadcast saved and sent",
-      notification: notif,
+      announcement: announce,
     });
   } catch (error) {
     console.error(error);
@@ -894,6 +923,18 @@ export const getNotifications = async (req, res) => {
   try {
     const items = await Notification.find().sort({ createdAt: -1 }).limit(100);
     return res.json({ notifications: items });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const getAnnouncements = async (req, res) => {
+  try {
+    const announces = await Announcement.find()
+      .sort({ createdAt: -1 })
+      .limit(100);
+    return res.json({ announcements: announces });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Server error" });
