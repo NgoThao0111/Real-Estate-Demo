@@ -13,7 +13,7 @@ let isHandlingUnauthorized = false;
 
 api.interceptors.response.use(
   (config) => {
-  console.log("➡️ API CALL:", config.url);
+  // console.log("➡️ API CALL:", config.url);
   return config;
 },
   (response) => response,

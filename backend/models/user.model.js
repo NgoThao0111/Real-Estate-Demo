@@ -87,20 +87,33 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-
 userSchema.methods.generateEmailVerificationCode = function () {
   const code = Math.floor(100000 + Math.random() * 900000).toString();
-  this.emailVerificationCode = crypto.createHash("sha256").update(code).digest("hex");
+  this.emailVerificationCode = crypto
+    .createHash("sha256")
+    .update(code)
+    .digest("hex");
   this.emailVerificationExpire = Date.now() + 2 * 60 * 1000; // 2 minutes
   return code;
 };
 
 userSchema.methods.generateResetPasswordCode = function () {
   const code = Math.floor(100000 + Math.random() * 900000).toString();
-  this.resetPasswordCode = crypto.createHash("sha256").update(code).digest("hex");
+  this.resetPasswordCode = crypto
+    .createHash("sha256")
+    .update(code)
+    .digest("hex");
   this.resetPasswordCodeExpire = Date.now() + 3 * 60 * 1000; // 3 minutes
   return code;
 };
+
+userSchema.index(
+  { createdAt: 1 },
+  {
+    expireAfterSeconds: 600, //   10 phút * 60 giây = 600 giây
+    partialFilterExpression: { emailVerified: false },
+  }
+);
 
 const User = mongoose.model("User", userSchema);
 

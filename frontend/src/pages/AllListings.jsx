@@ -96,7 +96,9 @@ const AllListings = () => {
 
   return (
     <>
-      <SlideShow listings={listings.slice(0, 5)} />
+      <Box mb={4}>
+        <SlideShow listings={listings.slice(0, 5)} />
+      </Box>
       
       {loading && (
         <Progress size="xs" isIndeterminate colorScheme="blue" position="fixed" top={0} left={0} w="full" zIndex={9999} />
@@ -106,10 +108,25 @@ const AllListings = () => {
         <Grid templateColumns={{ base: "1fr", lg: "350px 1fr" }} gap={8}>
           
           <GridItem>
-            <SearchOpt />
+            <Box
+              bg="white"
+              borderRadius="xl"
+              shadow="lg"
+              p={4}
+              position="sticky"
+              top="80px"
+            >
+              <SearchOpt />
+            </Box>
           </GridItem>
 
           <GridItem>
+            <Box
+              bg="white"
+              borderRadius="xl"
+              shadow="lg"
+              p={6}
+            >
             <SortViewOpts
               listings={listings}
               
@@ -132,6 +149,7 @@ const AllListings = () => {
               transition="opacity 0.2s"
               pointerEvents={loading ? "none" : "auto"}
               position="relative"
+              mt={6}
             >
               {loading && listings.length === 0 ? (
                  <Center minH="400px">
@@ -160,6 +178,7 @@ const AllListings = () => {
                   ))}
                 </SimpleGrid>
               )}
+            </Box>
             </Box>
           </GridItem>
         </Grid>
