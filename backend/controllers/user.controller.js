@@ -14,28 +14,76 @@ dotenv.config();
 const resend = new Resend(process.env.RESEND_API_KEY);
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
+import nodemailer from "nodemailer";
+
+// --- CẤU HÌNH BREVO SMTP ---
+const transporter = nodemailer.createTransport({
+  host: "smtp-relay.brevo.com",
+  port: 587,
+  secure: false, // true for 465, false for other ports
+  auth: {
+    user: process.env.BREVO_LOGIN, // Email đăng nhập Brevo
+    pass: process.env.BREVO_PASS, // Master Password (SMTP Key) của Brevo
+  },
+});
+
+// --- THÊM ĐOẠN NÀY ĐỂ TEST KẾT NỐI NGAY KHI SERVER CHẠY ---
+transporter.verify(function (error, success) {
+  if (error) {
+    console.log("❌ LỖI KẾT NỐI SMTP BREVO:");
+    console.error(error);
+  } else {
+    console.log("✅ KẾT NỐI SMTP BREVO THÀNH CÔNG! Sẵn sàng gửi mail.");
+  }
+});
+
+// Giữ nguyên tên hàm để không ảnh hưởng code cũ
 const sendEmailViaResend = async (toEmail, subject, htmlContent) => {
   try {
-    // LƯU Ý QUAN TRỌNG:
-    // 1. Nếu chưa add domain riêng: Bắt buộc dùng 'onboarding@resend.dev' và chỉ gửi được cho chính email đăng ký Resend của bạn.
-    // 2. Nếu đã verify domain (vd: verified@my-app.com): Thay dòng 'from' bên dưới thành email domain của bạn.
-    const senderEmail = process.env.EMAIL_SENDER || "onboarding@resend.dev";
+    // Với Brevo, 'from' bắt buộc phải là email bạn đã verify trong tài khoản Brevo
+    // (Thường chính là email đăng nhập BREVO_USER)
+    const senderEmail = process.env.BREVO_USER;
 
-    const data = await resend.emails.send({
-      from: senderEmail,
-      to: "hoangvanbinh14122005@gmail.com",
+    const info = await transporter.sendMail({
+      from: `"Support Team" <${senderEmail}>`, // Thêm tên hiển thị cho chuyên nghiệp
+      to: toEmail, // QUAN TRỌNG: Dùng biến toEmail, không được hardcode email của bạn vào đây
       subject: subject,
       html: htmlContent,
     });
 
-    console.log(`Email sent to ${toEmail}. ID: ${data.id}`);
-    return data;
+    console.log(
+      `Email sent via Brevo to ${toEmail}. Message ID: ${info.messageId}`
+    );
+    return info;
   } catch (error) {
-    console.error("Resend Error:", error);
-    // Không throw error để tránh crash app nếu gửi mail lỗi, chỉ log lại
+    console.error("Error sending email via Brevo:", error);
+    // Không throw error để tránh crash app, chỉ log lại lỗi
     return null;
   }
 };
+
+// const sendEmailViaResend = async (toEmail, subject, htmlContent) => {
+//   try {
+//     // LƯU Ý QUAN TRỌNG:
+//     // 1. Nếu chưa add domain riêng: Bắt buộc dùng 'onboarding@resend.dev' và chỉ gửi được cho chính email đăng ký Resend của bạn.
+//     // 2. Nếu đã verify domain (vd: verified@my-app.com): Thay dòng 'from' bên dưới thành email domain của bạn.
+//     const senderEmail = process.env.EMAIL_SENDER || "onboarding@resend.dev";
+
+//     const data = await resend.emails.send({
+//       from: senderEmail,
+//       to: "hoangvanbinh14122005@gmail.com",
+//       subject: subject,
+//       html: htmlContent,
+//     });
+
+//     console.log(`Email sent to ${toEmail}. ID: ${data.id}`);
+//     return data;
+//   } catch (error) {
+//     console.error("Resend Error:", error);
+//     // Không throw error để tránh crash app nếu gửi mail lỗi, chỉ log lại
+//     return null;
+//   }
+// };
 
 const pepperPassword = (password) => {
   if (!process.env.PASSWORD_PEPPER) {
