@@ -8,7 +8,8 @@ const SlideShow = ({ listings = [] }) => {
   // Define theme-aware colors
   const contentBg = useColorModeValue("white", "gray.800");
   const cardShadow = useColorModeValue("lg", "dark-lg");
-  
+  const slideBg = useColorModeValue("gray.300", "gray.600");
+
   // Get 4 most recent listings
   const recentListings = listings
     .sort((a, b) => new Date(b.createdAt || b.updatedAt) - new Date(a.createdAt || a.updatedAt))
@@ -148,7 +149,7 @@ const SlideShow = ({ listings = [] }) => {
             {recentListings[currentSlide]?.property_type.name}
             </Badge>
             <Badge colorScheme="blue" bg="blue.600" color="white" fontSize="xs">
-            {(!recentListings[currentSlide]?.rental_type) ? 'Còn trống' : (recentListings[currentSlide]?.rental_type === 'sale' ? 'Bán' : 'Cho thuê')}
+            {(!recentListings[currentSlide]?.rental_type) ? 'Còn trống' : (recentListings[currentSlide]?.rental_type === 'sell' ? 'Bán' : 'Cho thuê')}
             </Badge>
           </HStack>
           <Heading
@@ -182,7 +183,7 @@ const SlideShow = ({ listings = [] }) => {
                   w={3}
                   h={3}
                   borderRadius="full"
-                  bg={index === currentSlide ? "blue.500" : useColorModeValue("gray.300", "gray.600")}
+                  bg={index === currentSlide ? "blue.500" : slideBg}
                   cursor="pointer"
                   onClick={() => setCurrentSlide(index)}
                   transition="all 0.2s"
