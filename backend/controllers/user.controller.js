@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken"; // Import jwt
 import dotenv from "dotenv";
 import { generateTokenAndSetCookie } from "../utils/generateToken.js";
 // import sendEmail from "../utils/sendEmail.js";
-import { Resend } from "resend";
+// import { Resend } from "resend";
 import crypto from "crypto";
 import { jwtDecode } from "jwt-decode";
 import { OAuth2Client } from "google-auth-library";
@@ -486,11 +486,11 @@ export const loginGoogle = async (req, res) => {
 
 export const getUserInfor = async (req, res) => {
   try {
-    // --- JWT: Lấy userId từ middleware verifyToken (đã gán vào req.userId) ---
-    const user_id = req.userId; // Middleware verifyToken đã xử lý việc check auth
+    
+    const user_id = req.userId; 
 
     const user = await User.findById(user_id).select(
-      "username name phone role createdAt"
+      "username name phone email role createdAt"
     );
 
     if (!user) {

@@ -42,7 +42,7 @@ export default function UserMenu({ user, logoutUser }) {
         </MenuButton>
 
         <MenuList>
-          <MenuItem as={Link} to="/" icon={<FaRegUserCircle />}>
+          <MenuItem as={Link} to="/profile" icon={<FaRegUserCircle />}>
             Trang cá nhân
           </MenuItem>
 
