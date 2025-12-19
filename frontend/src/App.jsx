@@ -24,12 +24,12 @@ import SavedPostsPage from "./pages/SavedPostsPage.jsx";
 import ChatPage from "./pages/ChatPage.jsx";
 import AllListings from "./pages/AllListings.jsx";
 import ListingDetailPage from "./pages/ListingDetailPage.jsx";
+import ProfilePage from "./pages/ProfilePage.jsx";
 import ChatWidget from "./components/ChatWidget.jsx";
 import AOSComponent from "./components/AOSComponent.jsx";
 import Footer from "./components/Footer.jsx";
 import AuthModal from "./components/AuthModal.jsx";
-
-import UserProfilePage from "./pages/UserProfilePage.jsx";
+import UserSettings from "./pages/UserSettings.jsx";
 
 import { useAuthContext } from "./context/AuthContext.jsx";
 
@@ -116,10 +116,18 @@ function App() {
             />
 
             <Route
+              path="/setting"
+              element={currentUser ? <UserSettings /> : <Navigate to="/" replace />}
+            />
+            
+            <Route
               path="/profile"
-              element={
-                currentUser ? <UserProfilePage /> : <Navigate to="/" replace />
-              }
+              element={currentUser ? <ProfilePage /> : <Navigate to="/" replace />}
+            />
+            
+            <Route
+              path="/profile/:userId"
+              element={<ProfilePage />}
             />
 
             {/* Admin Routes */}

@@ -13,7 +13,15 @@ import {
   VStack,
   Badge,
 } from "@chakra-ui/react";
-import { FiUsers, FiGrid, FiCheckCircle, FiChevronLeft, FiChevronRight, FiMapPin, FiHome } from "react-icons/fi";
+import {
+  FiUsers,
+  FiGrid,
+  FiCheckCircle,
+  FiChevronLeft,
+  FiChevronRight,
+  FiMapPin,
+  FiHome,
+} from "react-icons/fi";
 import { useEffect, useState } from "react";
 import ListingCard from "../components/ListingCard";
 import HomePanel from "../components/HomePanel";
@@ -21,7 +29,7 @@ import { useListStore } from "../store/list.js";
 import { useNavigate } from "react-router-dom";
 // 1. Import Component MapboxMap & API
 import MapboxMap from "../components/MapboxMap";
-import api from "../lib/axios";
+import api from "../lib/axios.js";
 
 const HomePage = () => {
   const { listings, loading, error, fetchListings } = useListStore();
@@ -29,6 +37,10 @@ const HomePage = () => {
 
   // State chứa danh sách bài đăng dành riêng cho bản đồ (limit lớn)
   const [mapListings, setMapListings] = useState([]);
+
+  const approvedListings = listings
+    ? listings.filter((item) => item.status === "approved")
+    : [];
 
   const contentBg = useColorModeValue("white", "gray.800");
   const subText = useColorModeValue("gray.600", "white");
@@ -50,36 +62,47 @@ const HomePage = () => {
       try {
         const res = await api.get("/listings/getList?limit=1000");
         if (res.data && res.data.listings) {
-          setMapListings(res.data.listings);
+          const approvedMapData = res.data.listings.filter(
+            (item) => item.status === "approved"
+          );
+          setMapListings(approvedMapData);
         }
       } catch (error) {
         console.error("Lỗi set data lên bản đồ: ", error);
-  // Auto-play slideshow
-  useEffect(() => {
-    if (!isAutoPlaying || !listings || listings.length === 0) return;
-    
-    const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % Math.min(3, listings.length));
-    }, 5000); // Chuyển slide mỗi 5 giây
+        // // Auto-play slideshow
+        // useEffect(() => {
+        //   if (!isAutoPlaying || !listings || listings.length === 0) return;
 
-    return () => clearInterval(interval);
-  }, [isAutoPlaying, listings]);
+        //   const interval = setInterval(() => {
+        //     setCurrentSlide(
+        //       (prev) => (prev + 1) % Math.min(3, listings.length)
+        //     );
+        //   }, 5000); // Chuyển slide mỗi 5 giây
 
-  const handlePrevSlide = () => {
-    setIsAutoPlaying(false);
-    setCurrentSlide((prev) => (prev - 1 + Math.min(3, listings.length)) % Math.min(3, listings.length));
-  };
+        //   return () => clearInterval(interval);
+        // }, [isAutoPlaying, listings]);
 
-  const handleNextSlide = () => {
-    setIsAutoPlaying(false);
-    setCurrentSlide((prev) => (prev + 1) % Math.min(3, listings.length));
-  };
+        // const handlePrevSlide = () => {
+        //   setIsAutoPlaying(false);
+        //   setCurrentSlide(
+        //     (prev) =>
+        //       (prev - 1 + Math.min(3, listings.length)) %
+        //       Math.min(3, listings.length)
+        //   );
+        // };
 
-  const formatPrice = (price) => {
-    if (!price) return "Liên hệ";
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
-  };
+        // const handleNextSlide = () => {
+        //   setIsAutoPlaying(false);
+        //   setCurrentSlide((prev) => (prev + 1) % Math.min(3, listings.length));
+        // };
 
+        // const formatPrice = (price) => {
+        //   if (!price) return "Liên hệ";
+        //   return new Intl.NumberFormat("vi-VN", {
+        //     style: "currency",
+        //     currency: "VND",
+        //   }).format(price);
+        // };
       }
     };
     fetchMapData();
@@ -127,9 +150,9 @@ const HomePage = () => {
         </Container>
 
         <Container maxW={"1140px"} py={8}>
-          {!listings || listings.length === 0 ? (
+          {!approvedListings || approvedListings.length === 0 ? (
             <Center>
-              <Text>Chưa có bài đăng nào.</Text>
+              <Text>Chưa có bài đăng nào được duyệt.</Text>
             </Center>
           ) : (
             (() => {
@@ -155,7 +178,7 @@ const HomePage = () => {
                 return items.slice(0, 6);
               };
 
-              const top = getTopThree(listings);
+              const top = getTopThree(approvedListings);
 
               return (
                 <SimpleGrid columns={{ base: 1, sm: 2, md: 3 }} spacing={6}>

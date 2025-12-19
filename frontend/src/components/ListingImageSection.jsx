@@ -74,7 +74,7 @@ const ListingImageSection = ({ listing }) => {
   const images =
     listing.images && listing.images.length > 0
       ? listing.images.map((img) => (typeof img === "string" ? img : img.url))
-      : ["https://via.placeholder.com/600x400?text=No+Image"];
+      : ["https://placehold.co/600x400?text=No+Image"];
 
   const mainImage = images[selectedImageIndex];
 
