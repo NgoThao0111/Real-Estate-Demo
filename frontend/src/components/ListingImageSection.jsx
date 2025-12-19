@@ -163,7 +163,7 @@ const handleCall = async () => {
           <Avatar 
             size="lg" 
             name={getUserDisplayName(listing.owner)} 
-            src={listing.owner?.avatar ? `${listing.owner?.avatar}?t=${Date.now()}` : undefined} 
+            src={listing.owner?.avatar} 
             cursor={"pointer"} 
             onClick={() => navigate(`/profile/${listing.owner?._id}`)}
           />

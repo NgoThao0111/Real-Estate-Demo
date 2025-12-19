@@ -178,7 +178,7 @@ const ListingInfoSection = ({ user, listing, onContact }) => {
                   case "rejected":
                     return { text: "Không được duyệt", color: "red" };
                   case "closed":
-                    return { text: "Đã thuê", color: "gray" };
+                    return { text: "Đã đóng", color: "gray" };
                   default:
                     return { text: status, color: "gray" };
                 }

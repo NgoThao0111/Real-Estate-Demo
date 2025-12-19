@@ -46,6 +46,7 @@ const PostsNavigationPanel = () => {
       bg={sidebarBg}
       borderRight="1px solid"
       borderColor={sidebarBorder}
+      display={{ base: "none", lg: "block" }}
     >
       <VStack spacing={2} align="stretch" w="full">
         {/* <Button as={NavLink} to="/saved-posts" {...itemProps('/saved-posts')} w="full">
@@ -55,7 +56,7 @@ const PostsNavigationPanel = () => {
           </HStack>
         </Button> */}
         <HStack m={1}>
-          <Avatar name={getUserDisplayName(user)} src={user?.avatar ? `${user.avatar}?t=${Date.now()}` : undefined} size="md" />
+          <Avatar name={getUserDisplayName(user)} src={user?.avatar} size="md" />
           <VStack spacing={0} align={"left"}>
             <Text
               fontWeight={"thin"}

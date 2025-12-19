@@ -404,7 +404,7 @@ export default function PropertyManager() {
               <Thead>
                 <Tr>
                   {/* CỘT CHÍNH */}
-                  <Th w={{ base: "100%", lg: "38%" }}>Tiêu đề</Th>
+                  <Th w={{ base: "100%", lg: "30%" }}>Tiêu đề</Th>
 
                   {/* CỘT PHỤ – AUTO */}
                   <Th display={{ base: "none", lg: "table-cell" }}>Loại</Th>
@@ -460,7 +460,7 @@ export default function PropertyManager() {
                       ) : normalize(l.status) === "rejected" ? (
                         <Badge colorScheme="red">Không duyệt</Badge>
                       ) : normalize(l.status) === "closed" ? (
-                        <Badge colorScheme="gray">Đã thuê</Badge>
+                        <Badge colorScheme="gray">Đã đóng</Badge>
                       ) : (
                         <Badge>{mapStatus(l.status)}</Badge>
                       )}
@@ -633,7 +633,7 @@ export default function PropertyManager() {
                     ) : normalize(l.status) === "rejected" ? (
                       <Badge colorScheme="red">Không được duyệt</Badge>
                     ) : normalize(l.status) === "closed" ? (
-                      <Badge colorScheme="gray">Đã thuê</Badge>
+                      <Badge colorScheme="gray">Đã đóng</Badge>
                     ) : (
                       <Badge>{mapStatus(l.status)}</Badge>
                     )}
