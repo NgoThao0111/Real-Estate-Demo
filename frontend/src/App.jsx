@@ -7,7 +7,7 @@ import {
 } from "@chakra-ui/react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useEffect } from "react";
-
+import "../index.css";
 import Navbar from "./components/Navbar.jsx";
 import AdminLayout from "./pages/Admin/AdminLayout.jsx";
 import DashboardOverview from "./pages/Admin/DashboardOverview.jsx";
