@@ -40,12 +40,12 @@ const SavedPostsPage = () => {
   const mainBg = useColorModeValue('gray.50', 'gray.900');
 
   return (
-    <Flex minH="100vh">
+    <Flex minH="100vh" justify={"center"}>
       {/* Left Navigation Panel */}
-      <PostsNavigationPanel />
+      {/* <PostsNavigationPanel /> */}
 
       {/* Main Content */}
-      <Box flex={1} p={6} bg={mainBg}>
+      <Box flex={1} p={6} maxW={"1140px"}>
         <Heading 
           size={{ base: "lg", md: "xl" }}
           textAlign="center"
