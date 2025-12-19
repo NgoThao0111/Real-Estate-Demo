@@ -14,6 +14,7 @@ import {
   getSavedListings,
   searchUsers,
   loginGoogle,
+  changeAvatar
   // checkSession, // Hàm này có thể bỏ vì ta đã có /api/check-auth ở server.js
 } from "../controllers/user.controller.js";
 import { verifyToken } from "../middleware/verifyToken.js"; // <--- QUAN TRỌNG: Import middleware
@@ -41,6 +42,7 @@ router.delete("/deleteUser/:id", deleteUser); // Lưu ý: Thường chỉ Admin 
 router.post("/save/:listingId", toggleSaveListing);
 router.get("/saved", getSavedListings);
 router.get("/search", searchUsers); // Cần userId để loại trừ bản thân khỏi kết quả tìm kiếm
+router.put("/avatar", changeAvatar);
 
 // router.get("/session", checkSession); // Route cũ, nên dùng /api/check-auth ở server.js thay thế
 

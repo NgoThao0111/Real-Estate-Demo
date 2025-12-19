@@ -81,6 +81,9 @@ const userSchema = new mongoose.Schema(
     emailVerificationExpire: Date,
     resetPasswordCode: String,
     resetPasswordCodeExpire: Date,
+    avatar: {
+      type: String
+    }
   },
   {
     timestamps: true,

@@ -267,4 +267,30 @@ export const useUserStore = create((set) => ({
       return { success: false, message };
     }
   },
+  changeAvatar: async (avatar) => {
+    try {
+      set({ loading: true });
+
+      const res = await api.put("/users/avatar", {
+        avatar,
+      });
+      console.log("changeAvatar response:", res);
+
+      const { avatar: newAvatar } = res.data;
+
+      // update user trong store
+      set((state) => ({
+        user: {
+          ...state.user,
+          avatar: newAvatar,
+        },
+        loading: false,
+      }));
+
+      return newAvatar;
+    } catch (error) {
+      set({ loading: false });
+      throw error.response?.data || error;
+    }
+  },
 }));

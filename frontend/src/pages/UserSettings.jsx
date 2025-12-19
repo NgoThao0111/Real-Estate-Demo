@@ -24,13 +24,16 @@ import {
   useToast,
   Spinner,
   Center,
+  GridItem,
+  Grid,
 } from "@chakra-ui/react";
 import { FiCamera, FiUser, FiLock, FiHome } from "react-icons/fi";
 import { useUserStore } from "../store/user.js";
+import PostsNavigationPanel from "../components/PostsNavigationPanel.jsx";
 
 const UserSettings = () => {
-  const bgPage = useColorModeValue("gray.50", "gray.900");
   const bgCard = useColorModeValue("white", "gray.800");
+  const mainBg = useColorModeValue("gray.50", "gray.900");
   const toast = useToast();
 
   // State lưu thông tin user
@@ -44,9 +47,18 @@ const UserSettings = () => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await useUserStore.getUserProfile();
+        const res = await useUserStore.getState().getUserInfor();
 
-        setCurrentUser(res.data);
+        if (res.success) {
+          setCurrentUser(res.data);
+        } else {
+          toast({
+            title: res.message || "Lỗi tải dữ liệu",
+            status: "error",
+            duration: 3000,
+            isClosable: true,
+          });
+        }
         setLoading(false);
       } catch (error) {
         console.error(error);
@@ -96,52 +108,44 @@ const UserSettings = () => {
   }
 
   return (
-    <Box bg={bgPage} minH="100vh" py={10}>
-      <Container maxW="container.xl">
-        <Heading
-          as="h1"
-          size="xl"
-          mb={2}
-          textAlign={{ base: "center", md: "left" }}
-        >
-          Cài đặt tài khoản
-        </Heading>
+    <Flex minH="100vh">
+      <PostsNavigationPanel />
+      <Box flex={1} p={6} bg={mainBg}>
+        <Container maxW="container.xl">
+          <Heading as="h1" size="lg" textAlign={{ base: "center", md: "left" }}>
+            Cài đặt tài khoản
+          </Heading>
 
-        <Flex
-          direction={{ base: "column", md: "row" }}
-          gap={8}
-          align="start"
-          mt={8}
-        >
-          {/* SIDEBAR USER INFO */}
-          <Box
-            w={{ base: "full", md: "300px" }}
-            bg={bgCard}
-            p={6}
-            rounded="xl"
-            shadow="sm"
-            textAlign="center"
-            border="1px solid"
-            borderColor="gray.100"
-          >
-            <Box position="relative" display="inline-block" mb={4}>
-              <Avatar
-                size="2xl"
-                name={currentUser?.name || "User"}
-                src={currentUser?.avatar}
-                mb={2}
-                border="4px solid"
-                borderColor="blue.500"
-              />
-              {/* Input file ẩn */}
-              {/* <input
+          <Flex direction={"column"} gap={10} align="start" mt={8}>
+            {/* SIDEBAR USER INFO */}
+            {/*<Box
+              w={{ base: "full", md: "300px" }}
+              bg={bgCard}
+              p={6}
+              rounded="xl"
+              shadow="sm"
+              textAlign="center"
+              border="1px solid"
+              borderColor="gray.100"
+            >
+               <Box position="relative" display="inline-block" mb={4}>
+                <Avatar
+                  size="2xl"
+                  name={currentUser?.name || "User"}
+                  src={currentUser?.avatar}
+                  mb={2}
+                  border="4px solid"
+                  borderColor="blue.500"
+                />
+                {/* Input file ẩn */}
+            {/* <input
                 type="file"
                 ref={fileInputRef}
                 onChange={handleAvatarChange}
                 style={{ display: "none" }}
                 accept="image/*"
               /> */}
-              {/* <IconButton
+            {/* <IconButton
                 aria-label="Upload image"
                 icon={<FiCamera />}
                 size="sm"
@@ -152,87 +156,61 @@ const UserSettings = () => {
                 right="5px"
                 shadow="md"
                 onClick={() => fileInputRef.current.click()} // Kích hoạt input file
-              /> */}
-            </Box>
-            <Heading size="md">{currentUser?.name}</Heading>
-            <Text color="gray.500" fontSize="sm">
-              {currentUser?.email}
-            </Text>
-          </Box>
+              /> 
+              </Box>
+              <Heading size="md">{currentUser?.name}</Heading>
+              <Text color="gray.500" fontSize="sm">
+                {currentUser?.email}
+              </Text> 
+            </Box>*/}
 
-          {/* MAIN CONTENT */}
-          <Box
-            flex={1}
-            w="full"
-            bg={bgCard}
-            rounded="xl"
-            shadow="sm"
-            border="1px solid"
-            borderColor="gray.100"
-          >
-            <Tabs
-              orientation="vertical"
-              variant="line"
-              colorScheme="blue"
-              display={{ base: "none", md: "flex" }}
-              minH="400px"
+            {/* MAIN CONTENT */}
+            <Box
+              flex={1}
+              w="full"
+              bg={bgCard}
+              rounded="xl"
+              shadow="sm"
+              p={{ base: 4, md: 8 }}
             >
-              <TabList
-                w="250px"
-                bg="gray.50"
-                py={4}
-                borderRight="1px solid"
-                borderColor="gray.100"
-              >
-                <Tab py={4} justifyContent="flex-start" pl={8}>
-                  <HStack spacing={3}>
-                    <FiUser />
-                    <Text>Thông tin cá nhân</Text>
-                  </HStack>
-                </Tab>
-                <Tab py={4} justifyContent="flex-start" pl={8}>
-                  <HStack spacing={3}>
-                    <FiLock />
-                    <Text>Đổi mật khẩu</Text>
-                  </HStack>
-                </Tab>
-                <Tab py={4} justifyContent="flex-start" pl={8}>
-                  <HStack spacing={3}>
-                    <FiHome />
-                    <Text>Tin đăng của tôi</Text>
-                  </HStack>
-                </Tab>
-              </TabList>
+              {/* THÔNG TIN CÁ NHÂN */}
+              <ProfileSettings user={currentUser} />
+            </Box>
 
-              <TabPanels p={8}>
-                <TabPanel>
-                  {/* Truyền currentUser xuống component con */}
-                  <ProfileSettings user={currentUser} />
-                </TabPanel>
-                <TabPanel>
-                  <PasswordSettings />
-                </TabPanel>
-                <TabPanel>
-                  <Text>
-                    Danh sách tin đăng (Cần tích hợp API lấy danh sách bài post
-                    của user)
+            <Box
+              flex={1}
+              w="full"
+              bg={bgCard}
+              rounded="xl"
+              shadow="sm"
+              p={{ base: 4, md: 8 }}
+            >
+              <PasswordSettings />
+
+              {/* <Divider />
+
+                <Box>
+                  <Heading size="md" mb={4}>
+                    Tin đăng của tôi
+                  </Heading>
+                  <Text color="gray.500">
+                    Danh sách tin đăng của bạn (tích hợp API sau).
                   </Text>
-                </TabPanel>
-              </TabPanels>
-            </Tabs>
-
-            {/* Mobile Tabs code... (giữ nguyên như cũ) */}
-          </Box>
-        </Flex>
-      </Container>
-    </Box>
+                </Box> */}
+            </Box>
+          </Flex>
+        </Container>
+      </Box>
+    </Flex>
   );
 };
 
 // --- COMPONENT LOGIC: PROFILE SETTINGS ---
-const ProfileSettings = ({ user }) => {
+const ProfileSettings = () => {
+  const bgPage = useColorModeValue("gray.50", "gray.900");
+  const {user, changeAvatar, loading} = useUserStore();
   const [formData, setFormData] = useState({
-    username: user?.username || "",
+    name: user?.name || "",
     phone: user?.phone || "", // Giả sử user có trường phone
     address: user?.address || "", // Giả sử user có trường address
   });
@@ -248,9 +226,9 @@ const ProfileSettings = ({ user }) => {
     try {
       const token = localStorage.getItem("access_token");
       // Gọi API Update
-    //   await axios.put(`${API_URL}/user/update/${user._id}`, formData, {
-    //     headers: { Authorization: `Bearer ${token}` },
-    //   });
+      //   await axios.put(`${API_URL}/user/update/${user._id}`, formData, {
+      //     headers: { Authorization: `Bearer ${token}` },
+      //   });
 
       toast({
         title: "Cập nhật thành công",
@@ -267,67 +245,145 @@ const ProfileSettings = ({ user }) => {
       setIsUpdating(false);
     }
   };
+  const handleChangeAvatar = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      // validate size (ví dụ < 2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        toast({
+          title: "Ảnh quá lớn",
+          description: "Vui lòng chọn ảnh nhỏ hơn 2MB",
+          status: "error",
+        });
+        return;
+      }
+
+      const reader = new FileReader();
+
+      reader.onloadend = async () => {
+        try {
+          await changeAvatar(reader.result); // base64
+          toast({
+            title: "Cập nhật avatar thành công",
+            status: "success",
+          });
+        } catch (err) {
+          toast({
+            title: "Cập nhật avatar thất bại",
+            description: err?.message || "Có lỗi xảy ra",
+            status: "error",
+          });
+        }
+      };
+
+      reader.readAsDataURL(file);
+    };
+
+    input.click();
+  };
 
   return (
-    <VStack spacing={6} align="start" maxW="800px">
+    <VStack spacing={6} align="stretch">
       <Heading size="md">Thông tin hồ sơ</Heading>
       <Divider />
 
-      <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6} w="full">
-        <FormControl>
-          <FormLabel>Họ và tên</FormLabel>
-          <Input
-            id="username"
-            value={formData.username}
-            onChange={handleChange}
-            focusBorderColor="blue.500"
-          />
-        </FormControl>
-        <FormControl>
-          <FormLabel>Số điện thoại</FormLabel>
-          <Input
-            id="phone"
-            type="tel"
-            value={formData.phone}
-            onChange={handleChange}
-            focusBorderColor="blue.500"
-            placeholder="Chưa cập nhật"
-          />
-        </FormControl>
-        <FormControl>
-          <FormLabel>Email</FormLabel>
-          <Input
-            value={user?.email}
-            isReadOnly
-            bg="gray.50"
-            color="gray.500"
-            cursor="not-allowed"
-          />
-          <Text fontSize="xs" color="gray.500" mt={1}>
-            Email dùng để đăng nhập, không thể thay đổi.
-          </Text>
-        </FormControl>
-        <FormControl>
-          <FormLabel>Địa chỉ</FormLabel>
-          <Input
-            id="address"
-            value={formData.address}
-            onChange={handleChange}
-            placeholder="Nhập địa chỉ"
-            focusBorderColor="blue.500"
-          />
-        </FormControl>
-      </SimpleGrid>
-
-      <Button
-        colorScheme="blue"
-        mt={4}
-        onClick={handleSubmit}
-        isLoading={isUpdating}
-        loadingText="Đang lưu..."
+      <SimpleGrid
+        columns={{ base: 1, lg: 2 }}
+        spacing={8}
+        w="full"
+        alignItems="start"
       >
-        Lưu thay đổi
-      </Button>
+        {/* AVATAR */}
+        <GridItem
+          order={{ base: 1, lg: 2 }}
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+        >
+          <VStack spacing={4}>
+            <Box position="relative">
+              <Avatar size="2xl" name={user?.name} src={user?.avatar ? `${user.avatar}?t=${Date.now()}` : undefined} />
+
+              {/* ICON ĐỔI AVATAR */}
+              <IconButton
+                aria-label="Đổi ảnh đại diện"
+                icon={<FiCamera />}
+                size="sm"
+                colorScheme="blue"
+                position="absolute"
+                bottom="0"
+                right="0"
+                borderRadius="full"
+                onClick={handleChangeAvatar}
+                isLoading={loading}
+              />
+              
+            </Box>
+
+            <Text fontSize="sm" color="gray.500">
+              Ảnh đại diện
+            </Text>
+          </VStack>
+        </GridItem>
+
+        {/* FORM */}
+        <GridItem order={{ base: 2, lg: 1 }}>
+          <VStack spacing={6} align="stretch">
+            <FormControl>
+              <FormLabel>Họ và tên</FormLabel>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={handleChange}
+                focusBorderColor="blue.500"
+              />
+            </FormControl>
+
+            <FormControl>
+              <FormLabel>Số điện thoại</FormLabel>
+              <Input
+                id="phone"
+                type="tel"
+                value={formData.phone}
+                onChange={handleChange}
+                focusBorderColor="blue.500"
+                placeholder="Chưa cập nhật"
+              />
+            </FormControl>
+
+            <FormControl>
+              <FormLabel>Email</FormLabel>
+              <Input
+                value={user?.email}
+                isReadOnly
+                bg={bgPage}
+                color="gray.500"
+                cursor="not-allowed"
+              />
+              <Text fontSize="xs" color="gray.500" mt={1}>
+                Email dùng để đăng nhập, không thể thay đổi.
+              </Text>
+            </FormControl>
+
+            <Button
+              colorScheme="blue"
+              mt={2}
+              onClick={handleSubmit}
+              isLoading={isUpdating}
+              loadingText="Đang lưu..."
+              alignSelf="flex-start"
+            >
+              Lưu thay đổi
+            </Button>
+          </VStack>
+        </GridItem>
+      </SimpleGrid>
     </VStack>
   );
 };
@@ -360,16 +416,16 @@ const PasswordSettings = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem("access_token");
-    //   await axios.put(
-    //     `${API_URL}/user/change-password`,
-    //     {
-    //       currentPassword: passData.currentPassword,
-    //       newPassword: passData.newPassword,
-    //     },
-    //     {
-    //       headers: { Authorization: `Bearer ${token}` },
-    //     }
-    //   );
+      //   await axios.put(
+      //     `${API_URL}/user/change-password`,
+      //     {
+      //       currentPassword: passData.currentPassword,
+      //       newPassword: passData.newPassword,
+      //     },
+      //     {
+      //       headers: { Authorization: `Bearer ${token}` },
+      //     }
+      //   );
 
       toast({ title: "Đổi mật khẩu thành công", status: "success" });
       setPassData({
@@ -390,7 +446,7 @@ const PasswordSettings = () => {
   };
 
   return (
-    <VStack spacing={6} align="start" maxW="500px">
+    <VStack spacing={6} align="start">
       <Heading size="md">Đổi mật khẩu</Heading>
       <Divider />
 

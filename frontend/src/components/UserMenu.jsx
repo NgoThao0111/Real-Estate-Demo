@@ -14,7 +14,7 @@ import {
 import { Link } from "react-router-dom";
 import { useState } from "react";
 
-import { FiFileText, FiMessageCircle, FiSettings, FiLogOut } from "react-icons/fi";
+import { FiFileText, FiMessageCircle, FiSettings, FiLogOut, FiUser } from "react-icons/fi";
 import { FaRegUserCircle } from "react-icons/fa";
 import { ImStarEmpty } from "react-icons/im";
 import { MdOutlineLightMode, MdOutlineDarkMode } from "react-icons/md";
@@ -36,8 +36,13 @@ export default function UserMenu({ user, logoutUser }) {
       >
         <MenuButton>
           <HStack cursor="pointer">
-            <Avatar name={getUserDisplayName(user)} size="sm" />
-            <Text fontWeight="medium" display={{base: "none", lg: "flex"}}>{getUserDisplayName(user)}</Text>
+            <Avatar name={getUserDisplayName(user)} src={user?.avatar ? `${user.avatar}?t=${Date.now()}` : undefined} size="sm" />
+            <Text 
+              fontWeight="medium" 
+              display={{base: "none", lg: "flex"}}
+              isTruncated
+              maxW="150px"
+            >{getUserDisplayName(user)}</Text>
           </HStack>
         </MenuButton>
 
@@ -52,9 +57,9 @@ export default function UserMenu({ user, logoutUser }) {
             Bài đăng của tôi
           </MenuItem>
 
-          <MenuItem as={Link} to="/saved-posts" icon={<ImStarEmpty />}>
+          {/* <MenuItem as={Link} to="/saved-posts" icon={<ImStarEmpty />}>
             Bài đăng đã lưu
-          </MenuItem>
+          </MenuItem> */}
           
           {/*
           <MenuItem as={Link} to="/chat" icon={<FiMessageCircle />}>
@@ -74,18 +79,18 @@ export default function UserMenu({ user, logoutUser }) {
           </MenuItem>
           */}
 
-          <MenuDivider />
-
           {user?.role === "admin" && (
             <MenuItem as={Link} to="/admin" icon={<FiSettings />}>
               Admin Panel
             </MenuItem>
           )}
           {user?.role === "guest" && (
-            <MenuItem as={Link} to="/setting" icon={<FiSettings />}>
-              Cài đặt
+            <MenuItem as={Link} to="/setting" icon={<FiUser />}>
+              Tài khoản
             </MenuItem>
           )}
+
+          <MenuDivider />
 
           <MenuItem
             icon={<FiLogOut />}
