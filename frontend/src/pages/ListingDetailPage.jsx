@@ -11,6 +11,7 @@ import {
   VStack,
   Button,
   HStack,
+  useColorModeValue
 } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -34,6 +35,8 @@ const ListingDetailPage = () => {
   const [listing, setListing] = useState(null);
   const [loading, setLoading] = useState(true);
   const [chatLoading, setChatLoading] = useState(false);
+  const bgBox = useColorModeValue("white", "gray.800");
+  const boxBorderColor = useColorModeValue("gray.200", "gray.700");
 
   const [mapMode, setMapMode] = useState("view");
 
@@ -165,14 +168,14 @@ const ListingDetailPage = () => {
               chatLoading={chatLoading}
             />
 
-            {/* --- 3. PHẦN BẢN ĐỒ (Thêm mới) --- */}
+            {/* --- 3. PHẦN BẢN ĐỒ --- */}
             <Box
               p={5}
               border="1px solid"
-              borderColor="gray.200"
+              borderColor={boxBorderColor}
               borderRadius="lg"
               boxShadow="sm"
-              bg="white"
+              bg={bgBox}
             >
               <HStack justifyContent="space-between" mb={4} wrap="wrap" gap={2}>
                 <Heading size="md">Vị trí bất động sản</Heading>

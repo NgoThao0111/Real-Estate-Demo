@@ -6,6 +6,7 @@ import MapboxDirections from "@mapbox/mapbox-gl-directions/dist/mapbox-gl-direct
 import "mapbox-gl/dist/mapbox-gl.css";
 import "@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css";
 import "@mapbox/mapbox-gl-directions/dist/mapbox-gl-directions.css";
+import { useColorMode } from "@chakra-ui/react";
 
 import { createRoot } from "react-dom/client";
 import { useNavigate } from "react-router-dom";
@@ -29,6 +30,7 @@ const MapboxMap = ({
   const directionsRef = useRef(null);
   const geolocateRef = useRef(null);
   const mapClickFnRef = useRef(null);
+  const { colorMode } = useColorMode();
 
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const navigate = useNavigate();
@@ -42,6 +44,15 @@ const MapboxMap = ({
     }
     mapboxgl.accessToken = token;
   }, []);
+
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const timer = setTimeout(() => {
+      mapRef.current.resize();
+    }, 200);
+
+    return () => clearTimeout(timer);
+  }, [height, mode, isMapLoaded]);
 
   const GlobalStyles = css`
     .mapboxgl-ctrl-geocoder--input {
@@ -75,9 +86,14 @@ const MapboxMap = ({
     if (!mapContainerRef.current || mapRef.current) return;
     if (!mapboxgl.accessToken) return;
 
+    const mapStyle =
+      colorMode === "dark"
+        ? "mapbox://styles/mapbox/dark-v11"
+        : "mapbox://styles/mapbox/streets-v12";
+
     mapRef.current = new mapboxgl.Map({
       container: mapContainerRef.current,
-      style: "mapbox://styles/mapbox/streets-v12",
+      style: mapStyle,
       center: initialCoords,
       zoom: mode === "explorer" ? 10 : 13,
     });
@@ -264,7 +280,29 @@ const MapboxMap = ({
     directionsRef.current.setDestination(initialCoords);
   };
 
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const style =
+      colorMode === "dark"
+        ? "mapbox://styles/mapbox/navigation-night-v1"
+        : "mapbox://styles/mapbox/outdoors-v12";
+    mapRef.current.setStyle(style);
+  }, [colorMode]);
+
   return (
+    // <>
+    //   <Global styles={GlobalStyles} />
+    //   <Box
+    //     ref={mapContainerRef}
+    //     w="100%"
+    //     h={height}
+    //     borderRadius="md"
+    //     overflow="hidden"
+    //     border="1px solid"
+    //     borderColor="gray.200"
+    //   />
+    // </>
+
     <>
       <Global styles={GlobalStyles} />
       <Box
@@ -275,6 +313,16 @@ const MapboxMap = ({
         overflow="hidden"
         border="1px solid"
         borderColor="gray.200"
+        position="relative"
+        sx={{
+          "& canvas": {
+            outline: "none",
+          },
+          ".mapboxgl-ctrl-directions": {
+            maxWidth: "300px",
+            minWidth: "250px",
+          },
+        }}
       />
     </>
   );
