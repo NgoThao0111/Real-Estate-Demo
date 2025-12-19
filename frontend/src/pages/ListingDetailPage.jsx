@@ -63,7 +63,6 @@ const ListingDetailPage = () => {
       document.title = `${listing.title} | Real Estate`;
     }
 
-    // Cleanup: Khi thoát trang chi tiết có thể reset về mặc định
     return () => {
       document.title = "Nền tảng Bất động sản uy tín";
     };
