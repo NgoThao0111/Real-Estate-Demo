@@ -1,11 +1,11 @@
 import { create } from "zustand";
-import api from "../lib/axios.js"; // Import api instance (đã có interceptor & credentials)
+import api from "../lib/axios.js"; 
 
 export const useUserStore = create((set) => ({
   user: null,
   savedListings: [],
   loading: false,
-  isCheckingAuth: false, // Đổi tên cho đúng ý nghĩa JWT
+  isCheckingAuth: false, 
   error: null,
 
   // --- 1. REGISTER ---
