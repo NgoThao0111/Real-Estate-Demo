@@ -71,6 +71,39 @@ const ListingImageSection = ({ listing }) => {
     }
   };
 
+const handleCall = async () => {
+  // 1. Kiểm tra owner
+  if (!listing.owner?._id) {
+    return toast({
+      title: "Lỗi",
+      description: "Không tìm thấy thông tin người bán.",
+      status: "error",
+      duration: 3000,
+      isClosable: true,
+    });
+  }
+
+  // 👉 Nếu có số điện thoại → hiện toast
+  if (listing.owner?.phone) {
+    toast({
+      title: "Số điện thoại người bán",
+      description: listing.owner.phone,
+      status: "info",
+      duration: 6000,
+      isClosable: true,
+      position: "top",
+    });
+  } else {
+    toast({
+      title: "Thông báo",
+      description: "Người bán chưa cập nhật số điện thoại.",
+      status: "warning",
+      duration: 3000,
+      isClosable: true,
+    });
+  }
+};
+
   const images =
     listing.images && listing.images.length > 0
       ? listing.images.map((img) => (typeof img === "string" ? img : img.url))
@@ -125,7 +158,7 @@ const ListingImageSection = ({ listing }) => {
           Thông tin người đăng
         </Heading>
         <HStack spacing={4}>
-          <Avatar size="lg" name={getUserDisplayName(listing.owner)} />
+          <Avatar size="lg" name={getUserDisplayName(listing.owner)} src={listing.owner?.avatar ? `${listing.owner?.avatar}?t=${Date.now()}` : undefined}/>
           <VStack align="start" spacing={1} flex={1}>
             <Text fontWeight="600" fontSize="lg">
               {getUserDisplayName(listing.owner)}
@@ -137,7 +170,7 @@ const ListingImageSection = ({ listing }) => {
               ).getFullYear()}
             </Text>
             <HStack spacing={4} mt={2}>
-              <Button leftIcon={<FiPhone />} size="sm" variant="outline">
+              <Button leftIcon={<FiPhone />} size="sm" variant="outline" onClick={handleCall}>
                 Gọi điện
               </Button>
               <Button
