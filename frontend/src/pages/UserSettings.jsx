@@ -10,7 +10,6 @@ import {
   Heading,
   Text,
   VStack,
-  HStack,
   FormControl,
   FormLabel,
   Input,
@@ -26,10 +25,22 @@ import {
   Center,
   GridItem,
   Grid,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalCloseButton,
+  ModalFooter,
+  PinInput,
+  PinInputField,
+  HStack,
+  useDisclosure,
 } from "@chakra-ui/react";
 import { FiCamera, FiUser, FiLock, FiHome } from "react-icons/fi";
 import { useUserStore } from "../store/user.js";
 import PostsNavigationPanel from "../components/PostsNavigationPanel.jsx";
+import api from "../lib/axios.js";
 
 const UserSettings = () => {
   const bgCard = useColorModeValue("white", "gray.800");
@@ -208,14 +219,23 @@ const UserSettings = () => {
 // --- COMPONENT LOGIC: PROFILE SETTINGS ---
 const ProfileSettings = () => {
   const bgPage = useColorModeValue("gray.50", "gray.900");
-  const {user, changeAvatar, loading} = useUserStore();
-  const [formData, setFormData] = useState({
-    name: user?.name || "",
-    phone: user?.phone || "", // Giả sử user có trường phone
-    address: user?.address || "", // Giả sử user có trường address
-  });
+  const { user, changeAvatar, loading } = useUserStore();
   const [isUpdating, setIsUpdating] = useState(false);
   const toast = useToast();
+
+  const [formData, setFormData] = useState({
+    name: "",
+    phone: "",
+  });
+
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        name: user.name || "",
+        phone: user.phone || "",
+      });
+    }
+  }, [user]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.id]: e.target.value });
@@ -224,11 +244,10 @@ const ProfileSettings = () => {
   const handleSubmit = async () => {
     setIsUpdating(true);
     try {
-      const token = localStorage.getItem("access_token");
-      // Gọi API Update
-      //   await axios.put(`${API_URL}/user/update/${user._id}`, formData, {
-      //     headers: { Authorization: `Bearer ${token}` },
-      //   });
+      await api.put("/users/update", formData); // Cần đảm bảo backend có route này
+
+      // Update store bằng cách fetch lại info
+      useUserStore.getState().getUserInfor();
 
       toast({
         title: "Cập nhật thành công",
@@ -308,7 +327,13 @@ const ProfileSettings = () => {
         >
           <VStack spacing={4}>
             <Box position="relative">
-              <Avatar size="2xl" name={user?.name} src={user?.avatar ? `${user.avatar}?t=${Date.now()}` : undefined} />
+              <Avatar
+                size="2xl"
+                name={user?.name}
+                src={
+                  user?.avatar ? `${user.avatar}?t=${Date.now()}` : undefined
+                }
+              />
 
               {/* ICON ĐỔI AVATAR */}
               <IconButton
@@ -323,7 +348,6 @@ const ProfileSettings = () => {
                 onClick={handleChangeAvatar}
                 isLoading={loading}
               />
-              
             </Box>
 
             <Text fontSize="sm" color="gray.500">
@@ -390,20 +414,27 @@ const ProfileSettings = () => {
 
 // --- COMPONENT LOGIC: PASSWORD SETTINGS ---
 const PasswordSettings = () => {
+  const { requestChangePassword, confirmChangePassword } = useUserStore();
+  const toast = useToast();
+  const { isOpen, onOpen, onClose } = useDisclosure();
   const [passData, setPassData] = useState({
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
   });
+
+  const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
-  const toast = useToast();
 
   const handleChange = (e) => {
     setPassData({ ...passData, [e.target.id]: e.target.value });
   };
 
-  const handleChangePassword = async () => {
-    // 1. Validate frontend cơ bản
+  const handleRequestStep = async () => {
+    if (!passData.currentPassword || !passData.newPassword) {
+      toast({ title: "Vui lòng nhập đủ thông tin", status: "warning" });
+      return;
+    }
     if (passData.newPassword !== passData.confirmPassword) {
       toast({ title: "Mật khẩu mới không khớp", status: "error" });
       return;
@@ -414,36 +445,93 @@ const PasswordSettings = () => {
     }
 
     setLoading(true);
-    try {
-      const token = localStorage.getItem("access_token");
-      //   await axios.put(
-      //     `${API_URL}/user/change-password`,
-      //     {
-      //       currentPassword: passData.currentPassword,
-      //       newPassword: passData.newPassword,
-      //     },
-      //     {
-      //       headers: { Authorization: `Bearer ${token}` },
-      //     }
-      //   );
+    const res = await requestChangePassword(passData.currentPassword);
+    setLoading(false);
 
-      toast({ title: "Đổi mật khẩu thành công", status: "success" });
+    if (res.success) {
+      onOpen(); // Mở Modal nhập OTP
+      toast({
+        title: "Đã gửi mã xác nhận",
+        description: "Vui lòng kiểm tra email của bạn",
+        status: "info",
+      });
+    } else {
+      toast({ title: "Lỗi", description: res.message, status: "error" });
+    }
+  };
+
+  const handleConfirmStep = async () => {
+    if (!code || code.length < 6) {
+      toast({ title: "Vui lòng nhập mã xác thực", status: "warning" });
+      return;
+    }
+
+    setLoading(true);
+    // Gửi code và password mới (pass cũ đã check ở bước 1)
+    const res = await confirmChangePassword(code, passData.newPassword);
+    setLoading(false);
+
+    if (res.success) {
+      toast({ title: "Đổi mật khẩu thành công!", status: "success" });
+      onClose(); // Đóng modal
       setPassData({
         currentPassword: "",
         newPassword: "",
         confirmPassword: "",
       }); // Reset form
-    } catch (error) {
-      toast({
-        title: "Lỗi",
-        description:
-          error.response?.data?.message || "Mật khẩu hiện tại không đúng",
-        status: "error",
-      });
-    } finally {
-      setLoading(false);
+      setCode("");
+    } else {
+      toast({ title: "Thất bại", description: res.message, status: "error" });
     }
   };
+
+  // return (
+  //   <VStack spacing={6} align="start">
+  //     <Heading size="md">Đổi mật khẩu</Heading>
+  //     <Divider />
+
+  //     <FormControl>
+  //       <FormLabel>Mật khẩu hiện tại</FormLabel>
+  //       <Input
+  //         id="currentPassword"
+  //         type="password"
+  //         value={passData.currentPassword}
+  //         onChange={handleChange}
+  //         focusBorderColor="blue.500"
+  //       />
+  //     </FormControl>
+
+  //     <FormControl>
+  //       <FormLabel>Mật khẩu mới</FormLabel>
+  //       <Input
+  //         id="newPassword"
+  //         type="password"
+  //         value={passData.newPassword}
+  //         onChange={handleChange}
+  //         focusBorderColor="blue.500"
+  //       />
+  //     </FormControl>
+
+  //     <FormControl>
+  //       <FormLabel>Xác nhận mật khẩu mới</FormLabel>
+  //       <Input
+  //         id="confirmPassword"
+  //         type="password"
+  //         value={passData.confirmPassword}
+  //         onChange={handleChange}
+  //         focusBorderColor="blue.500"
+  //       />
+  //     </FormControl>
+
+  //     <Button
+  //       colorScheme="blue"
+  //       onClick={handleChangePassword}
+  //       isLoading={loading}
+  //     >
+  //       Cập nhật mật khẩu
+  //     </Button>
+  //   </VStack>
+  // );
 
   return (
     <VStack spacing={6} align="start">
@@ -485,11 +573,53 @@ const PasswordSettings = () => {
 
       <Button
         colorScheme="blue"
-        onClick={handleChangePassword}
+        onClick={handleRequestStep}
         isLoading={loading}
       >
-        Cập nhật mật khẩu
+        Tiếp tục
       </Button>
+
+      {/* --- MODAL NHẬP OTP --- */}
+      <Modal isOpen={isOpen} onClose={onClose} isCentered closeOnOverlayClick={false}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Xác thực bảo mật</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody pb={6}>
+            <VStack spacing={4}>
+              <Text textAlign="center">
+                Chúng tôi đã gửi mã xác thực tới email của bạn. Vui lòng nhập mã đó để hoàn tất việc đổi mật khẩu.
+              </Text>
+              
+              <HStack justify="center">
+                <PinInput 
+                  otp 
+                  value={code} 
+                  onChange={(value) => setCode(value)}
+                  size="lg"
+                  focusBorderColor="blue.500"
+                >
+                  <PinInputField />
+                  <PinInputField />
+                  <PinInputField />
+                  <PinInputField />
+                  <PinInputField />
+                  <PinInputField />
+                </PinInput>
+              </HStack>
+            </VStack>
+          </ModalBody>
+
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={onClose}>
+              Hủy
+            </Button>
+            <Button colorScheme="blue" onClick={handleConfirmStep} isLoading={loading}>
+              Xác nhận đổi
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </VStack>
   );
 };

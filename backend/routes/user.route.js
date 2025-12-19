@@ -14,7 +14,9 @@ import {
   getSavedListings,
   searchUsers,
   loginGoogle,
-  changeAvatar
+  changeAvatar,
+  requestChangePassword,
+  verifyAndChangeCurrentPassword,
   // checkSession, // Hàm này có thể bỏ vì ta đã có /api/check-auth ở server.js
 } from "../controllers/user.controller.js";
 import { verifyToken } from "../middleware/verifyToken.js"; // <--- QUAN TRỌNG: Import middleware
@@ -25,19 +27,25 @@ const router = express.Router();
 router.post("/register", userRegister);
 router.post("/login", loginUser);
 router.post("/login-google", loginGoogle);
-router.post("/logout", logoutUser); 
-router.post('/resend-verification', resendVerification);
-router.post('/verify-email', verifyEmail);
-router.post('/forgot-password-code', sendResetCode);
-router.post('/reset-password-code', resetPasswordWithCode);
+router.post("/logout", logoutUser);
+router.post("/resend-verification", resendVerification);
+router.post("/verify-email", verifyEmail);
+router.post("/forgot-password-code", sendResetCode);
+router.post("/reset-password-code", resetPasswordWithCode);
 
 // --- 2. ROUTES BẢO MẬT (Cần đăng nhập) ---
 // Áp dụng middleware verifyToken cho tất cả các route bên dưới
 // Middleware này sẽ giải mã Token -> Lấy ID -> Gán vào req.userId
-router.use(verifyToken); 
+router.use(verifyToken);
+
+// Route yêu cầu đổi pass (Gửi current pass -> nhận code)
+router.post("/request-change-password", requestChangePassword);
+
+// Route xác nhận đổi pass (Gửi code + new pass -> xong)
+router.post("/confirm-change-password", verifyAndChangeCurrentPassword);
 
 router.get("/profile", getUserInfor);
-router.put("/me/update-profile", updateUserInfo);
+router.put("/update", updateUserInfo);
 router.delete("/deleteUser/:id", deleteUser); // Lưu ý: Thường chỉ Admin mới xóa được user
 router.post("/save/:listingId", toggleSaveListing);
 router.get("/saved", getSavedListings);
