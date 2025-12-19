@@ -25,13 +25,23 @@ import { useState, useEffect } from "react";
 import { useUserStore } from "../store/user.js";
 import { useListStore } from "../store/list.js";
 import ReportModal from "./ReportModal.jsx";
+import { useChatStore } from "../store/chat.js";
+import { useNavigate } from "react-router-dom";
+
+const getUserDisplayName = (user) => {
+  if (!user) return "Người dùng";
+  if (user.name) return user.name;
+};
 
 const ListingInfoSection = ({ user, listing, onContact }) => {
   const toggleSave = useUserStore((s) => s.toggleSaveListing);
   const savedListings = useUserStore((s) => s.savedListings);
   const fallbackToggle = useListStore((s) => s.toggleSaveListing);
   const toast = useToast();
+  const navigate = useNavigate();
   const [isContacting, setIsContacting] = useState(false);
+
+  const { createOrFindConversation } = useChatStore();
 
   const contentBg = useColorModeValue("white", "gray.800");
   const subTextColor = useColorModeValue("gray.600", "white");
@@ -51,11 +61,17 @@ const ListingInfoSection = ({ user, listing, onContact }) => {
     }
 
     setIsContacting(true);
+    console.log(listing.owner?._id);
     try {
-      const result = await createOrFindConversation(listing.owner?._id);
+
+      const autoMessage = "Tôi muốn tham khảo thêm về bài đăng này: " + listing.title;
+
+      const result = await createOrFindConversation(listing.owner?._id, autoMessage);
 
       if (result.success) {
-        navigate(`/chat`);
+        useChatStore.getState().setSelectedConversation(result.conversation);
+        
+        navigate(`/chat?id=${result.conversation._id}`);
       } else {
         toast({
           title: "Thông báo",

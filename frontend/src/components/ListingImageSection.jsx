@@ -46,8 +46,11 @@ const ListingImageSection = ({ listing }) => {
     }
 
     setIsContacting(true);
+    console.log(listing.owner?._id);
     try {
       const result = await createOrFindConversation(listing.owner?._id);
+
+      console.log(listing.owner?._id);
 
       if (result.success) {
         // 4. Nếu thành công, chuyển hướng đến trang chat với ID nhận được
@@ -83,7 +86,6 @@ const handleCall = async () => {
     });
   }
 
-  // 👉 Nếu có số điện thoại → hiện toast
   if (listing.owner?.phone) {
     toast({
       title: "Số điện thoại người bán",

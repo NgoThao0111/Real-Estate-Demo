@@ -6,41 +6,94 @@ export const createConversation = async (req, res) => {
   try {
     const currentUserId = req.userId;
 
-    const { participantIds = [], title, type = "private" } = req.body;
-    
+    const { participantIds = [], title, type = "private", message } = req.body;
+
     // Đảm bảo không trùng lặp ID và ép kiểu về String để so sánh chuẩn
     const uniqueIds = new Set([currentUserId, ...participantIds]);
     const participants = Array.from(uniqueIds);
 
+    let conversation = null;
+    let isNew = false;
+
     // Kiểm tra xem đã có conversation giữa các participants này chưa
     if (type === "private" && participants.length === 2) {
-      const existingConv = await Conversation.findOne({
+      conversation = await Conversation.findOne({
         type: "private",
-        participants: { $all: participants, $size: 2 }
+        participants: { $all: participants, $size: 2 },
       }).populate("participants", "username name profile");
+    }
 
-      if (existingConv) {
-        return res.json({
-          message: "Found existing conversation",
-          conversation: existingConv,
-        });
+    if (!conversation) {
+      conversation = await Conversation.create({
+        title: title || null,
+        participants,
+        type,
+      });
+      isNew = true;
+    }
+
+    //   if (existingConv) {
+    //     return res.json({
+    //       message: "Found existing conversation",
+    //       conversation: existingConv,
+    //     });
+    //   }
+    // }
+
+    // const conv = await Conversation.create({
+    //   title: title || null,
+    //   participants,
+    //   type,
+    // });
+
+    // await conv.populate("participants", "username name profile");
+
+    // return res.status(201).json({
+    //   message: "Created",
+    //   conversation: conv,
+    // });
+
+    // 2. Xử lý gửi tin nhắn tự động (Nếu có 'message' trong body)
+    if (message && message.trim().length > 0) {
+      // Tạo tin nhắn
+      const newMessage = await Message.create({
+        conversation: conversation._id,
+        sender: currentUserId,
+        content: message,
+        type: "text",
+        readBy: [currentUserId],
+      });
+
+      // Populate sender để trả về cho socket/client đẹp hơn
+      await newMessage.populate("sender", "username name profile");
+
+      // Cập nhật lastMessage cho Conversation
+      conversation.lastMessage = newMessage._id;
+      conversation.updatedAt = new Date(); // Đẩy hội thoại lên đầu
+      await conversation.save();
+
+      // Gửi Socket realtime (nếu có cấu hình)
+      if (req.io) {
+        req.io.to(conversation._id.toString()).emit("new_message", newMessage);
       }
     }
 
-    const conv = await Conversation.create({
-      title: title || null,
-      participants,
-      type,
+    // 3. Populate và trả về kết quả
+    // Cần populate lại để đảm bảo đầy đủ thông tin (đặc biệt là lastMessage vừa update)
+    await conversation.populate("participants", "username name profile");
+    await conversation.populate({
+      path: "lastMessage",
+      populate: { path: "sender", select: "username name profile" },
     });
 
-    await conv.populate("participants", "username name profile");
-
-    return res.status(201).json({
-      message: "Created",
-      conversation: conv,
+    return res.status(isNew ? 201 : 200).json({
+      message: isNew
+        ? "Created new conversation"
+        : "Found existing conversation",
+      conversation: conversation,
     });
   } catch (error) {
-    console.error(error);
+    console.error("Create Conversation Error:", error);
     return res.status(500).json({ message: "Server error" });
   }
 };
@@ -48,7 +101,7 @@ export const createConversation = async (req, res) => {
 // GET /api/chats -> list conversations for current user
 export const getConversations = async (req, res) => {
   try {
-    const currentUserId = req.userId; 
+    const currentUserId = req.userId;
 
     const { page = 1, limit = 20 } = req.query;
     const skip = (Math.max(1, Number(page)) - 1) * Number(limit);
@@ -76,7 +129,6 @@ export const getConversations = async (req, res) => {
 // GET /api/chats/:id/message
 export const getMessages = async (req, res) => {
   try {
-
     const convId = req.params.id;
     const { page = 1, limit = 30, before } = req.query;
     const skip = (Math.max(1, Number(page)) - 1) * Number(limit);
@@ -90,7 +142,7 @@ export const getMessages = async (req, res) => {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(Number(limit))
-      .populate("sender", "username name profile"); 
+      .populate("sender", "username name profile");
 
     return res.json({
       message: "OK",
@@ -105,21 +157,21 @@ export const getMessages = async (req, res) => {
 // PUT /api/chats/:id/read
 export const markMessagesRead = async (req, res) => {
   try {
-    const currentUserId = req.userId; // ✅ JWT
+    const currentUserId = req.userId; 
 
     const convId = req.params.id;
     const { messageIds } = req.body;
     const filter = { conversation: convId };
-    
+
     if (Array.isArray(messageIds) && messageIds.length) {
       filter._id = { $in: messageIds };
     }
-    
+
     // Chỉ update những tin chưa được user này đọc
     filter.readBy = { $ne: currentUserId };
 
-    const result = await Message.updateMany(filter, { 
-      $addToSet: { readBy: currentUserId } 
+    const result = await Message.updateMany(filter, {
+      $addToSet: { readBy: currentUserId },
     });
 
     return res.json({
@@ -142,17 +194,21 @@ export const addParticipant = async (req, res) => {
 
     const conv = await Conversation.findById(convId);
     if (!conv) {
-        return res.status(404).json({ message: "Conversation not found" });
+      return res.status(404).json({ message: "Conversation not found" });
     }
 
     // Convert ObjectId sang String để so sánh chính xác
-    const isMember = conv.participants.some(id => id.toString() === currentUserId);
+    const isMember = conv.participants.some(
+      (id) => id.toString() === currentUserId
+    );
     if (!isMember) {
-        return res.status(403).json({ message: "Forbidden" });
+      return res.status(403).json({ message: "Forbidden" });
     }
 
-    const isAlreadyAdded = conv.participants.some(id => id.toString() === participantId.toString());
-    
+    const isAlreadyAdded = conv.participants.some(
+      (id) => id.toString() === participantId.toString()
+    );
+
     if (!isAlreadyAdded) {
       conv.participants.push(participantId);
       await conv.save();
@@ -173,7 +229,7 @@ export const addParticipant = async (req, res) => {
 // POST /api/chats/:id/messages
 export const sendMessage = async (req, res) => {
   try {
-    const currentUserId = req.userId; // ✅ JWT: Lấy ID người gửi
+    const currentUserId = req.userId; 
 
     const convId = req.params.id;
     const { content, type = "text" } = req.body;
@@ -200,7 +256,7 @@ export const sendMessage = async (req, res) => {
     if (req.io) {
       req.io.to(convId).emit("new_message", newMessage);
     } else {
-        console.warn("Socket.io (req.io) is undefined. Realtime update skipped.");
+      console.warn("Socket.io (req.io) is undefined. Realtime update skipped.");
     }
 
     return res.status(201).json({
