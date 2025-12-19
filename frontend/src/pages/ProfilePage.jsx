@@ -309,9 +309,8 @@ const ProfilePage = () => {
       >
         <TabList mb={6} bg={bgColor} p={2} rounded="lg" shadow="sm">
           <Tab>Tất cả</Tab>
-          <Tab>Đang bán</Tab>
-          <Tab>Cho thuê</Tab>
-          <Tab>Đã ẩn</Tab>
+          <Tab>Chưa thuê/mua</Tab>
+          <Tab>Đã thuê/mua</Tab>
         </TabList>
  
         <TabPanels>
