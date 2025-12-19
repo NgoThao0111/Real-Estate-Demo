@@ -197,7 +197,7 @@ const ListingDetailPage = () => {
                 )}
               </HStack>
 
-              <Text color="gray.600" mb={4}>
+              <Text mb={4}>
                 {listing.location.detail}, {listing.location.ward},{" "}
                 {listing.location.province}
               </Text>
