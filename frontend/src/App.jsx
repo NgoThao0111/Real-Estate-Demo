@@ -30,6 +30,7 @@ import AOSComponent from "./components/AOSComponent.jsx";
 import Footer from "./components/Footer.jsx";
 import AuthModal from "./components/AuthModal.jsx";
 import UserSettings from "./pages/UserSettings.jsx";
+import PageTitle from "./components/PageTitle.jsx";
 
 import { useAuthContext } from "./context/AuthContext.jsx";
 
@@ -71,6 +72,7 @@ function App() {
 
   return (
     <AOSComponent>
+      <PageTitle />
       <Box>
         {/* Navbar luôn tồn tại – KHÔNG bị unmount */}
         <Box
@@ -118,18 +120,19 @@ function App() {
 
             <Route
               path="/setting"
-              element={currentUser ? <UserSettings /> : <Navigate to="/" replace />}
+              element={
+                currentUser ? <UserSettings /> : <Navigate to="/" replace />
+              }
             />
-            
+
             <Route
               path="/profile"
-              element={currentUser ? <ProfilePage /> : <Navigate to="/" replace />}
+              element={
+                currentUser ? <ProfilePage /> : <Navigate to="/" replace />
+              }
             />
-            
-            <Route
-              path="/profile/:userId"
-              element={<ProfilePage />}
-            />
+
+            <Route path="/profile/:userId" element={<ProfilePage />} />
 
             {/* Admin Routes */}
             <Route
