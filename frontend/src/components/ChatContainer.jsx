@@ -253,6 +253,7 @@ import {
   useColorModeValue,
 } from "@chakra-ui/react";
 import { useAuthContext } from "../context/AuthContext";
+import { useSocketContext } from "../context/SocketContext";
 import { useChatStore } from "../store/chat.js";
 import { useUserStore } from "../store/user.js";
 
@@ -280,6 +281,7 @@ const getUserDisplayName = (user) => {
 const ChatContainer = ({ isWidget }) => {
   // Lấy dữ liệu user hiện tại
   const { user: currentUser } = useUserStore(); // Hoặc useAuthContext tùy project
+  const { socket } = useSocketContext();
 
   // Lấy state và actions từ ChatStore
   const { selectedConversation, messages, isMessagesLoading, sendMessage } =
@@ -308,6 +310,12 @@ const ChatContainer = ({ isWidget }) => {
       inline: "nearest",
     });
   }, [messages]);
+
+  useEffect(() => {
+    if (socket && selectedConversation?._id) {
+      socket.emit("join_chat", selectedConversation._id);
+    }
+  }, [socket, selectedConversation]);
 
   // Xử lý gửi tin nhắn
   const handleSend = async () => {
