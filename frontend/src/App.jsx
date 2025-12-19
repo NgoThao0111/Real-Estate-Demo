@@ -96,6 +96,7 @@ function App() {
             <Route path="/home-panel" element={<HomePanel />} />
             <Route path="/listings" element={<AllListings />} />
             <Route path="/listings/:id" element={<ListingDetailPage />} />
+            <Route path="/profile/:userId" element={<ProfilePage />} />
 
             {/* Protected */}
             <Route

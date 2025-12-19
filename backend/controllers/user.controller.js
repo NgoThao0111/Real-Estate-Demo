@@ -677,3 +677,29 @@ export const changeAvatar = async (req, res) => {
 		res.status(500).json({ message: "Server error", error: error.message });
 	}
 };
+
+export const getUserById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const user = await User.findById(id).select(
+      "username name phone email role avatar createdAt profile"
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User không tồn tại",
+      });
+    }
+
+    res.json({
+      message: "Thông tin người dùng",
+      user: user,
+    });
+  } catch (error) {
+    console.log(error.message);
+    return res.status(500).json({
+      message: "Server error",
+    });
+  }
+};

@@ -158,9 +158,20 @@ const handleCall = async () => {
           Thông tin người đăng
         </Heading>
         <HStack spacing={4}>
-          <Avatar size="lg" name={getUserDisplayName(listing.owner)} src={listing.owner?.avatar ? `${listing.owner?.avatar}?t=${Date.now()}` : undefined}/>
+          <Avatar 
+            size="lg" 
+            name={getUserDisplayName(listing.owner)} 
+            src={listing.owner?.avatar ? `${listing.owner?.avatar}?t=${Date.now()}` : undefined} 
+            cursor={"pointer"} 
+            onClick={() => navigate(`/profile/${listing.owner?._id}`)}
+          />
           <VStack align="start" spacing={1} flex={1}>
-            <Text fontWeight="600" fontSize="lg">
+            <Text 
+              fontWeight="600" 
+              fontSize="lg"
+              cursor={"pointer"} 
+              onClick={() => navigate(`/profile/${listing.owner?._id}`)}
+            >
               {getUserDisplayName(listing.owner)}
             </Text>
             <Text color={subTextColor} fontSize="sm">

@@ -14,7 +14,8 @@ import {
   getSavedListings,
   searchUsers,
   loginGoogle,
-  changeAvatar
+  changeAvatar,
+  getUserById
   // checkSession, // Hàm này có thể bỏ vì ta đã có /api/check-auth ở server.js
 } from "../controllers/user.controller.js";
 import { verifyToken } from "../middleware/verifyToken.js"; // <--- QUAN TRỌNG: Import middleware
@@ -30,6 +31,7 @@ router.post('/resend-verification', resendVerification);
 router.post('/verify-email', verifyEmail);
 router.post('/forgot-password-code', sendResetCode);
 router.post('/reset-password-code', resetPasswordWithCode);
+router.get("/:id", getUserById);
 
 // --- 2. ROUTES BẢO MẬT (Cần đăng nhập) ---
 // Áp dụng middleware verifyToken cho tất cả các route bên dưới

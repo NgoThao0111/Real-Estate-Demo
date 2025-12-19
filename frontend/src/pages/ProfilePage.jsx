@@ -25,11 +25,14 @@ import { useListStore } from "../store/list";
 import ListingCard from "../components/ListingCard";
 import AOS from "aos";
 import "aos/dist/aos.css";
- 
+import { useParams } from "react-router-dom";
+import api from "../lib/axios";
+
 const ProfilePage = () => {
+  const { userId } = useParams();
   const { currentUser } = useAuthContext();
   const { fetchUserListings } = useListStore();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [profileUser, setProfileUser] = useState(null);
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
@@ -40,13 +43,46 @@ const ProfilePage = () => {
  
   useEffect(() => {
     AOS.init({ duration: 800, once: true });
-    loadListings();
-  }, []);
- 
+    loadUser();
+  }, [userId]);
+
+  const loadUser = async () => {
+    if (userId) {
+      try {
+        const res = await api.get(`/users/${userId}`);
+        if (res.data.user) {
+          console.log(res.data.user);
+          setProfileUser(res.data.user);
+        }
+      } catch (error) {
+        console.error("Error fetching user:", error);
+      }
+    } else {
+      setProfileUser(currentUser);
+    }
+  };
+
+  useEffect(() => {
+    if (profileUser) {
+      loadListings();
+    }
+  }, [profileUser]);
+
+    useEffect(() => {
+      if (profileUser && profileUser.name) {
+        document.title = `${profileUser.name} | Real Estate`;
+      }
+
+      // Cleanup: Khi thoát trang chi tiết có thể reset về mặc định
+      return () => {
+        document.title = "Nền tảng Bất động sản uy tín";
+      };
+    }, [profileUser]);
+
   const loadListings = async () => {
-    if (!currentUser?._id) return;
+    if (!profileUser?._id) return;
     setLoading(true);
-    const res = await fetchUserListings(currentUser._id);
+    const res = await fetchUserListings(profileUser._id);
     if (res.success) {
       setListings(res.data || []);
     }
@@ -74,8 +110,99 @@ const ProfilePage = () => {
   };
  
   const currentListings = getListingsByTab(activeTab);
- 
-  // Sidebar Component
+
+  // Sidebar Content Component (reusable for both desktop and mobile)
+  const SidebarContent = () => (
+    <Box
+      position="relative"
+      zIndex={1}
+      p={6}
+      h="full"
+      overflowY="auto"
+    >
+      <VStack 
+        spacing={4} 
+        align="center"
+        py={4}
+      >
+        <Avatar
+          size="xl"
+          name={profileUser?.name}
+          src={profileUser?.avatar ? `${profileUser.avatar}?t=${Date.now()}` : undefined}
+          color="white"
+          fontSize="3xl"
+          border="4px solid"
+          borderColor="whiteAlpha.300"
+        />
+        
+        <Heading size="md" color="white" textAlign="center">
+          {profileUser?.name || "User"}
+        </Heading>
+        <Badge colorScheme="blue" fontSize="sm" px={3} py={1}>
+          Thành viên
+        </Badge>
+
+        <Divider borderColor="whiteAlpha.400" />
+
+        <VStack spacing={3} align="stretch" w="full">
+          <HStack>
+            <Icon as={FaUser} color="blue.300" boxSize={4} />
+            <Text fontWeight="semibold" color="whiteAlpha.700" fontSize="xs">
+              TÊN
+            </Text>
+          </HStack>
+          <Text fontWeight="semibold" color="white" fontSize="sm">
+            {profileUser?.name || "N/A"}
+          </Text>
+
+          <HStack mt={2}>
+            <Icon as={FaPhone} color="green.300" boxSize={4} />
+            <Text fontWeight="semibold" color="whiteAlpha.700" fontSize="xs">
+              SỐ ĐIỆN THOẠI
+            </Text>
+          </HStack>
+          <Text fontWeight="semibold" color="white" fontSize="sm">
+            {profileUser?.phone || "N/A"}
+          </Text>
+
+          <HStack mt={2}>
+            <Icon as={FaEnvelope} color="purple.300" boxSize={4} />
+            <Text fontWeight="semibold" color="whiteAlpha.700" fontSize="xs">
+              EMAIL
+            </Text>
+          </HStack>
+          <Text 
+            fontWeight="semibold" 
+            color="white" 
+            fontSize="sm"
+            wordBreak="break-word"
+          >
+            {profileUser?.email || "N/A"}
+          </Text>
+        </VStack>
+
+        <Divider borderColor="whiteAlpha.400" />
+
+        <Box 
+          bg="whiteAlpha.200" 
+          p={3} 
+          rounded="lg" 
+          w="full" 
+          textAlign="center"
+          backdropFilter="blur(10px)"
+        >
+          <Text fontSize="xs" color="whiteAlpha.800" mb={1}>
+            Tổng bài đăng
+          </Text>
+          <Text fontSize="2xl" fontWeight="bold" color="blue.300">
+            {listings.length}
+          </Text>
+        </Box>
+      </VStack>
+    </Box>
+  );
+
+  // Desktop Sidebar Component
   const Sidebar = () => (
     <Box
       w={isSidebarOpen ? "320px" : "0px"}
