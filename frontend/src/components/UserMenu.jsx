@@ -36,7 +36,7 @@ export default function UserMenu({ user, logoutUser }) {
       >
         <MenuButton>
           <HStack cursor="pointer">
-            <Avatar name={getUserDisplayName(user)} size="sm" />
+            <Avatar name={getUserDisplayName(user)} src={user?.avatar ? `${user.avatar}?t=${Date.now()}` : undefined} size="sm" />
             <Text 
               fontWeight="medium" 
               display={{base: "none", lg: "flex"}}
