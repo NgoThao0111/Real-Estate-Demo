@@ -6,9 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Nền tảng bất động sản uy tín - Real Estate</title>
     <style>
-      input[type="password"]::-ms-reveal,
-      input[type="password"]::-ms-clear {
-        display: none;
+      @supports (-ms-ime-align: auto) {
+        input[type="password"]::-ms-reveal,
+        input[type="password"]::-ms-clear {
+          display: none;
+        }
       }
     </style>
   </head>

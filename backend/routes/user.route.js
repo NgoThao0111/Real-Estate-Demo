@@ -15,6 +15,7 @@ import {
   searchUsers,
   loginGoogle,
   changeAvatar,
+  getUserById
   requestChangePassword,
   verifyAndChangeCurrentPassword,
   // checkSession, // Hàm này có thể bỏ vì ta đã có /api/check-auth ở server.js
@@ -27,11 +28,12 @@ const router = express.Router();
 router.post("/register", userRegister);
 router.post("/login", loginUser);
 router.post("/login-google", loginGoogle);
-router.post("/logout", logoutUser);
-router.post("/resend-verification", resendVerification);
-router.post("/verify-email", verifyEmail);
-router.post("/forgot-password-code", sendResetCode);
-router.post("/reset-password-code", resetPasswordWithCode);
+router.post("/logout", logoutUser); 
+router.post('/resend-verification', resendVerification);
+router.post('/verify-email', verifyEmail);
+router.post('/forgot-password-code', sendResetCode);
+router.post('/reset-password-code', resetPasswordWithCode);
+router.get("/:id", getUserById);
 
 // --- 2. ROUTES BẢO MẬT (Cần đăng nhập) ---
 // Áp dụng middleware verifyToken cho tất cả các route bên dưới
