@@ -58,6 +58,19 @@ const ListingDetailPage = () => {
     loadListing();
   }, [id, getListingById, toast]);
 
+  useEffect(() => {
+    if (listing && listing.title) {
+      document.title = `${listing.title} | Real Estate`;
+    }
+
+    // Cleanup: Khi thoát trang chi tiết có thể reset về mặc định
+    return () => {
+      document.title = "Nền tảng Bất động sản uy tín";
+    };
+  }, [listing]);
+
+  if (!listing) return <Spinner />;
+
   if (loading) {
     return (
       <Center minH="60vh">
@@ -188,7 +201,11 @@ const ListingDetailPage = () => {
               </Text>
 
               {coords && coords.length === 2 ? (
-                <MapboxMap mode={mapMode} initialCoords={coords} height={mapMode === "directions" ? "600px" : "400px"} />
+                <MapboxMap
+                  mode={mapMode}
+                  initialCoords={coords}
+                  height={mapMode === "directions" ? "600px" : "400px"}
+                />
               ) : (
                 <Box
                   h="200px"

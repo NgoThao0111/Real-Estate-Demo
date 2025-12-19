@@ -291,11 +291,188 @@ export const sendResetCode = async (req, res) => {
   }
 };
 
+export const requestChangePassword = async (req, res) => {
+  try {
+    const { currentPassword } = req.body;
+    const userId = req.userId; // Lấy từ middleware verifyToken
+
+    if (!currentPassword) {
+      return res
+        .status(400)
+        .json({ message: "Vui lòng nhập mật khẩu hiện tại" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // 1. Kiểm tra mật khẩu hiện tại có đúng không
+    const currentPasswordWithPepper = pepperPassword(currentPassword);
+    const isMatch = await bcrypt.compare(
+      currentPasswordWithPepper,
+      user.password
+    );
+
+    if (!isMatch) {
+      return res.status(400).json({ message: "Mật khẩu hiện tại không đúng" });
+    }
+
+    // 2. Nếu đúng, tạo Code xác thực
+    const code = user.generateResetPasswordCode();
+    await user.save({ validateBeforeSave: false });
+
+    const htmlMessage = `
+  <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #ffffff;">
+    
+    <h2 style="color: #333; text-align: center; margin-top: 0;">Xác thực đăng ký</h2>
+    
+    <p style="font-size: 16px; color: #555;">Xin chào <strong>${user.name}</strong>,</p>
+    
+    <p style="font-size: 16px; color: #555;">Cảm ơn bạn đã đăng ký tài khoản. Để hoàn tất, vui lòng sử dụng mã xác thực dưới đây:</p>
+    
+    <div style="background-color: #f8f9fa; padding: 20px; text-align: center; border-radius: 6px; margin: 20px 0;">
+      <h1 style="color: #007bff; letter-spacing: 5px; margin: 0; font-size: 32px;">${code}</h1>
+      <p style="margin-top: 10px; font-size: 14px; color: #888;">(Mã có hiệu lực trong 4 phút)</p>
+    </div>
+
+    <hr style="border: none; border-top: 1px solid #eee; margin: 25px 0;" />
+
+    <div style="font-size: 14px; color: #999; line-height: 1.5;">
+      <p style="margin: 0;"><strong>⚠️ Lưu ý quan trọng:</strong></p>
+      <p style="margin-top: 5px;">Để không bỏ lỡ các thông báo quan trọng tiếp theo, hãy đánh dấu email này là <em>"Không phải Spam" (Not Spam)</em>.</p>
+    </div>
+
+  </div>
+`;
+
+    // --- GỌI HÀM GỬI MAIL ---
+    try {
+      console.log(`Đang gửi mail tới: ${user.email}`);
+
+      // Gọi hàm API mới (nhớ await)
+      await sendEmailViaBrevo(user.email, "Đổi Mật Khẩu", htmlMessage);
+
+      console.log("Gửi mail thành công!");
+    } catch (emailError) {
+      console.error("Không gửi được mail:", emailError.message);
+      // Tùy chọn: return lỗi hoặc cho qua tùy logic của bạn
+    }
+
+    return res.status(200).json({
+      message:
+        "Mật khẩu hiện tại đúng. Mã xác nhận đã được gửi tới email của bạn.",
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
+// export const verifyAndChangePassword = async (req, res) => {
+//   try {
+//     const { code, newPassword } = req.body;
+//     const userId = req.user._id;
+
+//     if (!code || !newPassword) {
+//       return res.status(400).json({ message: "Thiếu thông tin xác thực" });
+//     }
+    
+//     if (newPassword.length < 6) {
+//         return res.status(400).json({ message: "Mật khẩu mới phải có ít nhất 6 ký tự" });
+//     }
+
+//     const user = await User.findById(userId);
+//     if (!user) return res.status(404).json({ message: "User not found" });
+
+//     // 1. Kiểm tra Code
+//     const hashedCode = crypto.createHash("sha256").update(code).digest("hex");
+
+//     if (
+//       user.resetPasswordCode !== hashedCode ||
+//       !user.resetPasswordCodeExpire ||
+//       user.resetPasswordCodeExpire < Date.now()
+//     ) {
+//       return res.status(400).json({ message: "Mã xác thực không đúng hoặc đã hết hạn" });
+//     }
+
+//     // 2. Hash mật khẩu MỚI
+//     // (Lưu ý: Không cần check lại mật khẩu cũ nữa vì đã check ở bước 1 rồi)
+//     const salt = await bcrypt.genSalt(10);
+//     const newPasswordWithPepper = pepperPassword(newPassword);
+//     const hashedPassword = await bcrypt.hash(newPasswordWithPepper, salt);
+
+//     // 3. Update DB
+//     user.password = hashedPassword;
+//     user.resetPasswordCode = undefined;
+//     user.resetPasswordCodeExpire = undefined;
+//     await user.save();
+
+//     return res.status(200).json({ message: "Đổi mật khẩu thành công!" });
+
+//   } catch (error) {
+//     console.error(error);
+//     return res.status(500).json({ message: "Lỗi server" });
+//   }
+// };
+
+export const verifyAndChangeCurrentPassword = async (req, res) => {
+  try {
+    const { code, newPassword } = req.body;
+    const userId = req.userId;
+
+    if (!code || !newPassword) {
+      return res.status(400).json({ message: "Thiếu thông tin xác thực" });
+    }
+    
+    if (newPassword.length < 6) {
+        return res.status(400).json({ message: "Mật khẩu mới phải có ít nhất 6 ký tự" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // 1. Kiểm tra Code
+    const hashedCode = crypto.createHash("sha256").update(code).digest("hex");
+
+    if (
+      user.resetPasswordCode !== hashedCode ||
+      !user.resetPasswordCodeExpire ||
+      user.resetPasswordCodeExpire < Date.now()
+    ) {
+      return res.status(400).json({ message: "Mã xác thực không đúng hoặc đã hết hạn" });
+    }
+
+    // 2. Hash mật khẩu MỚI
+    // (Lưu ý: Không cần check lại mật khẩu cũ nữa vì đã check ở bước 1 rồi)
+    const salt = await bcrypt.genSalt(10);
+    const newPasswordWithPepper = pepperPassword(newPassword);
+    const hashedPassword = await bcrypt.hash(newPasswordWithPepper, salt);
+
+    // 3. Update DB
+    user.password = hashedPassword;
+    user.resetPasswordCode = undefined;
+    user.resetPasswordCodeExpire = undefined;
+    await user.save();
+
+    return res.status(200).json({ message: "Đổi mật khẩu thành công!" });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
 export const resetPasswordWithCode = async (req, res) => {
   try {
     const { email, code, password } = req.body;
     if (!email || !code || !password)
       return res.status(400).json({ message: "Missing params" });
+
+    if (password.length < 6) {
+      return res
+        .status(400)
+        .json({ message: "Mật khẩu mới phải có ít nhất 6 ký tự" });
+    }
+
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ message: "User not found" });
 
@@ -634,48 +811,45 @@ export const searchUsers = async (req, res) => {
 };
 
 export const changeAvatar = async (req, res) => {
-	try {
-		const { avatar } = req.body; // base64 hoặc url
+  try {
+    const { avatar } = req.body; // base64 hoặc url
 
-		if (!avatar) {
-			return res.status(400).json({ message: "Avatar is required" });
-		}
+    if (!avatar) {
+      return res.status(400).json({ message: "Avatar is required" });
+    }
 
-		const user = await User.findById(req.userId);
+    const user = await User.findById(req.userId);
 
-		if (!user) {
-			return res.status(404).json({ message: "User not found" });
-		}
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
-		// Xóa avatar cũ trên cloudinary (nếu có)
-		if (user.avatar) {
-			const publicId = user.avatar
-				.split("/")
-				.pop()
-				.split(".")[0];
+    // Xóa avatar cũ trên cloudinary (nếu có)
+    if (user.avatar) {
+      const publicId = user.avatar.split("/").pop().split(".")[0];
 
-			await cloudinary.uploader.destroy(`avatars/${publicId}`);
-		}
+      await cloudinary.uploader.destroy(`avatars/${publicId}`);
+    }
 
-		// Upload avatar mới
-		const cloudinaryResponse = await cloudinary.uploader.upload(avatar, {
-			folder: "avatars",
-			transformation: [
-				{ width: 300, height: 300, crop: "fill", gravity: "face" },
-			],
-		});
+    // Upload avatar mới
+    const cloudinaryResponse = await cloudinary.uploader.upload(avatar, {
+      folder: "avatars",
+      transformation: [
+        { width: 300, height: 300, crop: "fill", gravity: "face" },
+      ],
+    });
 
-		user.avatar = cloudinaryResponse.secure_url;
-		await user.save();
+    user.avatar = cloudinaryResponse.secure_url;
+    await user.save();
 
-		res.status(200).json({
-			message: "Cập nhật avatar thành công",
-			avatar: user.avatar,
-		});
-	} catch (error) {
-		console.log("Error in changeAvatar controller", error.message);
-		res.status(500).json({ message: "Server error", error: error.message });
-	}
+    res.status(200).json({
+      message: "Cập nhật avatar thành công",
+      avatar: user.avatar,
+    });
+  } catch (error) {
+    console.log("Error in changeAvatar controller", error.message);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
 };
 
 export const getUserById = async (req, res) => {
