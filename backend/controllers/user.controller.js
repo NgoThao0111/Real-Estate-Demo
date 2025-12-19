@@ -769,10 +769,10 @@ export const toggleSaveListing = async (req, res) => {
 // Lấy danh sách tin đăng đã lưu của người dùng hiện tại
 export const getSavedListings = async (req, res) => {
   try {
-    console.log(req.userId); // --- JWT: Lấy userId từ req.userId ---
-    const userId = req.userId;
+    console.log(req.userId); 
+    const Id = req.userId;
 
-    const user = await User.findById(userId).populate({
+    const user = await User.findById(Id).populate({
       path: "savedListings",
       options: { sort: { createdAt: -1 } },
     });

@@ -33,27 +33,22 @@ router.post('/resend-verification', resendVerification);
 router.post('/verify-email', verifyEmail);
 router.post('/forgot-password-code', sendResetCode);
 router.post('/reset-password-code', resetPasswordWithCode);
-router.get("/:id", getUserById);
 
-// --- 2. ROUTES BẢO MẬT (Cần đăng nhập) ---
-// Áp dụng middleware verifyToken cho tất cả các route bên dưới
-// Middleware này sẽ giải mã Token -> Lấy ID -> Gán vào req.userId
-router.use(verifyToken);
 
 // Route yêu cầu đổi pass (Gửi current pass -> nhận code)
-router.post("/request-change-password", requestChangePassword);
+router.post("/request-change-password", verifyToken, requestChangePassword);
 
 // Route xác nhận đổi pass (Gửi code + new pass -> xong)
-router.post("/confirm-change-password", verifyAndChangeCurrentPassword);
+router.post("/confirm-change-password", verifyToken, verifyAndChangeCurrentPassword);
 
-router.get("/profile", getUserInfor);
-router.put("/update", updateUserInfo);
-router.delete("/deleteUser/:id", deleteUser); // Lưu ý: Thường chỉ Admin mới xóa được user
-router.post("/save/:listingId", toggleSaveListing);
-router.get("/saved", getSavedListings);
-router.get("/search", searchUsers); // Cần userId để loại trừ bản thân khỏi kết quả tìm kiếm
-router.put("/avatar", changeAvatar);
+router.get("/profile", verifyToken , getUserInfor);
+router.put("/update", verifyToken, updateUserInfo);
+router.delete("/deleteUser/:id", verifyToken, deleteUser);
+router.get("/saved", verifyToken, getSavedListings);
+router.post("/save/:listingId", verifyToken, toggleSaveListing);
+router.get("/search", verifyToken, searchUsers); 
+router.put("/avatar", verifyToken, changeAvatar);
 
-// router.get("/session", checkSession); // Route cũ, nên dùng /api/check-auth ở server.js thay thế
+router.get("/:id", getUserById);
 
 export default router;
