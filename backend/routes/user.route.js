@@ -18,9 +18,8 @@ import {
   getUserById,
   requestChangePassword,
   verifyAndChangeCurrentPassword,
-  // checkSession, // Hàm này có thể bỏ vì ta đã có /api/check-auth ở server.js
 } from "../controllers/user.controller.js";
-import { verifyToken } from "../middleware/verifyToken.js"; // <--- QUAN TRỌNG: Import middleware
+import { verifyToken } from "../middleware/verifyToken.js"; 
 
 const router = express.Router();
 

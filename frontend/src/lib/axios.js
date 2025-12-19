@@ -8,17 +8,14 @@ const api = axios.create({
   withCredentials: true,
 });
 
-// Flag để tránh bắn 401 nhiều lần
 let isHandlingUnauthorized = false;
 
 api.interceptors.response.use(
   (config) => {
-  // console.log("➡️ API CALL:", config.url);
   return config;
 },
   (response) => response,
   (error) => {
-    // Nếu có lỗi xảy ra từ phía Server
     const status = error.response?.status;
 
     // Chỉ tự động xử lý phiên khi server trả 401 (chưa đăng nhập) hoặc 403 (không có quyền)

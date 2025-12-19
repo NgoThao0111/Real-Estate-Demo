@@ -14,7 +14,7 @@ export const sendEmailViaBrevo = async (toEmail, subject, htmlContent) => {
   const data = {
     sender: {
       name: process.env.BREVO_SENDER_NAME || "Support Team",
-      email: process.env.BREVO_USER, // BẮT BUỘC: Phải là mail đã verify trong Brevo
+      email: process.env.BREVO_USER,
     },
     to: [
       {
