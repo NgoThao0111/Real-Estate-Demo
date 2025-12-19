@@ -71,12 +71,12 @@ export default function AdminLayout() {
             </HStack>
           </Button>
 
-          <Button as={NavLink} to="/admin/messages" {...itemProps("/admin/messages")} w="full" justifyContent={isCollapsed ? "center" : "flex-start"}>
+          {/* <Button as={NavLink} to="/admin/messages" {...itemProps("/admin/messages")} w="full" justifyContent={isCollapsed ? "center" : "flex-start"}>
             <HStack spacing={2}>
               <Icon as={MdMessage} boxSize={5} />
               {!isCollapsed && <Text>Trung tâm thông báo</Text>}
             </HStack>
-          </Button>
+          </Button> */}
 
           <Button as={NavLink} to="/admin/actions" {...itemProps("/admin/actions")} w="full" justifyContent={isCollapsed ? "center" : "flex-start"}>
             <HStack spacing={2}>
