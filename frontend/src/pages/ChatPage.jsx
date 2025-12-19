@@ -91,7 +91,7 @@ const ChatPage = () => {
         setSearchParams({});
       }
     }
-  }, [targetId, chats, selectedConversation, setSelectedConversation]);
+  }, [targetId, chats, setSelectedConversation, setSearchParams]);
 
   return (
     <Box p={5} h="90vh" overflow="hidden">

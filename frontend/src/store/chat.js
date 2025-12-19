@@ -24,7 +24,22 @@ export const useChatStore = create((set, get) => ({
 
       // set({ currentChat: conversation });
       set({ selectedConversation: conversation });
-      get().fetchChats(); // Cập nhật lại danh sách bên trái
+      if (initialMessage && conversation.lastMessage) {
+        try {
+          const msgRes = await api.get(`/chats/${conversation._id}/messages`);
+          const reversedMessages = msgRes.data.messages.reverse(); 
+
+          set({
+            messages: reversedMessages,
+            isMessagesLoading: false,
+          });
+        } catch (e) {
+          console.error("Lỗi fetch messages ngầm:", e);
+        }
+      } else {
+        set({ messages: [], isMessagesLoading: false });
+      }
+      get().fetchChats(); 
 
       // return { success: true, conversationId: conversation._id };
 
