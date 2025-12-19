@@ -23,7 +23,7 @@ import {
   PinInputField,
   Center,
 } from "@chakra-ui/react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useUserStore } from "../store/user.js";
 import { useAuthContext } from "../context/AuthContext.jsx";
 import { useNavigate } from "react-router-dom";

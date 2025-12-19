@@ -423,7 +423,7 @@ const CreateListingModal = ({ isOpen, onClose, defaultValues = {} }) => {
             </HStack>
 
             {/* Ảnh */}
-            <FormControl>
+            <FormControl isRequired>
               <HStack justify="space-between" mb={2}>
                 <FormLabel m={0}>Hình ảnh</FormLabel>
                 <Button

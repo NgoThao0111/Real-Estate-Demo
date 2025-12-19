@@ -221,7 +221,7 @@ export const getListingById = async (req, res) => {
   try {
     const id = req.params.id;
     const listing = await Listing.findById(id)
-      .populate("owner", "name profile createdAt")
+      .populate("owner", "name profile createdAt phone avatar")
       .populate("property_type", "name");
     if (!listing) return res.status(404).json({ message: "Not Found" });
     // If listing is not approved, only the owner or admin may view it
