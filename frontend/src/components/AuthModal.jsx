@@ -16,26 +16,28 @@ import {
   Divider,
   useToast,
   InputGroup,
-  InputRightElement, 
+  InputRightElement,
   IconButton,
-  Flex
+  Flex,
+  PinInput,
+  PinInputField,
+  Center,
 } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { useUserStore } from "../store/user.js";
 import { useAuthContext } from "../context/AuthContext.jsx";
 import { useNavigate } from "react-router-dom";
-import { GoogleOAuthProvider } from "@react-oauth/google";
-import { GoogleLogin } from "@react-oauth/google";
-import { ViewIcon, ViewOffIcon } from "@chakra-ui/icons";
+import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 import { FaEye, FaEyeSlash } from "react-icons/fa6";
+import { ArrowBackIcon } from "@chakra-ui/icons";
 
 const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
   const [mode, setMode] = useState(defaultMode);
-  const [step, setStep] = useState("form"); // 'form' | 'verify' | 'forgot' | 'reset'
+  // Các steps: 'form' | 'verify' (đăng ký) | 'forgot' | 'reset-code' | 'reset-password'
+  const [step, setStep] = useState("form");
+  
   const [showPassword, setShowPassword] = useState(false);
-  const [isPasswordFocused, setIsPasswordFocused] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isConfirmPasswordFocused, setIsConfirmPasswordFocused] = useState(false);
 
   // State form data
   const [formData, setFormData] = useState({
@@ -45,15 +47,13 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
     name: "",
     email: "",
     phone: "",
-    role: "guest", // Mặc định role guest nếu backend yêu cầu
+    code: "",
+    role: "guest",
     type: "login",
   });
 
   const toast = useToast();
-
-  // Lấy các hàm từ Store (Lưu ý: Không lấy checkSession nữa)
-  const { registerUser, loginUser, loading, requestLoginGoogle } =
-    useUserStore();
+  const { registerUser, loginUser, loading, requestLoginGoogle } = useUserStore();
   const { updateUser } = useAuthContext();
   const navigate = useNavigate();
 
@@ -68,6 +68,7 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
         name: "",
         email: "",
         phone: "",
+        code: "",
         role: "guest",
         type: "login",
       });
@@ -83,207 +84,123 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
     }));
   };
 
+  // Handle PinInput Change (OTP)
+  const handleCodeChange = (value) => {
+    setFormData((prev) => ({ ...prev, code: value }));
+  };
+
+  // --- SUBMIT LOGIN / REGISTER ---
   const handleSubmit = async (e) => {
     e.preventDefault();
+    // Chỉ xử lý submit form chính ở đây
+    if (step !== "form") return;
 
     if (mode === "login") {
       const { success, message, user } = await loginUser(formData);
-
       if (!success) {
-        toast({
-          title: "Đăng nhập thất bại",
-          description: message,
-          status: "error",
-          duration: 3000,
-          isClosable: true,
-          position: "top",
-        });
+        toast({ title: "Đăng nhập thất bại", description: "Email hoặc Mật khẩu không đúng", status: "error", duration: 3000, isClosable: true });
       } else {
-        toast({
-          title: "Chào mừng trở lại!",
-          description: message,
-          status: "success",
-          duration: 3000,
-          isClosable: true,
-          position: "top",
-        });
-
-        // Update AuthContext so role-based UI updates immediately
+        toast({ title: "Chào mừng trở lại!", description: message, status: "success", duration: 3000, isClosable: true });
         if (user) updateUser(user);
-
-        // If admin, redirect to admin dashboard for convenience
-        if (user?.role === "admin") {
-          navigate("/admin");
-        }
-
+        if (user?.role === "admin") navigate("/admin");
         onClose();
       }
     } else {
       // REGISTER
-      // 1. VALIDATION PHÍA CLIENT (Chỉ cho phần Đăng ký)
       if (formData.password !== formData.confirmPassword) {
-        return toast({
-          title: "Mật khẩu không khớp",
-          description: "Vui lòng kiểm tra lại mật khẩu xác nhận.",
-          status: "error",
-          duration: 3000,
-          isClosable: true,
-          position: "top",
-        });
+        return toast({ title: "Mật khẩu không khớp", status: "error" });
       }
       if (formData.password.length < 6) {
-        return toast({
-          title: "Mật khẩu quá ngắn",
-          description: "Mật khẩu nên có ít nhất 6 ký tự.",
-          status: "warning",
-          duration: 3000,
-          isClosable: true,
-          position: "top",
-        });
+        return toast({ title: "Mật khẩu quá ngắn", description: "Tối thiểu 6 ký tự", status: "warning" });
       }
       if (!formData.email.includes("@")) {
-        return toast({
-          title: "Email không hợp lệ",
-          description: "Vui lòng nhập đúng định dạng email.",
-          status: "warning",
-          duration: 3000,
-          isClosable: true,
-          position: "top",
-        });
+        return toast({ title: "Email không hợp lệ", status: "warning" });
       }
 
-      const { success, message, user, verificationRequired } =
-        await registerUser(formData);
+      const { success, message, user, verificationRequired } = await registerUser(formData);
 
       if (!success) {
-        toast({
-          title: "Đăng ký thất bại",
-          description: "Email này đã tồn tại trong hệ thống",
-          status: "error",
-          duration: 3000,
-          isClosable: true,
-          position: "top",
-        });
+        toast({ title: "Đăng ký thất bại", description: message, status: "error" });
       } else if (verificationRequired) {
-        toast({
-          title: "Hoàn tất bước 1",
-          description: message,
-          status: "info",
-          duration: 4000,
-          isClosable: true,
-          position: "top",
-        });
-        // Show verify step
-        setStep("verify");
+        toast({ title: "Kiểm tra email", description: message, status: "info", duration: 4000 });
+        setStep("verify"); // Chuyển sang nhập OTP đăng ký
       } else {
-        toast({
-          title: "Thành công",
-          description: "Tài khoản đã được tạo và đăng nhập!",
-          status: "success",
-          duration: 3000,
-          isClosable: true,
-          position: "top",
-        });
+        toast({ title: "Thành công", status: "success" });
         if (user) updateUser(user);
         onClose();
       }
     }
   };
 
-  // Verify email code flow
+  // --- VERIFY EMAIL (REGISTRATION) ---
   const handleVerify = async () => {
-    const res = await useUserStore
-      .getState()
-      .verifyEmail(formData.email, formData.code);
+    const res = await useUserStore.getState().verifyEmail(formData.email, formData.code);
     if (!res.success) {
-      toast({
-        title: "Xác thực thất bại",
-        description: res.message,
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
+      toast({ title: "Xác thực thất bại", description: res.message, status: "error" });
       return;
     }
-    toast({
-      title: "Xác thực thành công",
-      description: res.message,
-      status: "success",
-      duration: 3000,
-      isClosable: true,
-    });
+    toast({ title: "Xác thực thành công", description: res.message, status: "success" });
     if (res.user) updateUser(res.user);
     onClose();
   };
 
-  const handleResend = async () => {
-    const res = await useUserStore
-      .getState()
-      .resendVerification(formData.email);
-    toast({
-      title: res.success ? "Đã gửi lại mã" : "Gửi thất bại",
-      description: res.message,
-      status: res.success ? "success" : "error",
-    });
-  };
-
-  // Forgot / reset password flows
+  // --- FORGOT PASSWORD FLOW ---
+  
+  // 1. Gửi Email -> Chuyển sang nhập Code
   const handleSendReset = async () => {
     const res = await useUserStore.getState().sendResetCode(formData.email);
-    if (!res.success)
-      return toast({
-        title: "Gửi thất bại",
-        description: res.message,
-        status: "error",
-      });
-    toast({
-      title: "Đã gửi mã đặt lại",
-      description: res.message,
-      status: "success",
-    });
-    setStep("reset");
+    if (!res.success) return toast({ title: "Gửi thất bại", description: res.message, status: "error" });
+    
+    toast({ title: "Đã gửi mã đặt lại", description: res.message, status: "success" });
+    // Reset code cũ để người dùng nhập mới
+    setFormData(prev => ({...prev, code: ""}));
+    setStep("reset-code");
   };
 
+  // 2. Kiểm tra Code (UI Only) -> Chuyển sang nhập Password
+  const handleValidateResetCode = () => {
+    if (!formData.code || formData.code.length < 6) {
+      return toast({ title: "Vui lòng nhập đủ mã xác thực", status: "warning" });
+    }
+    // Chuyển bước
+    setStep("reset-password");
+  };
+
+  // 3. Submit Đổi mật khẩu
   const handleResetPassword = async () => {
-    if (formData.password !== formData.confirmPassword)
+    if (formData.password !== formData.confirmPassword) {
       return toast({ title: "Mật khẩu không khớp", status: "error" });
-    const res = await useUserStore
-      .getState()
-      .resetPasswordWithCode(formData.email, formData.code, formData.password);
-    if (!res.success)
-      return toast({
-        title: "Thất bại",
-        description: res.message,
-        status: "error",
-      });
+    }
+    const res = await useUserStore.getState().resetPasswordWithCode(formData.email, formData.code, formData.password);
+    
+    if (!res.success) {
+      // Nếu lỗi code sai, có thể quay lại bước nhập code
+      if (res.message && res.message.toLowerCase().includes("mã")) {
+         toast({ title: "Mã xác thực không đúng", status: "error" });
+         setStep("reset-code");
+         return;
+      }
+      return toast({ title: "Thất bại", description: res.message, status: "error" });
+    }
+    
     toast({ title: "Thành công", description: res.message, status: "success" });
     onClose();
   };
 
+  const handleResend = async () => {
+    const res = await useUserStore.getState().resendVerification(formData.email);
+    toast({ title: res.success ? "Đã gửi lại mã" : "Gửi thất bại", description: res.message, status: res.success ? "success" : "error" });
+  };
+
+  // Google Login Handler
   const handleSuccess = async (response) => {
-    const { credential } = response; //Nhan ID token tu google
-    console.log(credential);
+    const { credential } = response;
     try {
       const { success, message, user } = await requestLoginGoogle(credential);
       if (!success) {
-        toast({
-          title: "Đăng nhập thất bại",
-          description: message,
-          status: "error",
-          duration: 3000,
-          isClosable: true,
-          position: "top",
-        });
+        toast({ title: "Đăng nhập thất bại", status: "error" });
       } else {
-        toast({
-          title: "Chào mừng trở lại!",
-          description: message,
-          status: "success",
-          duration: 3000,
-          isClosable: true,
-          position: "top",
-        });
-
+        toast({ title: "Chào mừng trở lại!", description: message, status: "success" });
         if (user) updateUser(user);
         if (user?.role === "admin") navigate("/admin");
         onClose();
@@ -293,274 +210,204 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
     }
   };
 
+  const getTitle = () => {
+    if (step === "verify") return "Xác thực đăng ký";
+    if (step === "forgot") return "Quên mật khẩu";
+    if (step === "reset-code") return "Nhập mã xác thực";
+    if (step === "reset-password") return "Đặt lại mật khẩu";
+    return mode === "login" ? "Đăng nhập" : "Tạo tài khoản mới";
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} isCentered size="md">
       <ModalOverlay />
       <ModalContent as="form" onSubmit={handleSubmit}>
-        <ModalHeader textAlign="center">
-          {mode === "login" ? "Đăng nhập" : "Tạo tài khoản mới"}
-        </ModalHeader>
+        <ModalHeader textAlign="center">{getTitle()}</ModalHeader>
         <ModalCloseButton />
 
         <ModalBody pb={6}>
           <VStack spacing={4}>
-            {/* Username */}
-            <FormControl isRequired>
-              <FormLabel>Email</FormLabel>
-              <Input
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="example@gmail.com"
-              />
-            </FormControl>
-            {/* Password */}
-            <FormControl isRequired>
-              <Flex justify="space-between" align="center" mb={1}>
-                <FormLabel mb="0">Mật khẩu</FormLabel>
-
-                {mode === "login" && step === "form" && (
-                  <Button
-                    variant="link"
-                    size="sm"
-                    colorScheme="red"
-                    onClick={() => setStep("forgot")}
-                  >
-                    Quên mật khẩu?
-                  </Button>
-                )}
-              </Flex>
-
-              <InputGroup>
-                <Input
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  value={formData.password}
-                  onChange={handleChange}
-                  placeholder="Nhập mật khẩu"
-                  pr={isPasswordFocused ? "4.5rem" : "1rem"}
-                  onFocus={() => setIsPasswordFocused(true)}
-                  onBlur={() => setIsPasswordFocused(false)}
-                />
-
-                {isPasswordFocused && formData.password.length > 0 && (
-                  <InputRightElement width="4.5rem">
-                    <IconButton
-                      aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
-                      icon={showPassword ? <FaEyeSlash /> : <FaEye />}
-                      size="sm"
-                      variant="ghost"
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => setShowPassword((prev) => !prev)}
-                    />
-                  </InputRightElement>
-                )}
-              </InputGroup>
-            </FormControl>
-
-            {/* Register Fields */}
-            {mode === "register" && step === "form" && (
+            
+            {/* === STEP 1: FORM LOGIN / REGISTER === */}
+            {step === "form" && (
               <>
                 <FormControl isRequired>
-                  <FormLabel>Xác nhận mật khẩu</FormLabel>
+                  <FormLabel>Email</FormLabel>
+                  <Input name="email" value={formData.email} onChange={handleChange} placeholder="example@gmail.com" />
+                </FormControl>
+                
+                <FormControl isRequired>
+                  <Flex justify="space-between" align="center" mb={1}>
+                    <FormLabel mb="0">Mật khẩu</FormLabel>
+                    {mode === "login" && (
+                      <Button variant="link" size="sm" colorScheme="red" onClick={() => setStep("forgot")}>
+                        Quên mật khẩu?
+                      </Button>
+                    )}
+                  </Flex>
                   <InputGroup>
                     <Input
-                      name="confirmPassword"
-                      type={showConfirmPassword ? "text" : "password"}
-                      autoComplete="new-password"
-                      value={formData.confirmPassword}
+                      name="password"
+                      type={showPassword ? "text" : "password"}
+                      value={formData.password}
                       onChange={handleChange}
-                      placeholder="Nhập lại mật khẩu"
-                      pr={isConfirmPasswordFocused ? "4.5rem" : "1rem"}
-                      onFocus={() => setIsConfirmPasswordFocused(true)}
-                      onBlur={() => setIsConfirmPasswordFocused(false)}
+                      placeholder="Nhập mật khẩu"
                     />
-
-                    {isConfirmPasswordFocused && formData.confirmPassword.length > 0 && (
-                      <InputRightElement width="4.5rem">
-                        <IconButton
-                          aria-label={showConfirmPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
-                          icon={showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
-                          size="sm"
-                          variant="ghost"
-                          onMouseDown={(e) => e.preventDefault()} 
-                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        />
-                      </InputRightElement>
-                    )}
+                    <InputRightElement width="4.5rem">
+                      <IconButton
+                        aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                        icon={showPassword ? <FaEyeSlash /> : <FaEye />}
+                        size="sm" variant="ghost" onClick={() => setShowPassword(!showPassword)}
+                      />
+                    </InputRightElement>
                   </InputGroup>
                 </FormControl>
 
-                <FormControl isRequired>
-                  <FormLabel>Họ và tên</FormLabel>
-                  <Input
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    placeholder="Nguyễn Văn A"
-                  />
-                </FormControl>
+                {mode === "register" && (
+                  <>
+                    <FormControl isRequired>
+                      <FormLabel>Xác nhận mật khẩu</FormLabel>
+                      <InputGroup>
+                        <Input
+                          name="confirmPassword"
+                          type={showConfirmPassword ? "text" : "password"}
+                          value={formData.confirmPassword}
+                          onChange={handleChange}
+                          placeholder="Nhập lại mật khẩu"
+                        />
+                        <InputRightElement width="4.5rem">
+                          <IconButton
+                            aria-label={showConfirmPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                            icon={showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                            size="sm" variant="ghost" onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          />
+                        </InputRightElement>
+                      </InputGroup>
+                    </FormControl>
+                    <FormControl isRequired>
+                      <FormLabel>Họ và tên</FormLabel>
+                      <Input name="name" value={formData.name} onChange={handleChange} placeholder="Nguyễn Văn A" />
+                    </FormControl>
+                    <FormControl isRequired>
+                      <FormLabel>Số điện thoại</FormLabel>
+                      <Input name="phone" type="tel" value={formData.phone} onChange={handleChange} placeholder="0912..." />
+                    </FormControl>
+                  </>
+                )}
 
-                <FormControl isRequired>
-                  <FormLabel>Số điện thoại</FormLabel>
-                  <Input
-                    name="phone"
-                    type="tel"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    placeholder="0912..."
-                  />
-                </FormControl>
+                {/* Google & Switch Mode */}
+                <VStack w="full" pt={2} spacing={3}>
+                   {/* Nút Submit nằm ở ModalFooter nhưng ta cần ẩn ModalFooter ở các bước khác, 
+                       Nên ta để Logic hiển thị Footer ở dưới cùng */}
+                </VStack>
               </>
             )}
 
-            {/* Verify Step */}
+            {/* === STEP 2: VERIFY REGISTER (OTP) === */}
             {step === "verify" && (
-              <>
-                <FormControl isRequired>
-                  <FormLabel>Email</FormLabel>
-                  <Input
-                    name="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                  />
-                </FormControl>
-                <FormControl isRequired>
-                  <FormLabel>Mã xác thực</FormLabel>
-                  <Input
-                    name="code"
-                    value={formData.code || ""}
-                    onChange={handleChange}
-                  />
-                </FormControl>
-                <HStack>
-                  <Button colorScheme="blue" onClick={handleVerify}>
-                    Xác thực
-                  </Button>
-                  <Button variant="ghost" onClick={handleResend}>
-                    Gửi lại mã
-                  </Button>
+              <VStack spacing={6} w="full" py={4}>
+                <Text textAlign="center" color="gray.600">
+                  Mã xác thực đăng ký đã gửi tới <b>{formData.email}</b>.
+                </Text>
+                <HStack justify="center">
+                  <PinInput otp size="lg" focusBorderColor="blue.500" value={formData.code} onChange={handleCodeChange}>
+                    <PinInputField /><PinInputField /><PinInputField /><PinInputField /><PinInputField /><PinInputField />
+                  </PinInput>
                 </HStack>
-              </>
+                <VStack w="full" spacing={3}>
+                  <Button colorScheme="blue" w="full" onClick={handleVerify} isLoading={loading}>Xác thực</Button>
+                  <Button variant="ghost" size="sm" onClick={handleResend}>Gửi lại mã</Button>
+                </VStack>
+              </VStack>
             )}
 
-            {/* Forgot password */}
-            {mode === "login" && step === "forgot" && (
-              <>
-                <HStack>
-                  <Button colorScheme="blue" onClick={handleSendReset}>
-                    Gửi mã
-                  </Button>
-                  <Button variant="ghost" onClick={() => setStep("form")}>
-                    Quay lại
-                  </Button>
-                </HStack>
-              </>
-            )}
-
-            {/* Reset password by code */}
-            {step === "reset" && (
-              <>
+            {/* === STEP 3: FORGOT PASSWORD (EMAIL INPUT) === */}
+            {step === "forgot" && (
+              <VStack spacing={4} w="full" py={2}>
+                <Text textAlign="center" color="gray.600" fontSize="m">Nhập email để nhận mã đặt lại mật khẩu.</Text>
                 <FormControl isRequired>
                   <FormLabel>Email</FormLabel>
-                  <Input
-                    name="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                  />
+                  <Input name="email" value={formData.email} onChange={handleChange} placeholder="example@gmail.com" />
                 </FormControl>
-                <FormControl isRequired>
-                  <FormLabel>Mã xác thực</FormLabel>
-                  <Input
-                    name="code"
-                    value={formData.code || ""}
-                    onChange={handleChange}
-                  />
-                </FormControl>
+                <Button colorScheme="blue" w="full" onClick={handleSendReset} isLoading={loading}>Gửi mã xác nhận</Button>
+                <Button variant="ghost" size="sm" leftIcon={<ArrowBackIcon />} onClick={() => setStep("form")}>Quay lại đăng nhập</Button>
+              </VStack>
+            )}
+
+            {/* === STEP 4: RESET CODE (NHẬP OTP) === */}
+            {step === "reset-code" && (
+               <VStack spacing={6} w="full" py={4}>
+                <Text textAlign="center" color="gray.600">
+                  Mã xác thực đã được gửi tới <b>{formData.email}</b>
+                </Text>
+                <HStack justify="center">
+                  <PinInput otp size="lg" focusBorderColor="blue.500" value={formData.code} onChange={handleCodeChange}>
+                    <PinInputField /><PinInputField /><PinInputField /><PinInputField /><PinInputField /><PinInputField />
+                  </PinInput>
+                </HStack>
+                <VStack w="full" spacing={3}>
+                  <Button colorScheme="blue" w="full" onClick={handleValidateResetCode}>Tiếp tục</Button>
+                  <HStack w="full" justify="space-between">
+                     <Button variant="ghost" size="sm" onClick={() => setStep("forgot")}>Nhập lại Email</Button>
+                     <Button variant="ghost" size="sm" onClick={handleResend}>Gửi lại mã</Button>
+                  </HStack>
+                </VStack>
+              </VStack>
+            )}
+
+             {/* === STEP 5: RESET PASSWORD (NEW PASS) === */}
+            {step === "reset-password" && (
+              <VStack spacing={5} w="full">
+                <Text textAlign="center" color="gray.600" fontSize="sm">Vui lòng thiết lập mật khẩu mới.</Text>
                 <FormControl isRequired>
                   <FormLabel>Mật khẩu mới</FormLabel>
-                  <Input
-                    name="password"
-                    type="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                  />
+                  <InputGroup>
+                     <Input name="password" type={showPassword ? "text" : "password"} value={formData.password} onChange={handleChange} placeholder="Mật khẩu mới" />
+                     <InputRightElement><IconButton icon={showPassword ? <FaEyeSlash /> : <FaEye />} size="sm" variant="ghost" onClick={() => setShowPassword(!showPassword)} /></InputRightElement>
+                  </InputGroup>
                 </FormControl>
                 <FormControl isRequired>
-                  <FormLabel>Xác nhận mật khẩu</FormLabel>
-                  <Input
-                    name="confirmPassword"
-                    type="password"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                  />
+                  <FormLabel>Nhập lại mật khẩu</FormLabel>
+                  <InputGroup>
+                     <Input name="confirmPassword" type={showConfirmPassword ? "text" : "password"} value={formData.confirmPassword} onChange={handleChange} placeholder="Xác nhận mật khẩu" />
+                     <InputRightElement><IconButton icon={showConfirmPassword ? <FaEyeSlash /> : <FaEye />} size="sm" variant="ghost" onClick={() => setShowConfirmPassword(!showConfirmPassword)} /></InputRightElement>
+                  </InputGroup>
                 </FormControl>
-                <HStack>
-                  <Button colorScheme="blue" onClick={handleResetPassword}>
-                    Đặt lại mật khẩu
-                  </Button>
-                </HStack>
-              </>
+                <Button colorScheme="blue" w="full" onClick={handleResetPassword} isLoading={loading}>Đổi mật khẩu</Button>
+                <Button variant="ghost" size="sm" onClick={() => setStep("reset-code")}>Quay lại nhập mã</Button>
+              </VStack>
             )}
 
-            {/* 3. Divider ngăn cách */}
-            <HStack w="full" py={2}>
-              <Divider />
-              <Text fontSize="sm" whiteSpace="nowrap" color="gray.500">
-                Hoặc tiếp tục với
-              </Text>
-              <Divider />
-            </HStack>
+            {/* Các thành phần chung cho Form Login/Register */}
+            {step === "form" && (
+                <>
+                 <HStack w="full" py={2}>
+                    <Divider /><Text fontSize="sm" whiteSpace="nowrap" color="gray.500">Hoặc tiếp tục với</Text><Divider />
+                 </HStack>
+                 <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+                    <GoogleLogin onSuccess={handleSuccess} onError={() => console.log("Login Failed")} />
+                 </GoogleOAuthProvider>
+                 <HStack justify="center" pt={2} w="full">
+                    <Text fontSize="sm" color="gray.500">{mode === "login" ? "Chưa có tài khoản?" : "Đã có tài khoản?"}</Text>
+                    <Button variant="link" colorScheme="blue" size="sm" onClick={() => setMode(mode === "login" ? "register" : "login")}>
+                        {mode === "login" ? "Đăng ký ngay" : "Đăng nhập"}
+                    </Button>
+                 </HStack>
+                </>
+            )}
 
-            {/* 4. Google Login Button */}
-            <GoogleOAuthProvider
-              clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}
-            >
-              <GoogleLogin
-                onSuccess={handleSuccess}
-                onError={() => {
-                  console.log("Login Failed");
-                }}
-              />
-            </GoogleOAuthProvider>
-
-            {/* Switch Mode Link */}
-            <HStack justify="center" pt={2} w="full">
-              <Text fontSize="sm" color="gray.500">
-                {mode === "login" ? "Chưa có tài khoản?" : "Đã có tài khoản?"}
-              </Text>
-              <Button
-                variant="link"
-                colorScheme="blue"
-                size="sm"
-                onClick={() => {
-                  setMode(mode === "login" ? "register" : "login");
-                  setStep("form");
-                }}
-              >
-                {mode === "login" ? "Đăng ký ngay" : "Đăng nhập"}
-              </Button>
-            </HStack>
           </VStack>
         </ModalBody>
 
-        <ModalFooter borderBottomRadius="md">
-          <Button variant="ghost" mr={3} onClick={onClose}>
-            Hủy
-          </Button>
-          <Button
-            type="submit"
-            colorScheme="blue"
-            isLoading={loading} // Hiển thị loading spinner khi đang gọi API
-            loadingText={
-              mode === "login" ? "Đang đăng nhập..." : "Đang đăng ký..."
-            }
-          >
-            {mode === "login" ? "Đăng nhập" : "Đăng ký"}
-          </Button>
-        </ModalFooter>
+        {/* Chỉ hiện Footer khi ở màn hình Form chính để tránh double button */}
+        {step === "form" && (
+            <ModalFooter borderBottomRadius="md">
+            <Button variant="ghost" mr={3} onClick={onClose}>Hủy</Button>
+            <Button type="submit" colorScheme="blue" isLoading={loading} loadingText={mode === "login" ? "Đang đăng nhập..." : "Đang đăng ký..."}>
+                {mode === "login" ? "Đăng nhập" : "Đăng ký"}
+            </Button>
+            </ModalFooter>
+        )}
       </ModalContent>
     </Modal>
   );
