@@ -7,7 +7,7 @@ import {
 } from "@chakra-ui/react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useEffect } from "react";
-
+import "../index.css";
 import Navbar from "./components/Navbar.jsx";
 import AdminLayout from "./pages/Admin/AdminLayout.jsx";
 import DashboardOverview from "./pages/Admin/DashboardOverview.jsx";
@@ -98,6 +98,7 @@ function App() {
             <Route path="/home-panel" element={<HomePanel />} />
             <Route path="/listings" element={<AllListings />} />
             <Route path="/listings/:id" element={<ListingDetailPage />} />
+            <Route path="/profile/:userId" element={<ProfilePage />} />
 
             {/* Protected */}
             <Route

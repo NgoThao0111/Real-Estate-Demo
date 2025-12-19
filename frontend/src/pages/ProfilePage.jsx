@@ -31,10 +31,14 @@ import { useListStore } from "../store/list";
 import ListingCard from "../components/ListingCard";
 import AOS from "aos";
 import "aos/dist/aos.css";
+import { useParams } from "react-router-dom";
+import api from "../lib/axios";
 
 const ProfilePage = () => {
+  const { userId } = useParams();
   const { currentUser } = useAuthContext();
   const { fetchUserListings } = useListStore();
+  const [profileUser, setProfileUser] = useState(null);
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
@@ -46,13 +50,46 @@ const ProfilePage = () => {
 
   useEffect(() => {
     AOS.init({ duration: 800, once: true });
-    loadListings();
-  }, []);
+    loadUser();
+  }, [userId]);
+
+  const loadUser = async () => {
+    if (userId) {
+      try {
+        const res = await api.get(`/users/${userId}`);
+        if (res.data.user) {
+          console.log(res.data.user);
+          setProfileUser(res.data.user);
+        }
+      } catch (error) {
+        console.error("Error fetching user:", error);
+      }
+    } else {
+      setProfileUser(currentUser);
+    }
+  };
+
+  useEffect(() => {
+    if (profileUser) {
+      loadListings();
+    }
+  }, [profileUser]);
+
+    useEffect(() => {
+      if (profileUser && profileUser.name) {
+        document.title = `${profileUser.name} | Real Estate`;
+      }
+
+      // Cleanup: Khi thoát trang chi tiết có thể reset về mặc định
+      return () => {
+        document.title = "Nền tảng Bất động sản uy tín";
+      };
+    }, [profileUser]);
 
   const loadListings = async () => {
-    if (!currentUser?._id) return;
+    if (!profileUser?._id) return;
     setLoading(true);
-    const res = await fetchUserListings(currentUser._id);
+    const res = await fetchUserListings(profileUser._id);
     if (res.success) {
       setListings(res.data || []);
     }
@@ -95,8 +132,8 @@ const ProfilePage = () => {
       >
         <Avatar
           size="xl"
-          name={currentUser?.username}
-          bg="pink.500"
+          name={profileUser?.name}
+          src={profileUser?.avatar ? `${profileUser.avatar}?t=${Date.now()}` : undefined}
           color="white"
           fontSize="3xl"
           border="4px solid"
@@ -104,7 +141,7 @@ const ProfilePage = () => {
         />
         
         <Heading size="md" color="white" textAlign="center">
-          {currentUser?.name || "User"}
+          {profileUser?.name || "User"}
         </Heading>
         <Badge colorScheme="blue" fontSize="sm" px={3} py={1}>
           Thành viên
@@ -120,7 +157,7 @@ const ProfilePage = () => {
             </Text>
           </HStack>
           <Text fontWeight="semibold" color="white" fontSize="sm">
-            {currentUser?.name || "N/A"}
+            {profileUser?.name || "N/A"}
           </Text>
 
           <HStack mt={2}>
@@ -130,7 +167,7 @@ const ProfilePage = () => {
             </Text>
           </HStack>
           <Text fontWeight="semibold" color="white" fontSize="sm">
-            {currentUser?.phone || "N/A"}
+            {profileUser?.phone || "N/A"}
           </Text>
 
           <HStack mt={2}>
@@ -145,7 +182,7 @@ const ProfilePage = () => {
             fontSize="sm"
             wordBreak="break-word"
           >
-            {currentUser?.email || "N/A"}
+            {profileUser?.email || "N/A"}
           </Text>
         </VStack>
 

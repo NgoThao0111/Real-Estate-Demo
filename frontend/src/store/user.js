@@ -293,4 +293,35 @@ export const useUserStore = create((set) => ({
       throw error.response?.data || error;
     }
   },
+
+  requestChangePassword: async (currentPassword) => {
+    set({ loading: true, error: null });
+    try {
+      const res = await api.post("/users/request-change-password", {
+        currentPassword,
+      });
+      set({ loading: false });
+      return { success: true, message: res.data.message };
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || error.message;
+      set({ loading: false, error: errorMessage });
+      return { success: false, message: errorMessage };
+    }
+  },
+
+  confirmChangePassword: async (code, newPassword) => {
+    set({ loading: true, error: null });
+    try {
+      const res = await api.post("/users/confirm-change-password", {
+        code,
+        newPassword,
+      });
+      set({ loading: false });
+      return { success: true, message: res.data.message };
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || error.message;
+      set({ loading: false, error: errorMessage });
+      return { success: false, message: errorMessage };
+    }
+  },
 }));
