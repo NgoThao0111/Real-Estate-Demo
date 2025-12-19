@@ -15,7 +15,7 @@ import {
   searchUsers,
   loginGoogle,
   changeAvatar,
-  getUserById
+  getUserById,
   requestChangePassword,
   verifyAndChangeCurrentPassword,
   // checkSession, // Hàm này có thể bỏ vì ta đã có /api/check-auth ở server.js
