@@ -20,7 +20,7 @@ import CreateListingModal from "./CreateListingModal";
 import { useUserStore } from "../store/user.js";
 import UserMenu from "./UserMenu";
 import { MdDarkMode, MdLightMode } from "react-icons/md";
-import { IoSunny, IoMoon, IoChatbubble, IoNotifications } from "react-icons/io5";
+import { IoSunny, IoMoon, IoChatbubble, IoNotifications, IoHeart } from "react-icons/io5";
 import NotificationBell from "./NotificationBell.jsx";
 
 const Navbar = () => {
@@ -113,6 +113,14 @@ const Navbar = () => {
                   />
 
                   <NotificationBell />
+
+                  <IconButton
+                    as={Link}
+                    to="/saved-posts"
+                    icon={<IoHeart size={20} />}
+                    variant={"ghost"}
+                    aria-label="Go to saved posts"
+                  />
 
                   {/* <IconButton
                     icon={<IoNotifications size={20}/>}

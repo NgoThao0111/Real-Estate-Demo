@@ -7,6 +7,7 @@ import crypto from "crypto";
 import { jwtDecode } from "jwt-decode";
 import { OAuth2Client } from "google-auth-library";
 import { sendEmailViaBrevo } from "../utils/sendEmail.js";
+import cloudinary from "../config/cloudinary.js";
 
 dotenv.config();
 
@@ -465,7 +466,7 @@ export const getUserInfor = async (req, res) => {
     const user_id = req.userId;
 
     const user = await User.findById(user_id).select(
-      "username name phone email role createdAt"
+      "username name phone email role avatar createdAt"
     );
 
     if (!user) {
@@ -630,4 +631,49 @@ export const searchUsers = async (req, res) => {
     console.log(error);
     res.status(500).json({ message: "Server error" });
   }
+};
+
+export const changeAvatar = async (req, res) => {
+	try {
+		const { avatar } = req.body; // base64 hoặc url
+
+		if (!avatar) {
+			return res.status(400).json({ message: "Avatar is required" });
+		}
+
+		const user = await User.findById(req.userId);
+
+		if (!user) {
+			return res.status(404).json({ message: "User not found" });
+		}
+
+		// Xóa avatar cũ trên cloudinary (nếu có)
+		if (user.avatar) {
+			const publicId = user.avatar
+				.split("/")
+				.pop()
+				.split(".")[0];
+
+			await cloudinary.uploader.destroy(`avatars/${publicId}`);
+		}
+
+		// Upload avatar mới
+		const cloudinaryResponse = await cloudinary.uploader.upload(avatar, {
+			folder: "avatars",
+			transformation: [
+				{ width: 300, height: 300, crop: "fill", gravity: "face" },
+			],
+		});
+
+		user.avatar = cloudinaryResponse.secure_url;
+		await user.save();
+
+		res.status(200).json({
+			message: "Cập nhật avatar thành công",
+			avatar: user.avatar,
+		});
+	} catch (error) {
+		console.log("Error in changeAvatar controller", error.message);
+		res.status(500).json({ message: "Server error", error: error.message });
+	}
 };
