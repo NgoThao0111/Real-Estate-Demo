@@ -16,11 +16,11 @@ import {
   Divider,
   useToast,
   InputGroup,
-  InputRightElement, 
+  InputRightElement,
   IconButton,
-  Flex
+  Flex,
 } from "@chakra-ui/react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useUserStore } from "../store/user.js";
 import { useAuthContext } from "../context/AuthContext.jsx";
 import { useNavigate } from "react-router-dom";
@@ -35,7 +35,8 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isPasswordFocused, setIsPasswordFocused] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isConfirmPasswordFocused, setIsConfirmPasswordFocused] = useState(false);
+  const [isConfirmPasswordFocused, setIsConfirmPasswordFocused] =
+    useState(false);
 
   // State form data
   const [formData, setFormData] = useState({
@@ -293,6 +294,42 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
     }
   };
 
+  const passwordRef = useRef(null);
+
+  const togglePassword = () => {
+    const input = passwordRef.current;
+    if (!input) return;
+
+    // Lưu vị trí con trỏ
+    const cursorPos = input.selectionStart;
+
+    setShowPassword((prev) => !prev);
+
+    // Khôi phục lại sau khi render
+    requestAnimationFrame(() => {
+      input.setSelectionRange(cursorPos, cursorPos);
+      input.focus();
+    });
+  };
+
+  const confirmPasswordRef = useRef(null);
+
+  const toggleConfirmPassword = () => {
+    const input = confirmPasswordRef.current;
+    if (!input) return;
+
+    // Lưu vị trí con trỏ
+    const cursorPos = input.selectionStart;
+
+    setShowConfirmPassword((prev) => !prev);
+
+    // Khôi phục lại sau khi render
+    requestAnimationFrame(() => {
+      input.setSelectionRange(cursorPos, cursorPos);
+      input.focus();
+    });
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} isCentered size="md">
       <ModalOverlay />
@@ -315,6 +352,7 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
               />
             </FormControl>
             {/* Password */}
+
             <FormControl isRequired>
               <Flex justify="space-between" align="center" mb={1}>
                 <FormLabel mb="0">Mật khẩu</FormLabel>
@@ -333,6 +371,7 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
 
               <InputGroup>
                 <Input
+                  ref={passwordRef}
                   name="password"
                   type={showPassword ? "text" : "password"}
                   value={formData.password}
@@ -346,12 +385,14 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
                 {isPasswordFocused && formData.password.length > 0 && (
                   <InputRightElement width="4.5rem">
                     <IconButton
-                      aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                      aria-label={
+                        showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"
+                      }
                       icon={showPassword ? <FaEyeSlash /> : <FaEye />}
                       size="sm"
                       variant="ghost"
                       onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => setShowPassword((prev) => !prev)}
+                      onClick={togglePassword}
                     />
                   </InputRightElement>
                 )}
@@ -362,15 +403,18 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
             {mode === "register" && step === "form" && (
               <>
                 <FormControl isRequired>
-                  <FormLabel>Xác nhận mật khẩu</FormLabel>
+                  <Flex justify="space-between" align="center" mb={1}>
+                    <FormLabel mb="0">Xác nhận mật khẩu</FormLabel>
+                  </Flex>
+
                   <InputGroup>
                     <Input
+                      ref={confirmPasswordRef}
                       name="confirmPassword"
                       type={showConfirmPassword ? "text" : "password"}
-                      autoComplete="new-password"
                       value={formData.confirmPassword}
                       onChange={handleChange}
-                      placeholder="Nhập lại mật khẩu"
+                      placeholder="Nhập mật khẩu"
                       pr={isConfirmPasswordFocused ? "4.5rem" : "1rem"}
                       onFocus={() => setIsConfirmPasswordFocused(true)}
                       onBlur={() => setIsConfirmPasswordFocused(false)}
@@ -379,12 +423,14 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
                     {isConfirmPasswordFocused && formData.confirmPassword.length > 0 && (
                       <InputRightElement width="4.5rem">
                         <IconButton
-                          aria-label={showConfirmPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                          aria-label={
+                            showConfirmPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"
+                          }
                           icon={showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
                           size="sm"
                           variant="ghost"
-                          onMouseDown={(e) => e.preventDefault()} 
-                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={toggleConfirmPassword}
                         />
                       </InputRightElement>
                     )}
