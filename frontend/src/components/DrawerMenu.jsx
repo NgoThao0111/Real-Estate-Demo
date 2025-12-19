@@ -74,7 +74,7 @@ const DrawerMenu = ({
                 </Button>
                 {user && user.role === "admin" && (
                   <Button as={Link} to="/admin" w="full" colorScheme="red" onClick={onClose}>
-                    Admin
+                    Trang quản trị
                   </Button>
                 )}
                 <Button w="full" onClick={logoutUser} variant={"outline"}>
