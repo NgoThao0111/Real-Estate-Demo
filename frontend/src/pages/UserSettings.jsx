@@ -206,11 +206,11 @@ const UserSettings = () => {
 };
 
 // --- COMPONENT LOGIC: PROFILE SETTINGS ---
-const ProfileSettings = ({ user }) => {
+const ProfileSettings = () => {
   const bgPage = useColorModeValue("gray.50", "gray.900");
-  const {changeAvatar, loading} = useUserStore();
+  const {user, changeAvatar, loading} = useUserStore();
   const [formData, setFormData] = useState({
-    username: user?.username || "",
+    name: user?.name || "",
     phone: user?.phone || "", // Giả sử user có trường phone
     address: user?.address || "", // Giả sử user có trường address
   });
@@ -308,7 +308,7 @@ const ProfileSettings = ({ user }) => {
         >
           <VStack spacing={4}>
             <Box position="relative">
-              <Avatar size="2xl" name={user?.name} src={user?.avatar} />
+              <Avatar size="2xl" name={user?.name} src={user?.avatar ? `${user.avatar}?t=${Date.now()}` : undefined} />
 
               {/* ICON ĐỔI AVATAR */}
               <IconButton
@@ -338,8 +338,8 @@ const ProfileSettings = ({ user }) => {
             <FormControl>
               <FormLabel>Họ và tên</FormLabel>
               <Input
-                id="username"
-                value={formData.username}
+                id="name"
+                value={formData.name}
                 onChange={handleChange}
                 focusBorderColor="blue.500"
               />

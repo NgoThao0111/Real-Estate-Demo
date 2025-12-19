@@ -55,7 +55,7 @@ const PostsNavigationPanel = () => {
           </HStack>
         </Button> */}
         <HStack m={1}>
-          <Avatar name={getUserDisplayName(user)} size="md" />
+          <Avatar name={getUserDisplayName(user)} src={user?.avatar ? `${user.avatar}?t=${Date.now()}` : undefined} size="md" />
           <VStack spacing={0} align={"left"}>
             <Text
               fontWeight={"thin"}
