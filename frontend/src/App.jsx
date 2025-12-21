@@ -31,6 +31,7 @@ import Footer from "./components/Footer.jsx";
 import AuthModal from "./components/AuthModal.jsx";
 import UserSettings from "./pages/UserSettings.jsx";
 import PageTitle from "./components/PageTitle.jsx";
+import NotFound from "./pages/NotFound";
 
 import { useAuthContext } from "./context/AuthContext.jsx";
 
@@ -150,6 +151,8 @@ function App() {
               <Route path="actions" element={<AdminActions />} />
               <Route path="reports" element={<ReportsManager />} />
             </Route>
+
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </Box>
 
