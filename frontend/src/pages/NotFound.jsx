@@ -23,16 +23,16 @@ const NotFound = () => {
         <Heading
           display="inline-block"
           as="h1"
-          size="4xl"
+          fontSize={{ base: "80px", md: "120px" }}
           bgGradient="linear(to-r, blue.600, blue.800)"
           backgroundClip="text"
         >
           404
         </Heading>
-        <Text fontSize="18px" mt={3} mb={2} fontWeight="bold" color="gray.700">
+        <Text fontSize="30px" mt={3} mb={2} fontWeight="bold" color="gray.700">
           Trang không tồn tại
         </Text>
-        <Text color={"gray.500"} mb={6}>
+        <Text fontSize="25px" color={"gray.500"} mb={6}>
           Đường dẫn bạn truy cập có thể bị hỏng hoặc trang đã bị xóa.
         </Text>
 
@@ -42,6 +42,9 @@ const NotFound = () => {
           color="white"
           variant="solid"
           onClick={goHome}
+          h="60px"
+          px="40px"
+          fontSize="2xl"
           _hover={{
             bgGradient: "linear(to-r, blue.600, blue.700, blue.800)",
             boxShadow: "xl",
