@@ -4,16 +4,22 @@ import { createStandaloneToast } from "@chakra-ui/react";
 const { toast } = createStandaloneToast();
 
 const api = axios.create({
-  baseURL: import.meta.env.MODE === 'production' ? "https://real-estate-demo-backend-latest.onrender.com/api" : import.meta.env.VITE_API_BASE_URL,
+  baseURL:
+    import.meta.env.MODE === "production"
+      ? "https://real-estate-demo-backend-latest.onrender.com/api"
+      : import.meta.env.VITE_API_BASE_URL,
   withCredentials: true,
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 
 let isHandlingUnauthorized = false;
 
 api.interceptors.response.use(
   (config) => {
-  return config;
-},
+    return config;
+  },
   (response) => response,
   (error) => {
     const status = error.response?.status;
@@ -31,7 +37,10 @@ api.interceptors.response.use(
         toast({
           id: "session-expired",
           title: status === 401 ? "Phiên đăng nhập hết hạn" : "Không có quyền",
-          description: status === 401 ? "Vui lòng đăng nhập lại để tiếp tục." : "Bạn không có quyền thực hiện hành động này.",
+          description:
+            status === 401
+              ? "Vui lòng đăng nhập lại để tiếp tục."
+              : "Bạn không có quyền thực hiện hành động này.",
           status: "warning",
           duration: 3000,
           isClosable: true,
