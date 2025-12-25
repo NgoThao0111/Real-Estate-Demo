@@ -16,46 +16,65 @@ const api = axios.create({
 
 let isHandlingUnauthorized = false;
 
+// Hàm xóa token và dữ liệu người dùng
+const clearAuthData = () => {
+  Object.keys(localStorage).forEach((key) => {
+    if (key !== "chakra-ui-color-mode") {
+      localStorage.removeItem(key);
+    }
+  });
+  
+  // Xóa cookies nếu có
+  document.cookie.split(";").forEach((c) => {
+    document.cookie = c
+      .replace(/^ +/, "")
+      .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+  });
+};
+
 api.interceptors.response.use(
-  (config) => {
-    return config;
-  },
   (response) => response,
   (error) => {
     const status = error.response?.status;
 
-    // Chỉ tự động xử lý phiên khi server trả 401 (chưa đăng nhập) hoặc 403 (không có quyền)
+    // Xử lý khi token hết hạn hoặc không có quyền
     if (status === 401 || status === 403) {
-      // 2. Dọn dẹp LocalStorage (Xóa user cũ, giữ lại theme Dark/Light)
-      Object.keys(localStorage).forEach((key) => {
-        if (key !== "chakra-ui-color-mode") {
-          localStorage.removeItem(key);
+      if (!isHandlingUnauthorized) {
+        isHandlingUnauthorized = true;
+        
+        // Xóa token và dữ liệu auth ngay lập tức
+        clearAuthData();
+
+        // Hiển thị toast
+        if (!toast.isActive("session-expired")) {
+          toast({
+            id: "session-expired",
+            title: status === 401 ? "Phiên đăng nhập đã hết hạn" : "Không có quyền truy cập",
+            description: status === 401
+              ? "Token của bạn đã hết hạn. Trang sẽ tự động tải lại sau 3 giây..."
+              : "Bạn không có quyền thực hiện hành động này. Trang sẽ tự động tải lại sau 3 giây...",
+            status: "error",
+            duration: 3000,
+            isClosable: false,
+            position: "top",
+            onCloseComplete: () => {
+              window.location.reload();
+            },
+          });
         }
-      });
 
-      if (!toast.isActive("session-expired")) {
-        toast({
-          id: "session-expired",
-          title: status === 401 ? "Phiên đăng nhập hết hạn" : "Không có quyền",
-          description:
-            status === 401
-              ? "Vui lòng đăng nhập lại để tiếp tục."
-              : "Bạn không có quyền thực hiện hành động này.",
-          status: "warning",
-          duration: 3000,
-          isClosable: true,
-          position: "top",
-        });
+        // Tự động reload sau 3 giây
+        setTimeout(() => {
+          window.location.reload();
+        }, 3000);
+
+        // Reset flag
+        setTimeout(() => {
+          isHandlingUnauthorized = false;
+        }, 3500);
       }
-
-      localStorage.setItem("triggerLoginModal", "true");
-      // 3. Chuyển hướng về Login sau 1.5s (để người dùng kịp đọc thông báo)
-      setTimeout(() => {
-        window.dispatchEvent(new Event("auth:unauthorized"));
-      }, 2000);
     }
 
-    // Các lỗi khác (4xx/5xx) không nên ép logout tự động, trả về để component xử lý
     return Promise.reject(error);
   }
 );
