@@ -23,7 +23,7 @@ const getUserDisplayName = (user) => {
   if (user.name) return user.name;
 };
 
-const ListingImageSection = ({ listing }) => {
+const ListingImageSection = ({ user, listing }) => {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isContacting, setIsContacting] = useState(false);
 
@@ -43,6 +43,17 @@ const ListingImageSection = ({ listing }) => {
         status: "error",
         duration: 3000,
       });
+    }
+
+    if (listing.owner._id === user.id) {
+      toast({
+        title: "Thông báo",
+        description: "Bạn không thể nhắn tin với chính mình",
+        status: "info",
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
     }
 
     setIsContacting(true);
