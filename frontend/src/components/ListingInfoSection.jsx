@@ -33,7 +33,7 @@ const getUserDisplayName = (user) => {
   if (user.name) return user.name;
 };
 
-const ListingInfoSection = ({ user, listing, onContact }) => {
+const ListingInfoSection = ({ user, listing }) => {
   const toggleSave = useUserStore((s) => s.toggleSaveListing);
   const savedListings = useUserStore((s) => s.savedListings);
   const fallbackToggle = useListStore((s) => s.toggleSaveListing);
@@ -60,13 +60,24 @@ const ListingInfoSection = ({ user, listing, onContact }) => {
       });
     }
 
+    if (listing.owner._id === user.id) {
+      toast({
+        title: "Thông báo",
+        description: "Bạn không thể nhắn tin với chính mình",
+        status: "info",
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
     setIsContacting(true);
     console.log(listing.owner?._id);
     try {
 
       const listingUrl = `${window.location.origin}/listings/${listing._id}`;
 
-      const autoMessage = `Tôi muốn tham khảo bài viết: [${listing.title}](${listingUrl})`;
+      const autoMessage = `Tôi muốn trao đổi thêm về bài đăng: [${listing.title}](${listingUrl})`;
 
       const result = await createOrFindConversation(listing.owner?._id, autoMessage);
 
