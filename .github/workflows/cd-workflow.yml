@@ -17,7 +17,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 🔹 Convert repo name to lowercase (Docker requires this)
+      # Convert repo name to lowercase (Docker images' name must be lowercase)
       - name: Set lowercase repo name
         run: |
           echo "REPO_LOWER=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
