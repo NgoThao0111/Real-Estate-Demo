@@ -89,11 +89,16 @@ const SearchOpt = () => {
 
       const currentSort = searchParams.get("sort");
       const currentPage = searchParams.get("page");
+      const currentRentalType = searchParams.get("rental_type");
 
       const finalParams = { ...newFilters };
 
       if (currentSort) {
         finalParams.sort = currentSort;
+      }
+      
+      if (currentRentalType) {
+        finalParams.rental_type = currentRentalType;
       }
 
       // 2. Đẩy lên URL -> AllListings.jsx sẽ tự bắt và fetch lại

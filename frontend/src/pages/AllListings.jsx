@@ -35,17 +35,17 @@ const AllListings = () => {
   useEffect(() => {
     const params = Object.fromEntries([...searchParams]);
     
-    // Đồng bộ state Sort với URL
-    if (params.sort && params.sort !== sortBy) {
-      setSortBy(params.sort);
-    }
+    // // Đồng bộ state Sort với URL
+    // if (params.sort && params.sort !== sortBy) {
+    //   setSortBy(params.sort);
+    // }
 
-    // Đồng bộ state Rental Type với URL (MỚI)
-    // (Xử lý trường hợp user bấm nút Back/Forward trình duyệt)
-    const typeFromUrl = params.rental_type || "";
-    if (typeFromUrl !== rentalType) {
-      setRentalType(typeFromUrl);
-    }
+    // // Đồng bộ state Rental Type với URL (MỚI)
+    // // (Xử lý trường hợp user bấm nút Back/Forward trình duyệt)
+    // const typeFromUrl = params.rental_type || "";
+    // if (typeFromUrl !== rentalType) {
+    //   setRentalType(typeFromUrl);
+    // }
 
     // Logic Loading ngầm
     const isBackgroundLoad = listings.length > 0;
