@@ -328,7 +328,7 @@ const ProfileSettings = () => {
           <VStack spacing={4}>
             <Box position="relative">
               <Avatar
-                size="2xl"
+                size="3xl"
                 name={user?.name}
                 src={
                   user?.avatar ? `${user.avatar}?t=${Date.now()}` : undefined
@@ -339,7 +339,7 @@ const ProfileSettings = () => {
               <IconButton
                 aria-label="Đổi ảnh đại diện"
                 icon={<FiCamera />}
-                size="sm"
+                size="lg"
                 colorScheme="blue"
                 position="absolute"
                 bottom="0"
