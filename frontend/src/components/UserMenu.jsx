@@ -36,7 +36,7 @@ export default function UserMenu({ user, logoutUser }) {
       >
         <MenuButton>
           <HStack cursor="pointer">
-            <Avatar name={getUserDisplayName(user)} src={user?.avatar ? `${user.avatar}?t=${Date.now()}` : undefined} size="sm" />
+            <Avatar name={getUserDisplayName(user)} src={user?.avatar} size="sm" />
             <Text 
               fontWeight="medium" 
               display={{base: "none", lg: "flex"}}
@@ -56,6 +56,10 @@ export default function UserMenu({ user, logoutUser }) {
           <MenuItem as={Link} to="/my-posts" icon={<FiFileText />}>
             Bài đăng của tôi
           </MenuItem>
+
+          <MenuItem as={Link} to="/setting" icon={<FiUser />}>
+             Tài khoản
+           </MenuItem>
 
           {/* <MenuItem as={Link} to="/saved-posts" icon={<ImStarEmpty />}>
             Bài đăng đã lưu
@@ -81,15 +85,9 @@ export default function UserMenu({ user, logoutUser }) {
 
           {user?.role === "admin" && (
             <MenuItem as={Link} to="/admin" icon={<FiSettings />}>
-              Admin Panel
+              Trang quản trị
             </MenuItem>
           )}
-          {user?.role === "guest" && (
-            <MenuItem as={Link} to="/setting" icon={<FiUser />}>
-              Tài khoản
-            </MenuItem>
-          )}
-
           <MenuDivider />
 
           <MenuItem

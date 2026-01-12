@@ -27,7 +27,7 @@ export const useChatStore = create((set, get) => ({
       if (initialMessage && conversation.lastMessage) {
         try {
           const msgRes = await api.get(`/chats/${conversation._id}/messages`);
-          const reversedMessages = msgRes.data.messages.reverse(); 
+          const reversedMessages = msgRes.data.messages.reverse();
 
           set({
             messages: reversedMessages,
@@ -39,7 +39,7 @@ export const useChatStore = create((set, get) => ({
       } else {
         set({ messages: [], isMessagesLoading: false });
       }
-      get().fetchChats(); 
+      get().fetchChats();
 
       // return { success: true, conversationId: conversation._id };
 
@@ -228,17 +228,28 @@ export const useChatStore = create((set, get) => ({
 
   // --- 5. NHẬN TIN NHẮN TỪ SOCKET ---
   addMessage: (message) => {
-    const { selectedConversation, chats } = get();
+    const { selectedConversation, messages } = get();
+
+    const currentUser = useUserStore.getState().user;
+    const currentUserId = currentUser?._id || currentUser?.id;
+
+    const senderId =
+      typeof message.sender === "object" ? message.sender._id : message.sender;
+    if (senderId?.toString() === currentUserId?.toString()) {
+      return;
+    }
 
     // 1. Nếu tin nhắn thuộc cuộc hội thoại đang mở -> Thêm vào list messages
     if (
       selectedConversation &&
       message.conversation === selectedConversation._id
     ) {
-      set((state) => ({ messages: [...state.messages, message] }));
-
-      // Mark read ngay lập tức
-      api.put(`/chats/${selectedConversation._id}/read`, {}).catch(() => {});
+      const isExist = messages.some((m) => m._id === message._id);
+      if (!isExist) {
+        set((state) => ({ messages: [...state.messages, message] }));
+        // Mark read
+        api.put(`/chats/${selectedConversation._id}/read`, {}).catch(() => {});
+      }
     }
 
     // 2. Cập nhật danh sách Chat bên trái (Realtime update Last Message & Reorder)

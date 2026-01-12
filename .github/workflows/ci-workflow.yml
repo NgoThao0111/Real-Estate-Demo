@@ -1,0 +1,39 @@
+name: Build & Test Backend & Frontend Images
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # =========================
+      # Backend
+      # =========================
+      - name: Build backend image (no push)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile
+          push: false
+
+      # =========================
+      # Frontend
+      # =========================
+      - name: Build frontend image (no push)
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: false
+          build-args: |
+            VITE_API_BASE_URL=http://localhost:8000/api
+            VITE_SOCKET_URL=http://localhost:8000
+          # Placeholder build-args for test-only purpose

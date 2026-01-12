@@ -56,6 +56,7 @@ const Navbar = () => {
                 textTransform="uppercase"
                 bgGradient="linear(to-r, cyan.400, blue.500)"
                 bgClip="text"
+                display={{ base: "none", md: "flex" }}
               >
                 Real Estate
               </Text>

@@ -3,13 +3,15 @@ import { useEffect, useState } from "react";
 import AOS from "aos";
 import "aos/dist/aos.css";
 import { useListStore } from "../store/list.js";
+import { useUserStore } from "../store/user.js";
 import ListingCard from "../components/ListingCard";
 import HorizontalListingCard from "../components/HorizontalListingCard";
 import SortViewOpts, { sortListings, filterListings } from "../components/SortViewOpts";
 import PostsNavigationPanel from "../components/PostsNavigationPanel";
 
 const SavedPostsPage = () => {
-  const { fetchSavedListings, toggleSaveListing } = useListStore();
+  const { fetchSavedListings } = useListStore();
+  const { toggleSaveListing } = useUserStore();
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(false);
   const [sortBy, setSortBy] = useState("newest");

@@ -251,8 +251,10 @@ import {
   Avatar,
   Spinner,
   useColorModeValue,
+  Link as ChakraLink,
 } from "@chakra-ui/react";
 import { useAuthContext } from "../context/AuthContext";
+import { useSocketContext } from "../context/SocketContext";
 import { useChatStore } from "../store/chat.js";
 import { useUserStore } from "../store/user.js";
 
@@ -277,9 +279,60 @@ const getUserDisplayName = (user) => {
   return user.name || user.username || "Người dùng";
 };
 
+const renderMessageContent = (text, isOwn) => {
+  if (!text) return null;
+
+  // Regex tìm pattern [Title](URL)
+  const regex = /\[([^\]]+)\]\(([^)]+)\)/g;
+  const parts = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = regex.exec(text)) !== null) {
+    // 1. Phần text thường trước link
+    if (match.index > lastIndex) {
+      parts.push(
+        <Text as="span" key={`text-${lastIndex}`}>
+          {text.substring(lastIndex, match.index)}
+        </Text>
+      );
+    }
+
+    // 2. Phần Link (match[1] là Title, match[2] là URL)
+    parts.push(
+      <ChakraLink
+        key={`link-${match.index}`}
+        href={match[2]}
+        isExternal // Mở tab mới
+        color={isOwn ? "white" : "blue.600"} // Chỉnh màu link cho dễ đọc
+        textDecoration="underline"
+        fontWeight="bold"
+        _hover={{ opacity: 0.8 }}
+      >
+        {match[1]}
+      </ChakraLink>
+    );
+
+    lastIndex = regex.lastIndex;
+  }
+
+  // 3. Phần text còn dư phía sau
+  if (lastIndex < text.length) {
+    parts.push(
+      <Text as="span" key={`text-end`}>
+        {text.substring(lastIndex)}
+      </Text>
+    );
+  }
+
+  // Nếu không có link nào, trả về text gốc
+  return parts.length > 0 ? parts : <Text as="span">{text}</Text>;
+};
+
 const ChatContainer = ({ isWidget }) => {
   // Lấy dữ liệu user hiện tại
   const { user: currentUser } = useUserStore(); // Hoặc useAuthContext tùy project
+  const { socket } = useSocketContext();
 
   // Lấy state và actions từ ChatStore
   const { selectedConversation, messages, isMessagesLoading, sendMessage } =
@@ -308,6 +361,12 @@ const ChatContainer = ({ isWidget }) => {
       inline: "nearest",
     });
   }, [messages]);
+
+  useEffect(() => {
+    if (socket && selectedConversation?._id) {
+      socket.emit("join_chat", selectedConversation._id);
+    }
+  }, [socket, selectedConversation]);
 
   // Xử lý gửi tin nhắn
   const handleSend = async () => {
@@ -372,9 +431,11 @@ const ChatContainer = ({ isWidget }) => {
               {getUserDisplayName(receiver)}
             </Text>
             {/* Nếu có trạng thái online thực tế thì thay vào đây */}
-            <Text fontSize="sm" fontWeight={"semibold"} color={"gray.500"}>
-              Đang trực tuyến
-            </Text>
+            <Text
+              fontSize="sm"
+              fontWeight={"semibold"}
+              color={"gray.500"}
+            ></Text>
           </Box>
         </Flex>
       )}
@@ -396,13 +457,9 @@ const ChatContainer = ({ isWidget }) => {
         }}
       >
         {messages.map((msg, index) => {
-          // Xử lý an toàn: sender có thể là object hoặc string ID
           const senderId =
             typeof msg.sender === "object" ? msg.sender?._id : msg.sender;
           const isOwn = senderId?.toString() === currentUser?._id?.toString();
-
-          // Kiểm tra tin nhắn cuối cùng để hiện avatar nhỏ (nếu muốn UI giống Messenger)
-          // const isLast = index === messages.length - 1;
 
           return (
             <Flex
@@ -423,7 +480,9 @@ const ChatContainer = ({ isWidget }) => {
                 borderBottomLeftRadius={isOwn ? "2xl" : "sm"}
                 opacity={msg.pending ? 0.7 : 1} // Làm mờ nếu đang gửi (Optimistic)
               >
-                <Text fontSize="md">{msg.content}</Text>
+                <Box fontSize="md" style={{ whiteSpace: "pre-wrap" }}>
+                   {renderMessageContent(msg.content, isOwn)}
+                </Box>
 
                 <Flex justify="flex-end" align="center" gap={1} mt={1}>
                   <Text fontSize="10px" opacity={0.8}>

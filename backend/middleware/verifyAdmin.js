@@ -1,6 +1,5 @@
 import User from "../models/user.model.js";
 
-// Assumes verifyToken has already set req.userId
 export const verifyAdmin = async (req, res, next) => {
   try {
     const userId = req.userId;

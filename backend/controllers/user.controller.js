@@ -18,8 +18,6 @@ const pepperPassword = (password) => {
     throw new Error("Chưa cấu hình PASSWORD_PEPPER trong file .env");
   }
 
-  // Dùng HMAC-SHA256 để trộn password và pepper
-  // Kết quả trả về là chuỗi hex 64 ký tự (vừa vặn giới hạn 72 bytes của Bcrypt)
   return crypto
     .createHmac("sha256", process.env.PASSWORD_PEPPER)
     .update(password)
@@ -108,13 +106,13 @@ export const userRegister = async (req, res) => {
     try {
       console.log(`Đang gửi mail tới: ${user.email}`);
 
-      // Gọi hàm API mới (nhớ await)
+      // Gọi hàm API 
       await sendEmailViaBrevo(user.email, "Xác minh tài khoản", htmlMessage);
 
       console.log("Gửi mail thành công!");
     } catch (emailError) {
       console.error("Không gửi được mail:", emailError.message);
-      // Tùy chọn: return lỗi hoặc cho qua tùy logic của bạn
+      
     }
 
     // try {
@@ -226,7 +224,6 @@ export const verifyEmail = async (req, res) => {
     user.emailVerificationExpire = undefined;
     await user.save();
 
-    // Auto login after verification
     generateTokenAndSetCookie(res, user._id, user.role);
 
     const { password: _p, ...userInfo } = user._doc;
@@ -595,9 +592,6 @@ export const loginGoogle = async (req, res) => {
     const dataUser = ticket.getPayload();
 
     console.log("User verified:", dataUser);
-
-    // 3. Xử lý logic lưu user vào DB hoặc tạo JWT của hệ thống bạn ở đây...
-    // ...
 
     let user = await User.findOne({ email: dataUser.email });
 

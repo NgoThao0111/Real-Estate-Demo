@@ -7,7 +7,8 @@ import {
   getUserListings,
   updateListing,
   getListingById,
-  searchListings
+  searchListings,
+  updateListingStatus
 } from "../controllers/listing.controller.js";
 import { verifyToken } from "../middleware/verifyToken.js"; // <--- QUAN TRỌNG: Import middleware
  
@@ -25,6 +26,7 @@ router.post("/createList", verifyToken, createList);
 router.get("/my", verifyToken, getMyListings);
 router.delete("/delete/:id", verifyToken, deleteListing);
 router.put("/:id", verifyToken, updateListing); // Update tin đăng
+router.put("/:id/status", verifyToken, updateListingStatus);
  
 // --- 3. DYNAMIC PUBLIC ROUTE (Đặt cuối cùng) ---
 // Route này "hút" tất cả các request GET còn lại vào ID

@@ -64,7 +64,9 @@ const ListingInfoSection = ({ user, listing, onContact }) => {
     console.log(listing.owner?._id);
     try {
 
-      const autoMessage = "Tôi muốn tham khảo thêm về bài đăng này: " + listing.title;
+      const listingUrl = `${window.location.origin}/listings/${listing._id}`;
+
+      const autoMessage = `Tôi muốn tham khảo bài viết: [${listing.title}](${listingUrl})`;
 
       const result = await createOrFindConversation(listing.owner?._id, autoMessage);
 
@@ -178,7 +180,7 @@ const ListingInfoSection = ({ user, listing, onContact }) => {
                   case "rejected":
                     return { text: "Không được duyệt", color: "red" };
                   case "closed":
-                    return { text: "Đã thuê", color: "gray" };
+                    return { text: "Đã đóng", color: "gray" };
                   default:
                     return { text: status, color: "gray" };
                 }

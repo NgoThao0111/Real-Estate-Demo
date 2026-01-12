@@ -133,7 +133,7 @@ const ProfilePage = () => {
         <Avatar
           size="xl"
           name={profileUser?.name}
-          src={profileUser?.avatar ? `${profileUser.avatar}?t=${Date.now()}` : undefined}
+          src={profileUser?.avatar}
           color="white"
           fontSize="3xl"
           border="4px solid"
