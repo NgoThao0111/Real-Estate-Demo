@@ -164,8 +164,7 @@ const ListingDetailPage = () => {
             {/* Phần Ảnh */}
             <ListingImageSection
               listing={listing}
-              onContact={handleContact}
-              chatLoading={chatLoading}
+              user={user}
             />
 
             {/* --- 3. PHẦN BẢN ĐỒ --- */}
@@ -231,7 +230,6 @@ const ListingDetailPage = () => {
           <ListingInfoSection
             listing={listing}
             user={user}
-            onContact={handleContact}
           />
         </GridItem>
       </Grid>

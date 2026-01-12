@@ -157,12 +157,12 @@ const ListingCard = ({ listing }) => {
           </Box>
         )}
 
-        {/* Status badge visible only to owner */}
+        {/* Status badge visible only to owner
         {currentUser && ownerId && currentUser._id === ownerId.toString() && (
           <Box position="absolute" top={2} left={2} bg="rgba(255,255,255,0.9)" px={2} py={1} borderRadius="md" fontSize="xs">
             <Box as="span" color={mapStatusLabel(listing.status).color} fontWeight="bold">{mapStatusLabel(listing.status).text}</Box>
           </Box>
-        )}
+        )} */}
 
         {imgCount > 0 && (
           <Box position="absolute" bottom={2} right={2} bg="rgba(0,0,0,0.6)" color="white" px={2} py={1} borderRadius="md" fontSize="xs" display="flex" alignItems="center" gap={1}>
