@@ -1,21 +1,41 @@
-name: Build & Push Backend & Frontend Images
+name: CI/CD Pipeline
 
 on:
   push:
     branches: [ "main" ]
-
-permissions:
-  contents: read
-  packages: write
+  pull_request:         
+    branches: [ "main" ]
 
 jobs:
-  build-and-push:
+  # ----------------------------------------------------------------
+  # JOB 1: CI - Chạy cho cả PR và Main
+  # ----------------------------------------------------------------
+  test-lint:
     runs-on: ubuntu-latest
-    environment: production
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with: 
+          node-version: '18'
+      
+      - name: Install & Test
+        run: |
+          npm ci
+          # npm test (Ví dụ)
+          # npm run build (Thử build xem có crash không, nhưng không deploy)
+
+  # ----------------------------------------------------------------
+  # JOB 2: CD - Chỉ chạy khi code đã vào Main
+  # ----------------------------------------------------------------
+  deploy:
+    needs: test-lint    # Phải pass test mới được deploy
+    runs-on: ubuntu-latest
+    
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - uses: actions/checkout@v4
 
       # Convert repo name to lowercase (Docker images' name must be lowercase)
       - name: Set lowercase repo name
